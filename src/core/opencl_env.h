@@ -37,7 +37,7 @@ typedef struct OpenCL_ENV {
 
 
 OpenCL_ENV* init_OpenCL_ENV();
-extern void recursive_init_environment(OpenCL_ENV* env);
+extern void cascade_init_environment(OpenCL_ENV* env);
 void destroy_OpenCL_ENV(OpenCL_ENV* env);
 
 

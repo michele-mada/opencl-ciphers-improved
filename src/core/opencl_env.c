@@ -42,7 +42,7 @@ OpenCL_ENV* init_OpenCL_ENV() {
     OpenCL_ENV* new_env = (OpenCL_ENV*) malloc(sizeof(OpenCL_ENV));
     select_OpenCL_platform_and_device(new_env);
     initialize_OpenCL_context(new_env);
-    recursive_init_environment(new_env);
+    cascade_init_environment(new_env);
     return new_env;
 }
 

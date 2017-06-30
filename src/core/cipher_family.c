@@ -23,19 +23,19 @@ void load_program(Cipher_Family* fam, char* source_filename) {
 
 Cipher_Family* init_Cipher_Family(struct OpenCL_ENV* environment,
                                   char* source_filename,
-                                  void (*recursive_init_fun)(struct Cipher_Family*),
-                                  void (*recursive_destroy_fun)(struct Cipher_Family*)) {
+                                  void (*cascade_init_fun)(struct Cipher_Family*),
+                                  void (*cascade_destroy_fun)(struct Cipher_Family*)) {
     Cipher_Family* new_fam = (Cipher_Family*) malloc(sizeof(Cipher_Family));
     new_fam->environment = environment;
-    new_fam->recursive_destroy_fun = recursive_destroy_fun;
+    new_fam->cascade_destroy_fun = cascade_destroy_fun;
     load_program(new_fam, source_filename);
-    (*recursive_init_fun)(new_fam);
+    (*cascade_init_fun)(new_fam);
     return new_fam;
 }
 
 
 void destroy_Cipher_Family(Cipher_Family* fam) {
-    fam->recursive_destroy_fun(fam);
+    fam->cascade_destroy_fun(fam);
     clReleaseProgram(fam->program);
     free(fam->source_str);
     free(fam);

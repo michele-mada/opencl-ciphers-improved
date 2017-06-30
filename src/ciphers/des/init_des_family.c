@@ -26,7 +26,7 @@ void init_des_methods_and_state(Cipher_Family* fam) {
     state->in = NULL;
     state->out = NULL;
     state->_esk = NULL;
-    state->local_item_size = 1;
+    state->local_item_size = 1;  //TODO: we may want to specify this parameter somewhere else
     fam->state = state;
 }
 

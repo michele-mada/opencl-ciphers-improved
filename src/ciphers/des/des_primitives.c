@@ -1,13 +1,18 @@
 #include "../../core/opencl_env.h"
 #include "../../core/cipher_family.h"
-#include "../cipher_families_id.h"
 #include "../../core/utils.h"
+#include "../cipher_families_setup.h"
 #include "des_methods.h"
 #include "des_state.h"
 #include "des_expansion.h"
 #include "des_primitives.h"
 
 
+/*
+    Constants only used within this file, to control the behaviour of various
+    des sub-routines.
+    DesMethodsId is the actual enum used to identify various des methods. 
+*/
 #define SINGLE_DES 1
 #define DOUBLE_DES 2
 #define TRIPLE_DES 3

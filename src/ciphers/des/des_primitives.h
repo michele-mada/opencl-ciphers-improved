@@ -11,4 +11,15 @@ void des2_ecb_decrypt(OpenCL_ENV* env, uint8_t* ciphertext, size_t input_size, u
 void des3_ecb_encrypt(OpenCL_ENV* env, uint8_t* plaintext, size_t input_size, uint8_t* key, uint8_t* ciphertext);
 void des3_ecb_decrypt(OpenCL_ENV* env, uint8_t* ciphertext, size_t input_size, uint8_t* key, uint8_t* plaintext);
 
+
+void des_ctr_encrypt(OpenCL_ENV* env, uint8_t* plaintext, size_t input_size, uint8_t* key, uint8_t* ciphertext);
+void des_ctr_decrypt(OpenCL_ENV* env, uint8_t* ciphertext, size_t input_size, uint8_t* key, uint8_t* plaintext);
+
+void des2_ctr_encrypt(OpenCL_ENV* env, uint8_t* plaintext, size_t input_size, uint8_t* key, uint8_t* ciphertext);
+void des2_ctr_decrypt(OpenCL_ENV* env, uint8_t* ciphertext, size_t input_size, uint8_t* key, uint8_t* plaintext);
+
+void des3_ctr_encrypt(OpenCL_ENV* env, uint8_t* plaintext, size_t input_size, uint8_t* key, uint8_t* ciphertext);
+void des3_ctr_decrypt(OpenCL_ENV* env, uint8_t* ciphertext, size_t input_size, uint8_t* key, uint8_t* plaintext);
+
+
 #endif
