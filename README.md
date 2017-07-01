@@ -11,6 +11,8 @@ The final version will be especially optimized for a FPGA device.
 
 ## Design overview
 
+### Core
+
     +------------------------------------+
     |  OpenCL_ENV                        <----------------------------------------------------+
     |                                    |                                                    |
@@ -25,7 +27,7 @@ The final version will be especially optimized for a FPGA device.
     | cascade_init_environment()         |           | struct OpenCL_ENV*   environment +-----+                                        |
     | destroy_OpenCL_ENV()               |           | char*                source_str  |                                              |
     +------------------------------------+           | cl_program           program     |        +------------------------------+      |
-                                                     | Cipher_Method[]      methods     +-------->  Cipher_Family               |      |
+                                                     | Cipher_Method[]      methods     +-------->  Cipher_Method               |      |
                                                      | void*                state       |        |                              |      |
                                                      |                                  |        +------------------------------+      |
                                                      +----------------------------------+        | struct Cipher_Family* family +------+
@@ -42,6 +44,8 @@ The core logic is structured in a series of nested object-like struct, to guaran
 * Each component is initialized in the right order at startup
 * Each resource is re-used as much as possible
 
+The main OpenCL_ENV structure should be initialized only once.
+
 When the environment is initialized, it will also initialize its cipher families and
 cipher method in cascade (the de-initialization is the same, but in reverse).
 
@@ -53,6 +57,10 @@ pass a pointer to the global environment, i.e.
 The inner implementation of the primitive will traverse the core data structure
 and extract the data needed for its run (the opencl command queue, its kernel,
 its buffers)
+
+### Further notes
+
+As of now, no Cipher_Method makes use of `void* state`
 
 
 ## Building
