@@ -3,12 +3,13 @@
 
 
 typedef enum DesMethodsId {
-    DES = 0,
-    DES2,
-    DES3,
+    DES_ECB = 0,
+    DES2_ECB,
+    DES3_ECB,
     DES_CTR,
     DES2_CTR,
     DES3_CTR,
+    
     NUM_DES_METHODS
 } DesMethodsId;
 

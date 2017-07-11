@@ -22,12 +22,18 @@ typedef struct DesState {
 typedef struct {
   uint32_t esk[32]; /*!< DES encryption subkeys */
   uint32_t dsk[32]; /*!< DES decryption subkeys */
-} des_context;
+} des1_context;
 
 typedef struct {
   uint32_t esk[96]; /*!< Triple-DES encryption subkeys */
   uint32_t dsk[96]; /*!< Triple-DES decryption subkeys */
 } des3_context;
+
+typedef union {
+    des1_context single;
+    des3_context double_triple;
+} des_context;
+
 
 
 #endif

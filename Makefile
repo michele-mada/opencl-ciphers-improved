@@ -3,7 +3,8 @@
 # Obtains the OS type, either 'Darwin' (OS X) or 'Linux'
 UNAME_S:=$(shell uname -s)
 
-BIN_NAME := test
+BIN_NAME := opencl_ciphers
+LIB_NAME := libopencl_ciphers
 # Compiler used
 CC ?= gcc
 # Extension of source files used in the project
@@ -13,7 +14,7 @@ SRC_PATH = src
 # Space-separated pkg-config libraries used by this project
 LIBS =
 # General compiler flags
-COMPILE_FLAGS = -std=c99 -Wall -Wno-unused-variable -Wno-unknown-pragmas -g 
+COMPILE_FLAGS = -fPIC -std=c99 -Wall -Wno-unused-variable -Wno-unknown-pragmas -g
 # Additional release-specific flags
 RCOMPILE_FLAGS = -D NDEBUG
 # Additional debug-specific flags
@@ -22,12 +23,12 @@ DCOMPILE_FLAGS = -D DEBUG
 ifeq ($(UNAME_S),Darwin)
 	INCLUDES = -I $(SRC_PATH)
 else
-	INCLUDES = -I $(SRC_PATH) -I /usr/local/cuda-8.0/include -I /usr/local/cuda-8.0/lib64 
+	INCLUDES = -I $(SRC_PATH) -I /usr/local/cuda-8.0/include -I /usr/local/cuda-8.0/lib64
 endif
 
 # General linker settings
 ifeq ($(UNAME_S),Darwin)
-	LINK_FLAGS = -framework opencl 
+	LINK_FLAGS = -framework opencl
 else
 	LINK_FLAGS = -lOpenCL
 endif
@@ -211,7 +212,7 @@ all: $(BIN_PATH)/$(BIN_NAME)
 	@ln -s $(BIN_PATH)/$(BIN_NAME) $(BIN_NAME)
 	$(shell mkdir $(BIN_PATH)/bench_output)
 	$(shell cp -R ./src/src_cl $(BIN_PATH))
-	$(shell cp -R ./src/tests/ctr_test $(BIN_PATH))
+#$(shell cp -R ./src/tests/ctr_test $(BIN_PATH))
 
 
 
@@ -220,6 +221,7 @@ $(BIN_PATH)/$(BIN_NAME): $(OBJECTS)
 	@echo "Linking: $@"
 	@$(START_TIME)
 	$(CMD_PREFIX)$(CC) $(OBJECTS) $(LDFLAGS) -o $@
+	$(CMD_PREFIX)$(CC) $(OBJECTS) $(LDFLAGS) -o $@.so -shared
 	@echo -en "\t Link time: "
 	@$(END_TIME)
 

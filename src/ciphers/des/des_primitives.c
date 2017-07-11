@@ -11,7 +11,7 @@
 /*
     Constants only used within this file, to control the behaviour of various
     des sub-routines.
-    DesMethodsId is the actual enum used to identify various des methods. 
+    DesMethodsId is the actual enum used to identify various des methods.
 */
 #define SINGLE_DES 1
 #define DOUBLE_DES 2
@@ -19,19 +19,16 @@
 #define BLOCK_SIZE 8
 
 
-void prepare_buffers(Cipher_Family* des_fam, size_t input_size, int mode) {
+void prepare_buffers_des(Cipher_Family* des_fam, size_t input_size, int mode) {
     cl_int ret;
+    cl_context context = des_fam->environment->context;
     size_t key_int_size = 32;
     if (mode != SINGLE_DES) key_int_size = 96;
     DesState *state = (DesState*) des_fam->state;
 
-    // TODO: re-use the buffers if the memory size required is the same
-    if (state->in != NULL) clReleaseMemObject(state->in);
-    state->in = clCreateBuffer(des_fam->environment->context, CL_MEM_READ_WRITE, input_size * sizeof(uint8_t), NULL, &ret);
-    if (state->out != NULL) clReleaseMemObject(state->out);
-    state->out = clCreateBuffer(des_fam->environment->context, CL_MEM_READ_WRITE, input_size * sizeof(uint8_t), NULL, &ret);
-    if (state->_esk != NULL) clReleaseMemObject(state->_esk);
-    state->_esk = clCreateBuffer(des_fam->environment->context, CL_MEM_READ_WRITE, key_int_size * sizeof(uint32_t), NULL, &ret);
+    prepare_buffer(context, &(state->in), CL_MEM_READ_WRITE, input_size * sizeof(uint8_t));
+    prepare_buffer(context, &(state->out), CL_MEM_READ_WRITE, input_size * sizeof(uint8_t));
+    prepare_buffer(context, &(state->_esk), CL_MEM_READ_WRITE, key_int_size * sizeof(uint32_t));
 }
 
 
@@ -41,7 +38,7 @@ void load_input_and_key(Cipher_Family* des_fam, uint8_t* input, size_t input_siz
     uint32_t* esk;
     if (mode == SINGLE_DES) {
         key_int_size = 32;
-        esk = ((des_context*)context)->esk;
+        esk = ((des1_context*)context)->esk;
     } else {
         key_int_size = 96;
         esk = ((des3_context*)context)->esk;
@@ -94,7 +91,7 @@ void des_encrypt_decrypt_function(OpenCL_ENV* env, DesMethodsId method_id, uint8
     Cipher_Method* meth = env->ciphers[DES_CIPHERS]->methods[method_id];
     size_t global_item_size = input_size / BLOCK_SIZE;
     size_t local_item_size = ((DesState*)meth->family->state)->local_item_size;
-    prepare_buffers(meth->family, input_size, mode);
+    prepare_buffers_des(meth->family, input_size, mode);
     load_input_and_key(meth->family, input, input_size, context, mode);
     prepare_kernel(meth);
     execute_kernel(meth, global_item_size, local_item_size);
@@ -102,72 +99,88 @@ void des_encrypt_decrypt_function(OpenCL_ENV* env, DesMethodsId method_id, uint8
 }
 
 
+/* ----------------- begin key preparation ----------------- */
+
+void opencl_des_set_encrypt_key(const unsigned char *userKey, const int bits, des_context *K) {
+    des1_expandkey(&K->single, userKey);
+}
+
+void opencl_des_set_decrypt_key(const unsigned char *userKey, const int bits, des_context *K) {
+    opencl_des_set_encrypt_key(userKey, bits, K);
+}
+
+void opencl_des2_set_encrypt_key(const unsigned char *userKey, const int bits, des_context *K) {
+    tdes2_expandkey(&K->double_triple, userKey);
+}
+
+void opencl_des2_set_decrypt_key(const unsigned char *userKey, const int bits, des_context *K) {
+    opencl_des2_set_encrypt_key(userKey, bits, K);
+}
+
+void opencl_des3_set_encrypt_key(const unsigned char *userKey, const int bits, des_context *K) {
+    tdes3_expandkey(&K->double_triple, userKey);
+}
+
+void opencl_des3_set_decrypt_key(const unsigned char *userKey, const int bits, des_context *K) {
+    opencl_des3_set_encrypt_key(userKey, bits, K);
+}
+
+/* ----------------- end key preparation ----------------- */
+
 /* ----------------- begin ecb mode ----------------- */
 
-void des_ecb_encrypt(OpenCL_ENV* env, uint8_t* plaintext, size_t input_size, uint8_t* key, uint8_t* ciphertext) {
-    des_context K;
-    des_expandkey(&K, key);
-    des_encrypt_decrypt_function(env, DES, plaintext, input_size, (void*)&K, ciphertext, SINGLE_DES);
+void opencl_des_ecb_encrypt(OpenCL_ENV* env, uint8_t* plaintext, size_t input_size, des_context* K, uint8_t* ciphertext) {
+    des_encrypt_decrypt_function(env, DES_ECB, plaintext, input_size, (void*)&(K->single), ciphertext, SINGLE_DES);
 }
 
-void des_ecb_decrypt(OpenCL_ENV* env, uint8_t* plaintext, size_t input_size, uint8_t* key, uint8_t* ciphertext) {
-    des_ecb_encrypt(env, plaintext, input_size, key, ciphertext);
-}
-
-
-void des2_ecb_encrypt(OpenCL_ENV* env, uint8_t* plaintext, size_t input_size, uint8_t* key, uint8_t* ciphertext) {
-    des3_context K;
-    tdes2_expandkey(&K, key);
-    des_encrypt_decrypt_function(env, DES2, plaintext, input_size, (void*)&K, ciphertext, DOUBLE_DES);
-}
-
-void des2_ecb_decrypt(OpenCL_ENV* env, uint8_t* plaintext, size_t input_size, uint8_t* key, uint8_t* ciphertext) {
-    des2_ecb_encrypt(env, plaintext, input_size, key, ciphertext);
+void opencl_des_ecb_decrypt(OpenCL_ENV* env, uint8_t* plaintext, size_t input_size, des_context* K, uint8_t* ciphertext) {
+    opencl_des_ecb_encrypt(env, plaintext, input_size, K, ciphertext);
 }
 
 
-void des3_ecb_encrypt(OpenCL_ENV* env, uint8_t* plaintext, size_t input_size, uint8_t* key, uint8_t* ciphertext) {
-    des3_context K;
-    tdes3_expandkey(&K, key);
-    des_encrypt_decrypt_function(env, DES3, plaintext, input_size, (void*)&K, ciphertext, TRIPLE_DES);
+void opencl_des2_ecb_encrypt(OpenCL_ENV* env, uint8_t* plaintext, size_t input_size, des_context* K, uint8_t* ciphertext) {
+    des_encrypt_decrypt_function(env, DES2_ECB, plaintext, input_size, (void*)&(K->double_triple), ciphertext, DOUBLE_DES);
 }
 
-void des3_ecb_decrypt(OpenCL_ENV* env, uint8_t* plaintext, size_t input_size, uint8_t* key, uint8_t* ciphertext) {
-    des3_ecb_encrypt(env, plaintext, input_size, key, ciphertext);
+void opencl_des2_ecb_decrypt(OpenCL_ENV* env, uint8_t* plaintext, size_t input_size, des_context* K, uint8_t* ciphertext) {
+    opencl_des2_ecb_encrypt(env, plaintext, input_size, K, ciphertext);
+}
+
+
+void opencl_des3_ecb_encrypt(OpenCL_ENV* env, uint8_t* plaintext, size_t input_size, des_context* K, uint8_t* ciphertext) {
+    des_encrypt_decrypt_function(env, DES3_ECB, plaintext, input_size, (void*)&(K->double_triple), ciphertext, TRIPLE_DES);
+}
+
+void opencl_des3_ecb_decrypt(OpenCL_ENV* env, uint8_t* plaintext, size_t input_size, des_context* K, uint8_t* ciphertext) {
+    opencl_des3_ecb_encrypt(env, plaintext, input_size, K, ciphertext);
 }
 /* ----------------- end ecb mode ----------------- */
 
 /* ----------------- begin ctr mode ----------------- */
 
-void des_ctr_encrypt(OpenCL_ENV* env, uint8_t* plaintext, size_t input_size, uint8_t* key, uint8_t* ciphertext) {
-    des_context K;
-    des_expandkey(&K, key);
-    des_encrypt_decrypt_function(env, DES_CTR, plaintext, input_size, (void*)&K, ciphertext, SINGLE_DES);
+void opencl_des_ctr_encrypt(OpenCL_ENV* env, uint8_t* plaintext, size_t input_size, des_context* K, uint8_t* ciphertext) {
+    des_encrypt_decrypt_function(env, DES_CTR, plaintext, input_size, (void*)&(K->single), ciphertext, SINGLE_DES);
 }
 
-void des_ctr_decrypt(OpenCL_ENV* env, uint8_t* plaintext, size_t input_size, uint8_t* key, uint8_t* ciphertext) {
-    des_ctr_encrypt(env, plaintext, input_size, key, ciphertext);
-}
-
-
-void des2_ctr_encrypt(OpenCL_ENV* env, uint8_t* plaintext, size_t input_size, uint8_t* key, uint8_t* ciphertext) {
-    des3_context K;
-    tdes2_expandkey(&K, key);
-    des_encrypt_decrypt_function(env, DES2_CTR, plaintext, input_size, (void*)&K, ciphertext, DOUBLE_DES);
-}
-
-void des2_ctr_decrypt(OpenCL_ENV* env, uint8_t* plaintext, size_t input_size, uint8_t* key, uint8_t* ciphertext) {
-    des2_ctr_encrypt(env, plaintext, input_size, key, ciphertext);
+void opencl_des_ctr_decrypt(OpenCL_ENV* env, uint8_t* plaintext, size_t input_size, des_context* K, uint8_t* ciphertext) {
+    opencl_des_ctr_encrypt(env, plaintext, input_size, K, ciphertext);
 }
 
 
-void des3_ctr_encrypt(OpenCL_ENV* env, uint8_t* plaintext, size_t input_size, uint8_t* key, uint8_t* ciphertext) {
-    des3_context K;
-    tdes3_expandkey(&K, key);
-    des_encrypt_decrypt_function(env, DES3_CTR, plaintext, input_size, (void*)&K, ciphertext, TRIPLE_DES);
+void opencl_des2_ctr_encrypt(OpenCL_ENV* env, uint8_t* plaintext, size_t input_size, des_context* K, uint8_t* ciphertext) {
+    des_encrypt_decrypt_function(env, DES2_CTR, plaintext, input_size, (void*)&(K->double_triple), ciphertext, DOUBLE_DES);
 }
 
-void des3_ctr_decrypt(OpenCL_ENV* env, uint8_t* plaintext, size_t input_size, uint8_t* key, uint8_t* ciphertext) {
-    des3_ctr_encrypt(env, plaintext, input_size, key, ciphertext);
+void opencl_des2_ctr_decrypt(OpenCL_ENV* env, uint8_t* plaintext, size_t input_size, des_context* K, uint8_t* ciphertext) {
+    opencl_des2_ctr_encrypt(env, plaintext, input_size, K, ciphertext);
+}
+
+
+void opencl_des3_ctr_encrypt(OpenCL_ENV* env, uint8_t* plaintext, size_t input_size, des_context* K, uint8_t* ciphertext) {
+    des_encrypt_decrypt_function(env, DES3_CTR, plaintext, input_size, (void*)&(K->double_triple), ciphertext, TRIPLE_DES);
+}
+
+void opencl_des3_ctr_decrypt(OpenCL_ENV* env, uint8_t* plaintext, size_t input_size, des_context* K, uint8_t* ciphertext) {
+    opencl_des3_ctr_encrypt(env, plaintext, input_size, K, ciphertext);
 }
 /* ----------------- end ctr mode ----------------- */

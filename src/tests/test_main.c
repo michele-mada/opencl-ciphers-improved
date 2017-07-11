@@ -14,7 +14,9 @@ int main(int argc, char* argv[]) {
     uint8_t plaintext[8] = {'h', 'e', 'l', 'l', 'o', ' ', 'w', 'o'};
     uint8_t ciphertext[8];
 
-    des_ecb_encrypt(global_env, plaintext, 8, key, ciphertext);
+    des_context K;
+    opencl_des_set_encrypt_key(key, 8, &K);
+    opencl_des_ecb_encrypt(global_env, plaintext, 8, &K, ciphertext);
 
     for (int i=0; i<8; i++) {
         printf("%02X", ciphertext[i]);

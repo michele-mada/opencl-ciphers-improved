@@ -15,9 +15,9 @@
 void init_des_methods_and_state(Cipher_Family* fam) {
     fam->methods = (Cipher_Method**) malloc(sizeof(Cipher_Method*) * NUM_DES_METHODS);
 
-    fam->methods[DES] = init_Cipher_Method(fam, "desCipher");
-    fam->methods[DES2] = init_Cipher_Method(fam, "des3Cipher");
-    fam->methods[DES3] = init_Cipher_Method(fam, "des3Cipher");
+    fam->methods[DES_ECB] = init_Cipher_Method(fam, "desCipher");
+    fam->methods[DES2_ECB] = init_Cipher_Method(fam, "des3Cipher");
+    fam->methods[DES3_ECB] = init_Cipher_Method(fam, "des3Cipher");
     fam->methods[DES_CTR] = init_Cipher_Method(fam, "desCtrCipher");
     fam->methods[DES2_CTR] = init_Cipher_Method(fam, "des3CtrCipher");
     fam->methods[DES3_CTR] = init_Cipher_Method(fam, "des3CtrCipher");

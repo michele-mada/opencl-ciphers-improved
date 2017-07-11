@@ -26,6 +26,35 @@ void logBuildError(cl_int* ret, cl_program* program, cl_device_id* deviceId) {
 }
 
 
+int is_buffer_compliant(cl_mem buffer, cl_mem_flags required_flags, size_t required_size) {
+    cl_mem_flags old_flags;
+    size_t old_size;
+    clGetMemObjectInfo(buffer, CL_MEM_SIZE, sizeof(size_t), &old_size, NULL);
+    if (old_size != required_size) return 0;
+    clGetMemObjectInfo(buffer, CL_MEM_FLAGS, sizeof(cl_mem_flags), &old_flags, NULL);
+    if (old_flags != required_flags) return 0;
+    return 1;
+}
+
+
+void prepare_buffer(cl_context context, cl_mem* buffer, cl_mem_flags required_flags, size_t required_size) {
+    /*
+        If buffer is NULL, the create a new buffer.
+        Otherwise, try to re-use it if the size and flags are compatible
+    */
+    cl_int ret;
+    if (*buffer == NULL) {
+        *buffer = clCreateBuffer(context, required_flags, required_size, NULL, &ret);
+        if (ret != CL_SUCCESS) error_fatal("Failed to allocate buffer: %d\n", ret);
+    } else {
+        if (!is_buffer_compliant(*buffer, required_flags, required_size)) {
+            clReleaseMemObject(*buffer);
+            *buffer = clCreateBuffer(context, required_flags, required_size, NULL, &ret);
+        }
+    }
+}
+
+
 void error_fatal(const char *format, ...) {
     va_list args;
     va_start(args, format);

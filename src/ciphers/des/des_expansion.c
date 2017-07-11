@@ -40,7 +40,7 @@
 
 
 
- 	void des_main_ks(uint32_t SK[32], uint8_t key[8]) {
+ 	void des_main_ks(uint32_t SK[32], const uint8_t key[8]) {
  		int i;
  		uint32_t X, Y, T;
 
@@ -112,7 +112,7 @@
 /*
  * DES key schedule (56-bit)
  */
- void des_set_key(des_context *ctx, uint8_t key[8]) {
+ void des_set_key(des1_context *ctx, const uint8_t key[8]) {
  	int i;
 
  	des_main_ks(ctx->esk, key);
@@ -125,7 +125,7 @@
  }
 
 
- void des3_set_2keys(des3_context *ctx, uint8_t key[16]) {
+ void des3_set_2keys(des3_context *ctx, const uint8_t key[16]) {
  	int i;
 
  	des_main_ks(ctx->esk, key);
@@ -151,7 +151,7 @@
 /*
  * Triple-DES key schedule (168-bit)
  */
- void des3_set_3keys(des3_context *ctx, uint8_t key[24]) {
+ void des3_set_3keys(des3_context *ctx, const uint8_t key[24]) {
  	int i;
 
  	des_main_ks(ctx->esk, key);
@@ -171,14 +171,14 @@
  	}
  }
 
- void des_expandkey(des_context* K, uint8_t *key) {
+ void des1_expandkey(des1_context* K, const uint8_t *key) {
  	des_set_key(K, key);
  }
 
- void tdes2_expandkey(des3_context* K, uint8_t *key) {
+ void tdes2_expandkey(des3_context* K, const uint8_t *key) {
  	des3_set_2keys(K, key);
  }
 
- void tdes3_expandkey(des3_context* K, uint8_t *key) {
+ void tdes3_expandkey(des3_context* K, const uint8_t *key) {
  	des3_set_3keys(K, key);
  }

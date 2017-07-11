@@ -11,8 +11,8 @@
 #endif
 
 
-void des_expandkey(des_context* K, uint8_t *key);
-void tdes2_expandkey(des3_context* K, uint8_t *key);
-void tdes3_expandkey(des3_context* K, uint8_t *key);
+void des1_expandkey(des1_context* K, const uint8_t *key);
+void tdes2_expandkey(des3_context* K, const uint8_t *key);
+void tdes3_expandkey(des3_context* K, const uint8_t *key);
 
 #endif
