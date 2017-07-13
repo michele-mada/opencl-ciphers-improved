@@ -212,6 +212,13 @@ all: $(BIN_PATH)/$(BIN_NAME)
 	@ln -s $(BIN_PATH)/$(BIN_NAME) $(BIN_NAME)
 	$(shell mkdir $(BIN_PATH)/bench_output)
 	$(shell cp -R ./src/src_cl $(BIN_PATH))
+	$(shell mv $(BIN_PATH)/$(BIN_NAME).so $(BIN_PATH)/lib$(BIN_NAME).so)
+	$(shell mkdir $(BIN_PATH)/include)
+	$(shell cp --parents -R ./src/ciphers/*/*_primitives.h $(BIN_PATH)/include/)
+	$(shell cp --parents -R ./src/ciphers/*/*_state.h $(BIN_PATH)/include/)
+	$(shell cp --parents -R ./src/core/*.h $(BIN_PATH)/include/)
+	$(shell cp --parents ./src/ciphers/primitives.h $(BIN_PATH)/include/)
+	$(shell cp ./src/opencl_ciphers.h $(BIN_PATH)/include/)
 #$(shell cp -R ./src/tests/ctr_test $(BIN_PATH))
 
 

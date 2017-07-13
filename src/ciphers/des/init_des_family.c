@@ -25,14 +25,14 @@ void init_des_methods_and_state(Cipher_Family* fam) {
     DesState *state = (DesState*) malloc(sizeof(DesState));
     state->in = NULL;
     state->out = NULL;
-    state->_esk = NULL;
+    state->key = NULL;
     state->local_item_size = 1;  //TODO: we may want to specify this parameter somewhere else
     fam->state = state;
 }
 
 void destroy_des_methods_and_state(Cipher_Family* fam) {
     DesState *state = (DesState*) fam->state;
-    if (state->_esk != NULL) clReleaseMemObject(state->_esk);
+    if (state->key != NULL) clReleaseMemObject(state->key);
     if (state->out != NULL) clReleaseMemObject(state->out);
     if (state->in != NULL) clReleaseMemObject(state->in);
     free(fam->state);
