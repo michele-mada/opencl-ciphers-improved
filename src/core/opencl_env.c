@@ -40,6 +40,7 @@ void select_OpenCL_platform_and_device(OpenCL_ENV* env) {
 
 OpenCL_ENV* init_OpenCL_ENV() {
     OpenCL_ENV* new_env = (OpenCL_ENV*) malloc(sizeof(OpenCL_ENV));
+    new_env->num_ciphers = 0;
     select_OpenCL_platform_and_device(new_env);
     initialize_OpenCL_context(new_env);
     cascade_init_environment(new_env);
@@ -48,7 +49,7 @@ OpenCL_ENV* init_OpenCL_ENV() {
 
 
 void recursive_destroy_environment(OpenCL_ENV* env) {
-    size_t num_families = sizeof(env->ciphers) / sizeof(Cipher_Family*);
+    size_t num_families = env->num_ciphers;
     for (size_t f = 0; f < num_families; f++) {
         destroy_Cipher_Family(env->ciphers[f]);
     }

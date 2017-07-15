@@ -32,6 +32,7 @@ typedef struct OpenCL_ENV {
     cl_command_queue command_queue;
     cl_platform_id selected_platform;
     cl_device_id* selected_device;
+    size_t num_ciphers;
     struct Cipher_Family** ciphers;
 } OpenCL_ENV;
 

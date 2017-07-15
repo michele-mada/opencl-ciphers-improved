@@ -22,6 +22,8 @@ void init_des_methods_and_state(Cipher_Family* fam) {
     fam->methods[DES2_CTR] = init_Cipher_Method(fam, "des3CtrCipher");
     fam->methods[DES3_CTR] = init_Cipher_Method(fam, "des3CtrCipher");
 
+    fam->num_methods = NUM_DES_METHODS;
+
     DesState *state = (DesState*) malloc(sizeof(DesState));
     state->in = NULL;
     state->out = NULL;
@@ -36,7 +38,7 @@ void destroy_des_methods_and_state(Cipher_Family* fam) {
     if (state->out != NULL) clReleaseMemObject(state->out);
     if (state->in != NULL) clReleaseMemObject(state->in);
     free(fam->state);
-    size_t num_methods = sizeof(fam->methods) / sizeof(Cipher_Method*);
+    size_t num_methods = fam->num_methods;
     for (size_t m = 0; m < num_methods; m++) {
         destroy_Cipher_Method(fam->methods[m]);
     }

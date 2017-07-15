@@ -27,6 +27,7 @@ Cipher_Family* init_Cipher_Family(struct OpenCL_ENV* environment,
                                   void (*cascade_destroy_fun)(struct Cipher_Family*)) {
     Cipher_Family* new_fam = (Cipher_Family*) malloc(sizeof(Cipher_Family));
     new_fam->environment = environment;
+    new_fam->num_methods = 0;
     new_fam->cascade_destroy_fun = cascade_destroy_fun;
     load_program(new_fam, source_filename);
     (*cascade_init_fun)(new_fam);

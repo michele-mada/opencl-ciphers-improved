@@ -28,6 +28,7 @@ typedef struct Cipher_Family {
     struct OpenCL_ENV* environment;
     char* source_str;
     cl_program program;
+    size_t num_methods;
     struct Cipher_Method** methods;
     void *state;
     void (*cascade_destroy_fun)(struct Cipher_Family*);
