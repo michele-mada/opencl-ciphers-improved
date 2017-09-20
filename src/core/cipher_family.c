@@ -4,7 +4,7 @@
 
 
 
-void load_program(Cipher_Family* fam, char* source_filename) {
+void load_program(CipherFamily* fam, char* source_filename) {
     size_t source_size;
     cl_int ret;
     load_CL_program_source(source_filename, &(fam->source_str), &source_size);
@@ -15,17 +15,19 @@ void load_program(Cipher_Family* fam, char* source_filename) {
         (const char **) &(fam->source_str),
         (const size_t *) &source_size,
         &ret);
-    if(ret != CL_SUCCESS) build_error_fatal(&ret, &(fam->program), fam->environment->selected_device);
+    if(ret != CL_SUCCESS) error_fatal("Failed to create program; source: \"%s\" error: %d\n", source_filename, ret);
 
     ret = clBuildProgram(fam->program, 1, fam->environment->selected_device, NULL, NULL, NULL);
-    if(ret != CL_SUCCESS) error_fatal("Failed to create kernel error: %d\n", ret);
+    if(ret != CL_SUCCESS) {
+        if(ret != CL_SUCCESS) build_error_fatal(&ret, &(fam->program), fam->environment->selected_device);
+    }
 }
 
-Cipher_Family* init_Cipher_Family(struct OpenCL_ENV* environment,
+CipherFamily* init_CipherFamily(struct OpenCLEnv* environment,
                                   char* source_filename,
-                                  void (*cascade_init_fun)(struct Cipher_Family*),
-                                  void (*cascade_destroy_fun)(struct Cipher_Family*)) {
-    Cipher_Family* new_fam = (Cipher_Family*) malloc(sizeof(Cipher_Family));
+                                  void (*cascade_init_fun)(struct CipherFamily*),
+                                  void (*cascade_destroy_fun)(struct CipherFamily*)) {
+    CipherFamily* new_fam = (CipherFamily*) malloc(sizeof(CipherFamily));
     new_fam->environment = environment;
     new_fam->num_methods = 0;
     new_fam->cascade_destroy_fun = cascade_destroy_fun;
@@ -35,7 +37,7 @@ Cipher_Family* init_Cipher_Family(struct OpenCL_ENV* environment,
 }
 
 
-void destroy_Cipher_Family(Cipher_Family* fam) {
+void destroy_CipherFamily(CipherFamily* fam) {
     fam->cascade_destroy_fun(fam);
     clReleaseProgram(fam->program);
     free(fam->source_str);

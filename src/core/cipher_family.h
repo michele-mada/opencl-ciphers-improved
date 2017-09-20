@@ -19,27 +19,27 @@
     .cl file)
 
     state is a pointer to a data structure defined by the specific
-    implemented Cipher_Family, it must be set by cascade_init_fun
+    implemented CipherFamily, it must be set by cascade_init_fun
 
 */
 
 
-typedef struct Cipher_Family {
-    struct OpenCL_ENV* environment;
+typedef struct CipherFamily {
+    struct OpenCLEnv* environment;
     char* source_str;
     cl_program program;
     size_t num_methods;
-    struct Cipher_Method** methods;
+    struct CipherMethod** methods;
     void *state;
-    void (*cascade_destroy_fun)(struct Cipher_Family*);
-} Cipher_Family;
+    void (*cascade_destroy_fun)(struct CipherFamily*);
+} CipherFamily;
 
 
-Cipher_Family* init_Cipher_Family(struct OpenCL_ENV* environment,
+CipherFamily* init_CipherFamily(struct OpenCLEnv* environment,
                                   char* source_filename,
-                                  void (*cascade_init_fun)(struct Cipher_Family*),
-                                  void (*cascade_destroy_fun)(struct Cipher_Family*));
-void destroy_Cipher_Family(Cipher_Family* fam);
+                                  void (*cascade_init_fun)(struct CipherFamily*),
+                                  void (*cascade_destroy_fun)(struct CipherFamily*));
+void destroy_CipherFamily(CipherFamily* fam);
 
 
 

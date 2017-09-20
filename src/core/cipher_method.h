@@ -18,15 +18,15 @@
 */
 
 
-typedef struct Cipher_Method {
-    struct Cipher_Family* family;
+typedef struct CipherMethod {
+    struct CipherFamily* family;
     cl_kernel kernel;
     void *state;
-} Cipher_Method;
+} CipherMethod;
 
 
-Cipher_Method* init_Cipher_Method(struct Cipher_Family* family, char* kernel_name);
-void destroy_Cipher_Method(Cipher_Method* meth);
+CipherMethod* init_CipherMethod(struct CipherFamily* family, char* kernel_name);
+void destroy_CipherMethod(CipherMethod* meth);
 
 
 

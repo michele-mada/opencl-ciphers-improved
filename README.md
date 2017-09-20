@@ -14,29 +14,29 @@ The final version will be especially optimized for a FPGA device.
 ### Core
 
     +------------------------------------+
-    |  OpenCL_ENV                        <----------------------------------------------------+
+    |  OpenCLEnv                        <----------------------------------------------------+
     |                                    |                                                    |
     +------------------------------------+                                                    |
     | cl_context        context          |                                                    |
     | cl_command_queue  command_queue    |                                                    |
     | cl_platform_id    selected_platfom |                                                    |
     | cl_device_id*     selected_device  |           +----------------------------------+     |
-    | Cipher_Family[]   ciphers          +----------->  Cipher_Family                   <----------------------------------------------+
+    | CipherFamily[]   ciphers          +----------->  CipherFamily                   <----------------------------------------------+
     +------------------------------------+           |                                  |     |                                        |
-    | init_OpenCL_ENV()                  |           +----------------------------------+     |                                        |
-    | cascade_init_environment()         |           | struct OpenCL_ENV*   environment +-----+                                        |
-    | destroy_OpenCL_ENV()               |           | char*                source_str  |                                              |
+    | init_OpenCLEnv()                  |           +----------------------------------+     |                                        |
+    | cascade_init_environment()         |           | struct OpenCLEnv*   environment +-----+                                        |
+    | destroy_OpenCLEnv()               |           | char*                source_str  |                                              |
     +------------------------------------+           | cl_program           program     |        +------------------------------+      |
-                                                     | Cipher_Method[]      methods     +-------->  Cipher_Method               |      |
+                                                     | CipherMethod[]      methods     +-------->  CipherMethod               |      |
                                                      | void*                state       |        |                              |      |
                                                      |                                  |        +------------------------------+      |
-                                                     +----------------------------------+        | struct Cipher_Family* family +------+
-                                                     | init_Cipher_Family()             |        | cl_kernel kernel             |
-                                                     | destroy_Cipher_Family()          |        | void* state                  |
+                                                     +----------------------------------+        | struct CipherFamily* family +------+
+                                                     | init_CipherFamily()             |        | cl_kernel kernel             |
+                                                     | destroy_CipherFamily()          |        | void* state                  |
                                                      +----------------------------------+        |                              |
                                                                                                  +------------------------------+
-                                                                                                 | init_Cipher_Method()         |
-                                                                                                 | destroy_Cipher_Method()      |
+                                                                                                 | init_CipherMethod()         |
+                                                                                                 | destroy_CipherMethod()      |
                                                                                                  +------------------------------+
 
 The core logic is structured in a series of nested object-like struct, to guarantee that:
@@ -44,7 +44,7 @@ The core logic is structured in a series of nested object-like struct, to guaran
 * Each component is initialized in the right order at startup
 * Each resource is re-used as much as possible
 
-The main OpenCL_ENV structure should be initialized only once.
+The main OpenCLEnv structure should be initialized only once.
 
 When the environment is initialized, it will also initialize its cipher families and
 cipher method in cascade (the de-initialization is the same, but in reverse).
@@ -60,7 +60,7 @@ its buffers)
 
 ### Further notes
 
-As of now, no Cipher_Method makes use of `void* state`
+As of now, no CipherMethod makes use of `void* state`
 
 
 ## Building

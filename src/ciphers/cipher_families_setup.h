@@ -4,7 +4,7 @@
 
 enum CipherFamilyId {
     DES_CIPHERS = 0,
-
+    AES_CIPHERS,
 
 
 
@@ -12,7 +12,8 @@ enum CipherFamilyId {
 };
 
 
-extern Cipher_Family* get_des_family(struct OpenCL_ENV* environment);
+extern CipherFamily* get_des_family(struct OpenCLEnv* environment);
+extern CipherFamily* get_aes_family(struct OpenCLEnv* environment);
 
 
 #endif

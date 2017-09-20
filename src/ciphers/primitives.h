@@ -3,6 +3,7 @@
 
 
 #include "des/des_primitives.h"
+#include "aes/aes_primitives.h"
 
 
 #endif

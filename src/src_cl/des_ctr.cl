@@ -188,7 +188,7 @@ __constant uint SB8[64] = {
   }
 
 void des_crypt(__global uint *SK, __private uchar input[8], __private uchar output[8]){
-  
+
   __private uint X, Y, T;
 
   GET_UINT32_BE(X, input, 0);
@@ -220,7 +220,7 @@ void des_crypt(__global uint *SK, __private uchar input[8], __private uchar outp
 }
 
 void des3_crypt(__global uint *SK, __private uchar input[8], __private uchar output[8]) {
-  
+
   __private uint X, Y, T;
 
   GET_UINT32_BE(X, input, 0);
@@ -286,14 +286,14 @@ void des3_crypt(__global uint *SK, __private uchar input[8], __private uchar out
 }
 
 __kernel void desCipher(__global uint *SK, __global uchar* input, __global uchar* output){
-  
-  __private int gid;
+
+  __private size_t gid;
   gid = get_global_id(0);
 
   __private uchar _input[8];
   #pragma unroll
-  for (int i = 0; i < 8; ++i) {
-    int offset = gid * 8 + i;
+  for (size_t i = 0; i < 8; ++i) {
+    size_t offset = gid * 8 + i;
     _input[i] = input[offset];
   }
 
@@ -302,21 +302,21 @@ __kernel void desCipher(__global uint *SK, __global uchar* input, __global uchar
   des_crypt(SK, _input, outCipher);
 
   #pragma unroll
-  for(int i = 0; i < 8; i++) {
-    int offset = gid * 8 + i;
+  for(size_t i = 0; i < 8; i++) {
+    size_t offset = gid * 8 + i;
     output[offset] = outCipher[i];
-  } 
+  }
 }
 
 __kernel void des3Cipher(__global uint *SK, __global uchar* input, __global uchar* output){
-  
-  __private int gid;
+
+  __private size_t gid;
   gid = get_global_id(0);
 
   __private uchar _input[8];
   #pragma unroll
-  for (int i = 0; i < 8; ++i) {
-    int offset = gid * 8 + i;
+  for (size_t i = 0; i < 8; ++i) {
+    size_t offset = gid * 8 + i;
     _input[i] = input[offset];
   }
 
@@ -325,35 +325,30 @@ __kernel void des3Cipher(__global uint *SK, __global uchar* input, __global ucha
   des3_crypt(SK, _input, outCipher);
 
   #pragma unroll
-  for(int i = 0; i < 8; i++) {
-    int offset = gid * 8 + i;
+  for(size_t i = 0; i < 8; i++) {
+    size_t offset = gid * 8 + i;
     output[offset] = outCipher[i];
-  } 
+  }
 }
 
-__kernel void desCtrCipher(__global uint *SK, __global uchar* input, __global uchar* output){
-  
-  __private int gid;
+__kernel void desCtrCipher(__global uint *SK, __global uchar* input, __global uchar* output, __global uchar* IV){
+
+  __private size_t gid;
   gid = get_global_id(0);
 
   /* initialize counter */
-  __private uchar counter[8]; 
-  //initialize counter
-  counter[0] = (char)0;
-  counter[1] = (char)0;
-  counter[2] = (char)0;
-  counter[3] = (char)0;
-  counter[4] = (char)0;
-  counter[5] = (char)0;
-  counter[6] = (char)0;
-  counter[7] = (char)0;
-  
-  int n = 8, c = gid;
+  __private uchar counter[8];
+  #pragma unroll
+  for(size_t i = 0; i < 8; i++) {
+    counter[i] = IV[i];
+  }
+
+  size_t n = 8, c = gid;
   /* increment the counter by gid */
   do {
     --n;
     c += counter[n];
-    counter[n] = (char)c;
+    counter[n] = (uchar)c;
     c >>= 8;
   } while (n);
 
@@ -362,35 +357,30 @@ __kernel void desCtrCipher(__global uint *SK, __global uchar* input, __global uc
   des_crypt(SK, counter, outCipher);
 
   #pragma unroll
-  for(int i = 0; i < 8; i++) {
-    int offset = gid * 8 + i;
+  for(size_t i = 0; i < 8; i++) {
+    size_t offset = gid * 8 + i;
     output[offset] = outCipher[i] ^ input[offset];
-  } 
+  }
 }
 
-__kernel void des3CtrCipher(__global uint *SK, __global uchar* input, __global uchar* output){
-  
-  __private int gid;
+__kernel void des3CtrCipher(__global uint *SK, __global uchar* input, __global uchar* output, __global uchar* IV){
+
+  __private size_t gid;
   gid = get_global_id(0);
 
   /* initialize counter */
-  __private uchar counter[8]; 
-  //initialize counter
-  counter[0] = (char)0;
-  counter[1] = (char)0;
-  counter[2] = (char)0;
-  counter[3] = (char)0;
-  counter[4] = (char)0;
-  counter[5] = (char)0;
-  counter[6] = (char)0;
-  counter[7] = (char)0;
- 
-  int n = 8, c = gid;
+  __private uchar counter[8];
+  #pragma unroll
+  for(size_t i = 0; i < 8; i++) {
+    counter[i] = IV[i];
+  }
+
+  size_t n = 8, c = gid;
   /* increment the counter by gid */
   do {
     --n;
     c += counter[n];
-    counter[n] = (char)c;
+    counter[n] = (uchar)c;
     c >>= 8;
   } while (n);
 
@@ -399,8 +389,8 @@ __kernel void des3CtrCipher(__global uint *SK, __global uchar* input, __global u
   des3_crypt(SK, counter, outCipher);
 
   #pragma unroll
-  for(int i = 0; i < 8; i++) {
-    int offset = gid * 8 + i;
+  for(size_t i = 0; i < 8; i++) {
+    size_t offset = gid * 8 + i;
     output[offset] = outCipher[i] ^ input[offset];
-  } 
+  }
 }

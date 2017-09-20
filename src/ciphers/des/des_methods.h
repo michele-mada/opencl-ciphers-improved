@@ -9,9 +9,12 @@ typedef enum DesMethodsId {
     DES_CTR,
     DES2_CTR,
     DES3_CTR,
-    
+
     NUM_DES_METHODS
 } DesMethodsId;
+
+
+#define DOES_METH_USE_IV(methid) (((methid) == DES_CTR) || ((methid) == DES2_CTR) || ((methid) == DES3_CTR))
 
 
 #endif

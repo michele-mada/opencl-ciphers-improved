@@ -11,6 +11,7 @@
 #endif
 
 #include "cipher_family.h"
+#include "param_atlas.h"
 
 /*
     Data structure used to manage the OpenCL environment, as well as the
@@ -22,24 +23,26 @@
         * cl_command_queue
         * cl_platform_id
         * cl_device_id*  <- array containing only the selected device id
-    * an array of pointer to the various Cipher_Family structures
+    * an array of pointer to the various CipherFamily structures
+    * structure containing the global params of the environment
 
 */
 
 
-typedef struct OpenCL_ENV {
+typedef struct OpenCLEnv {
     cl_context context;
     cl_command_queue command_queue;
     cl_platform_id selected_platform;
     cl_device_id* selected_device;
     size_t num_ciphers;
-    struct Cipher_Family** ciphers;
-} OpenCL_ENV;
+    struct CipherFamily** ciphers;
+    struct ParamAtlas* parameters;
+} OpenCLEnv;
 
 
-OpenCL_ENV* init_OpenCL_ENV();
-extern void cascade_init_environment(OpenCL_ENV* env);
-void destroy_OpenCL_ENV(OpenCL_ENV* env);
+OpenCLEnv* init_OpenCLEnv();
+extern void cascade_init_environment(OpenCLEnv* env);
+void destroy_OpenCLEnv(OpenCLEnv* env);
 
 
 

@@ -13,7 +13,7 @@ void load_CL_program_source(char* fileName, char** source_str, size_t* source_si
 
 
 void logBuildError(cl_int* ret, cl_program* program, cl_device_id* deviceId) {
-    printf("\nBuild Error = %d", *ret);
+    printf("\nBuild Error = %d\n", *ret);
     // Determine the size of the log
     size_t log_size;
     clGetProgramBuildInfo(*program, *deviceId, CL_PROGRAM_BUILD_LOG, 0, NULL, &log_size);
