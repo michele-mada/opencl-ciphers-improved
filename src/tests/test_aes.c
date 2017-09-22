@@ -32,6 +32,15 @@ int validate_aes_256_ecb(OpenCLEnv *global_env, TestDatum *datum) \
         opencl_aes_256_ecb_decrypt(global_env, generated_ctx, datum->ctx_length, &K, generated_ptx);
     })
 
+int validate_aes_128_ctr(OpenCLEnv *global_env, TestDatum *datum) \
+    VALIDATION_DECORATOR({
+        aes_context K;
+        opencl_aes_128_set_encrypt_key((unsigned char*) datum->key, 128, &K);
+        memcpy(K.iv, datum->iv, AES_IV_SIZE);
+        opencl_aes_128_ctr_encrypt(global_env, datum->ptx, datum->ptx_length, &K, generated_ctx);
+        opencl_aes_128_ctr_decrypt(global_env, generated_ctx, datum->ctx_length, &K, generated_ptx);
+    })
+
 static int run_all_cases_ecb(OpenCLEnv *global_env) {
     int succeeded = 0;
     int all_cases = NUM_CASES_ECB_128 + NUM_CASES_ECB_192 + NUM_CASES_ECB_256;
@@ -43,6 +52,18 @@ static int run_all_cases_ecb(OpenCLEnv *global_env) {
     return succeeded == all_cases;
 }
 
+static int run_all_cases_ctr(OpenCLEnv *global_env) {
+    int succeeded = 0;
+    int all_cases = NUM_CASES_CTR_128/* + NUM_CASES_CTR_192 + NUM_CASES_CTR_256*/;
+    printf("Testing AES CTR... ");
+    succeeded += test_all_cases(global_env, &validate_aes_128_ctr, aes_128_ctr_test_cases, NUM_CASES_CTR_128);
+    //succeeded += test_all_cases(global_env, &validate_aes_192_ctr, aes_192_ctr_test_cases, NUM_CASES_CTR_192);
+    //succeeded += test_all_cases(global_env, &validate_aes_256_ctr, aes_256_ctr_test_cases, NUM_CASES_CTR_256);
+    printf("passed: %d/%d\n", succeeded, all_cases);
+    return succeeded == all_cases;
+}
+
 int test_aes(OpenCLEnv* global_env) {
-    return run_all_cases_ecb(global_env);  // && other
+    return run_all_cases_ecb(global_env) && \
+        run_all_cases_ctr(global_env);
 }

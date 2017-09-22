@@ -13,6 +13,7 @@ typedef struct TestDatum {
     uint8_t ptx[MAX_VECTOR_LENGTH];
     uint8_t ptx_length;
     uint8_t key[MAX_VECTOR_LENGTH];
+    uint8_t iv[MAX_VECTOR_LENGTH];
     uint8_t ctx[MAX_VECTOR_LENGTH];
     uint8_t ctx_length;
 } TestDatum;
