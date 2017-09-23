@@ -26,7 +26,7 @@
 
 typedef struct CipherFamily {
     struct OpenCLEnv* environment;
-    char* source_str;
+    unsigned char* source_str;
     cl_program program;
     size_t num_methods;
     struct CipherMethod** methods;

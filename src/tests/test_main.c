@@ -11,6 +11,8 @@ int test_all(OpenCLEnv *global_env) {
 
 int main(int argc, char* argv[]) {
 
+    print_opencl_ciphers_build_info();
+
     OpenCLEnv *global_env = init_OpenCLEnv();
 
     int success = test_all(global_env);

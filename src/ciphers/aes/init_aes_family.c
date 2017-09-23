@@ -54,7 +54,7 @@ void destroy_aes_methods_and_state(CipherFamily* fam) {
 
 
 CipherFamily* get_aes_family(struct OpenCLEnv* environment) {
-    char *kernel_path = aget_full_kernel_path(environment->parameters, "aes_ctr.cl");
+    char *kernel_path = aget_full_kernel_path(environment->parameters, "aes_ctr");
     CipherFamily* aes = init_CipherFamily(environment, kernel_path, &init_aes_methods_and_state, &destroy_aes_methods_and_state);
     free(kernel_path);
     return aes;

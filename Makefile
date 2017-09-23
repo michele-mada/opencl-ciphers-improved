@@ -1,7 +1,10 @@
 #### PROJECT SETTINGS ####
-# The name of the executable to be created
 # Obtains the OS type, either 'Darwin' (OS X) or 'Linux'
-UNAME_S:=$(shell uname -s)
+UNAME_S := $(shell uname -s)
+
+BUILD_MACHINE := $(shell uname -a)
+BUILD_VERSION := $(shell git describe --dirty --always --tags)
+BUILD_DATE := $(shell date -R)
 
 BIN_NAME := opencl_ciphers
 LIB_NAME := libopencl_ciphers
@@ -14,7 +17,10 @@ SRC_PATH = src
 # Space-separated pkg-config libraries used by this project
 LIBS =
 # General compiler flags
-COMPILE_FLAGS = -fPIC -std=c99 -Wall -Wno-unused-variable -Wno-unknown-pragmas -g
+COMPILE_FLAGS = -fPIC -std=c99 -Wall -Wno-unused-variable -Wno-unknown-pragmas -g \
+ 	-D BUILD_MACHINE="\"$(BUILD_MACHINE)\"" -D BUILD_VERSION="\"$(BUILD_VERSION)\"" \
+	-D BUILD_DATE="\"$(BUILD_DATE)\"" \
+	-D PLATFORM_CPU
 # Additional release-specific flags
 RCOMPILE_FLAGS = -D NDEBUG
 # Additional debug-specific flags
@@ -41,6 +47,8 @@ DLINK_FLAGS =
 DESTDIR = /
 # Install path (bin/ is appended automatically)
 INSTALL_PREFIX = usr/local
+
+
 #### END PROJECT SETTINGS ####
 
 # Generally should not need to edit below this line
@@ -128,28 +136,6 @@ else
 		echo `date -u -d @$$st '+%H:%M:%S'`
 endif
 
-# Version macros
-# Comment/remove this section to remove versioning
-USE_VERSION := false
-# If this isn't a git repo or the repo has no tags, git describe will return non-zero
-ifeq ($(shell git describe > /dev/null 2>&1 ; echo $$?), 0)
-	USE_VERSION := true
-	VERSION := $(shell git describe --tags --long --dirty --always | \
-		sed 's/v\([0-9]*\)\.\([0-9]*\)\.\([0-9]*\)-\?.*-\([0-9]*\)-\(.*\)/\1 \2 \3 \4 \5/g')
-	VERSION_MAJOR := $(word 1, $(VERSION))
-	VERSION_MINOR := $(word 2, $(VERSION))
-	VERSION_PATCH := $(word 3, $(VERSION))
-	VERSION_REVISION := $(word 4, $(VERSION))
-	VERSION_HASH := $(word 5, $(VERSION))
-	VERSION_STRING := \
-		"$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_PATCH).$(VERSION_REVISION)-$(VERSION_HASH)"
-	override CFLAGS := $(CFLAGS) \
-		-D VERSION_MAJOR=$(VERSION_MAJOR) \
-		-D VERSION_MINOR=$(VERSION_MINOR) \
-		-D VERSION_PATCH=$(VERSION_PATCH) \
-		-D VERSION_REVISION=$(VERSION_REVISION) \
-		-D VERSION_HASH=\"$(VERSION_HASH)\"
-endif
 
 # Standard, non-optimized release build
 .PHONY: release

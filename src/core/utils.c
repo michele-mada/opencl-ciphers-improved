@@ -2,15 +2,27 @@
 #include "constants.h"
 
 
-void load_CL_program_source(char* fileName, char** source_str, size_t* source_size) {
-    /* Load the source code containing the kernel*/
+void load_CL_program_source(char* fileName, unsigned char** source_str, size_t* source_size) {
     FILE *fp = fopen(fileName, "r");
     if (!fp) error_fatal("Failed to load program source\n");
-    *source_str = (char*)malloc(MAX_SOURCE_SIZE);
-    *source_size = fread(*source_str, 1, MAX_SOURCE_SIZE, fp);
+    fseek(fp,0,SEEK_END);
+    *source_size = ftell(fp);
+    *source_str = (unsigned char*) malloc(*source_size * sizeof(unsigned char));
+    rewind(fp);
+    fread(*source_str, 1, *source_size, fp);
     fclose(fp);
 }
 
+void load_CL_program_binary(char* fileName, unsigned char** binary_str, size_t* binary_size) {
+    FILE *fp = fopen(fileName, "rb");
+    if (!fp) error_fatal("Failed to load program binary\n");
+    fseek(fp,0,SEEK_END);
+    *binary_size = ftell(fp);
+    *binary_str = (unsigned char*) malloc(*binary_size * sizeof(unsigned char));
+    rewind(fp);
+    fread(*binary_str, 1, *binary_size, fp);
+    fclose(fp);
+}
 
 void logBuildError(cl_int* ret, cl_program* program, cl_device_id* deviceId) {
     printf("\nBuild Error = %d\n", *ret);

@@ -5,17 +5,6 @@
 #include "utils.h"
 
 
-
-void initialize_OpenCL_context(OpenCLEnv* env) {
-    cl_int ret;
-	// Create OpenCL context
-   	env->context = clCreateContext(NULL, 1, env->selected_device, NULL, NULL, &ret);
-   	if(ret != CL_SUCCESS) error_fatal("Failed to create context : %d\n",ret);
-	// Create Command Queue
-   	env->command_queue = clCreateCommandQueue(env->context, *(env->selected_device), CL_QUEUE_PROFILING_ENABLE, &ret);
-    if(ret != CL_SUCCESS) error_fatal("Failed to create commandqueue\n");
-}
-
 void select_OpenCL_platform_and_device(OpenCLEnv* env) {
     cl_uint ret_num_devices;
 	cl_uint ret_num_platforms;
@@ -37,6 +26,16 @@ void select_OpenCL_platform_and_device(OpenCLEnv* env) {
 
     }
 	free(platforms);
+}
+
+void initialize_OpenCL_context(OpenCLEnv* env) {
+    cl_int ret;
+	// Create OpenCL context
+   	env->context = clCreateContext(NULL, 1, env->selected_device, NULL, NULL, &ret);
+   	if(ret != CL_SUCCESS) error_fatal("Failed to create context : %d\n",ret);
+	// Create Command Queue
+   	env->command_queue = clCreateCommandQueue(env->context, *(env->selected_device), CL_QUEUE_PROFILING_ENABLE, &ret);
+    if(ret != CL_SUCCESS) error_fatal("Failed to create commandqueue\n");
 }
 
 OpenCLEnv* init_OpenCLEnv() {
@@ -65,4 +64,12 @@ void destroy_OpenCLEnv(OpenCLEnv* env) {
     destroy_ParamAtlas(env->parameters);
     free(env->selected_device);
     free(env);
+}
+
+
+void print_opencl_ciphers_build_info() {
+    printf("Build version: %s\n", BUILD_VERSION);
+    printf("Build date: %s\n", BUILD_DATE);
+    printf("Build machine: %s\n", BUILD_MACHINE);
+    printf("Target opencl device: %s (%d)\n", (TARGET_DEVICE_TYPE == CL_DEVICE_TYPE_ACCELERATOR ? "fpga" : "cpu"), TARGET_DEVICE_TYPE);
 }

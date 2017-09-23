@@ -3,8 +3,7 @@
 #include "utils.h"
 
 
-
-void load_program(CipherFamily* fam, char* source_filename) {
+void load_program_cl(CipherFamily* fam, char* source_filename) {
     size_t source_size;
     cl_int ret;
     load_CL_program_source(source_filename, &(fam->source_str), &source_size);
@@ -23,6 +22,29 @@ void load_program(CipherFamily* fam, char* source_filename) {
     }
 }
 
+void load_program_aocx(CipherFamily* fam, char* source_filename) {
+    size_t source_size;
+    cl_int ret;
+    cl_int binary_status;
+    load_CL_program_binary(source_filename, &(fam->source_str), &source_size);
+    /* Create Kernel Program from the binary */
+    fam->program = clCreateProgramWithBinary(
+        fam->environment->context,
+        1,
+        fam->environment->selected_device,
+        (const size_t *) &source_size,
+        (const unsigned char **) &(fam->source_str),
+        &binary_status,
+        &ret);
+    if(binary_status != CL_SUCCESS) error_fatal("Could not load binary, error: %d\n", ret);
+    if(ret != CL_SUCCESS) error_fatal("Failed to create program; binary: \"%s\" error: %d\n", source_filename, ret);
+
+    ret = clBuildProgram(fam->program, 1, fam->environment->selected_device, NULL, NULL, NULL);
+    if(ret != CL_SUCCESS) {
+        if(ret != CL_SUCCESS) build_error_fatal(&ret, &(fam->program), fam->environment->selected_device);
+    }
+}
+
 CipherFamily* init_CipherFamily(struct OpenCLEnv* environment,
                                   char* source_filename,
                                   void (*cascade_init_fun)(struct CipherFamily*),
@@ -31,7 +53,11 @@ CipherFamily* init_CipherFamily(struct OpenCLEnv* environment,
     new_fam->environment = environment;
     new_fam->num_methods = 0;
     new_fam->cascade_destroy_fun = cascade_destroy_fun;
-    load_program(new_fam, source_filename);
+    #ifdef PLATFORM_CPU
+        load_program_cl(new_fam, source_filename);
+    #else
+        asprintf_aocx(&(new_atl->kernel_path_prefix), "bin_cl");
+    #endif
     (*cascade_init_fun)(new_fam);
     return new_fam;
 }
