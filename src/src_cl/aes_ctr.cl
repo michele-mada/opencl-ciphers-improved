@@ -651,7 +651,7 @@ void debug_round(size_t r, uint temp_state[NUM_WORDS], __global uint *w) {
 void encrypt(__private uchar state_in[BLOCK_SIZE],
              __global uint *w,
              __private uchar state_out[BLOCK_SIZE],
-             size_t num_rounds) {
+             unsigned int num_rounds) {
 
     uint temp_state1[NUM_WORDS], temp_state2[NUM_WORDS];
 
@@ -684,7 +684,7 @@ void encrypt(__private uchar state_in[BLOCK_SIZE],
 void decrypt(__private uchar state_in[BLOCK_SIZE],
              __global uint *w,
              __private uchar state_out[BLOCK_SIZE],
-             size_t num_rounds) {
+             unsigned int num_rounds) {
 
     uint temp_state1[NUM_WORDS], temp_state2[NUM_WORDS];
 
@@ -717,7 +717,7 @@ void decrypt(__private uchar state_in[BLOCK_SIZE],
 __kernel void aesEncCipher(__global uchar* in,
                            __global uint *w,
                            __global uchar* out,
-                           size_t num_rounds) {
+                           unsigned int num_rounds) {
 
     __private size_t gid;
     gid = get_global_id(0);
@@ -744,7 +744,7 @@ __kernel void aesEncCipher(__global uchar* in,
 __kernel void aesDecCipher(__global uchar* in,
                            __global uint *w,
                            __global uchar* out,
-                           size_t num_rounds) {
+                           unsigned int num_rounds) {
 
     __private size_t gid;
     gid = get_global_id(0);
@@ -773,7 +773,7 @@ __kernel void aesCipherCtr(__global uchar* in,
                               __global uint *w,
                               __global uchar* out,
                               __global uchar* IV,
-                              size_t num_rounds) {
+                              unsigned int num_rounds) {
 
   __private size_t gid;
   gid = get_global_id(0);

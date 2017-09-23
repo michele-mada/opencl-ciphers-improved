@@ -62,7 +62,7 @@ void load_aes_input_key_iv(CipherFamily* aes_fam,
     }
 }
 
-void prepare_kernel_aes(CipherMethod* meth, size_t num_rounds, int with_iv) {
+void prepare_kernel_aes(CipherMethod* meth, cl_int num_rounds, int with_iv) {
     cl_int ret;
     CipherFamily *aes_fam = meth->family;
     AesState *state = (AesState*) aes_fam->state;
@@ -81,7 +81,7 @@ void prepare_kernel_aes(CipherMethod* meth, size_t num_rounds, int with_iv) {
         KERNEL_PARAM_ERRORCHECK()
     }
 
-    ret = clSetKernelArg(meth->kernel, param_id++, sizeof(size_t), &num_rounds);
+    ret = clSetKernelArg(meth->kernel, param_id++, sizeof(cl_int), &num_rounds);
     KERNEL_PARAM_ERRORCHECK()
 }
 
