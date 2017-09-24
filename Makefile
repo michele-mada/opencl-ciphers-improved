@@ -6,8 +6,10 @@ BUILD_MACHINE := $(shell uname -a)
 BUILD_VERSION := $(shell git describe --dirty --always --tags)
 BUILD_DATE := $(shell date -R)
 
+# Generated binaries
 BIN_NAME := opencl_ciphers
 LIB_NAME := libopencl_ciphers
+
 # Compiler used
 CC ?= gcc
 # Extension of source files used in the project
@@ -18,6 +20,7 @@ SRC_PATH = src
 LIBS =
 # General compiler flags
 COMPILE_FLAGS = -fPIC -std=c99 -Wall -Wno-unused-variable -Wno-unknown-pragmas -g \
+	-L "$(LD_LIBRARY_PATH)" \
  	-D BUILD_MACHINE="\"$(BUILD_MACHINE)\"" -D BUILD_VERSION="\"$(BUILD_VERSION)\"" \
 	-D BUILD_DATE="\"$(BUILD_DATE)\"" \
 	-D PLATFORM_CPU
