@@ -56,7 +56,7 @@ CipherFamily* init_CipherFamily(struct OpenCLEnv* environment,
     #ifdef PLATFORM_CPU
         load_program_cl(new_fam, source_filename);
     #else
-        asprintf_aocx(&(new_atl->kernel_path_prefix), "bin_cl");
+        load_program_aocx(new_fam, source_filename);
     #endif
     (*cascade_init_fun)(new_fam);
     return new_fam;
