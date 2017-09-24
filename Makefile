@@ -20,7 +20,6 @@ SRC_PATH = src
 LIBS =
 # General compiler flags
 COMPILE_FLAGS = -fPIC -std=c99 -Wall -Wno-unused-variable -Wno-unknown-pragmas -g \
-	-L "$(LD_LIBRARY_PATH)" \
  	-D BUILD_MACHINE="\"$(BUILD_MACHINE)\"" -D BUILD_VERSION="\"$(BUILD_VERSION)\"" \
 	-D BUILD_DATE="\"$(BUILD_DATE)\"" \
 	-D PLATFORM_CPU
