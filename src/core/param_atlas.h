@@ -3,16 +3,15 @@
 
 
 typedef struct ParamAtlas {
-    size_t des_local_item_size;
-    size_t aes_local_item_size;
+    size_t enc_block_size;
     char *kernel_path_prefix;
 } ParamAtlas;
 
 
-ParamAtlas* init_ParamAtlas();
-void destroy_ParamAtlas(ParamAtlas* atl);
+ParamAtlas* ParamAtlas_init();
+void ParamAtlas_destroy(ParamAtlas* atl);
 
-char* aget_full_kernel_path(ParamAtlas* atl, char *relative);
+char* ParamAtlas_aget_full_kernel_path(ParamAtlas* atl, char *relative);
 
 
 #endif

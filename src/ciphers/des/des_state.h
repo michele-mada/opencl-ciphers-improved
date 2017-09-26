@@ -19,7 +19,6 @@ typedef struct DesState {
     cl_mem in;
     cl_mem key;
     cl_mem iv;
-    size_t local_item_size;
 } DesState;
 
 

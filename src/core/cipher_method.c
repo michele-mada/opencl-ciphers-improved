@@ -9,7 +9,7 @@ void load_kernel(CipherMethod* meth, char* kernel_name) {
     if (ret != CL_SUCCESS) error_fatal("Failed to create kernel error: %d\n", ret);
 }
 
-CipherMethod* init_CipherMethod(struct CipherFamily* family, char* kernel_name) {
+CipherMethod* CipherMethod_init(struct CipherFamily* family, char* kernel_name) {
     CipherMethod* new_meth = (CipherMethod*) malloc(sizeof(CipherMethod));
     new_meth->family = family;
     load_kernel(new_meth, kernel_name);
@@ -18,7 +18,7 @@ CipherMethod* init_CipherMethod(struct CipherFamily* family, char* kernel_name) 
 }
 
 
-void destroy_CipherMethod(CipherMethod* meth) {
+void CipherMethod_destroy(CipherMethod* meth) {
     clReleaseKernel(meth->kernel);
     free(meth);
 }

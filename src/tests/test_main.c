@@ -13,12 +13,14 @@ int main(int argc, char* argv[]) {
 
     print_opencl_ciphers_build_info();
 
-    OpenCLEnv *global_env = init_OpenCLEnv();
+    OpenCLEnv *global_env = OpenCLEnv_init();
+
+    printf("Running with enc_block_size=%lu\n", OpenCLEnv_get_enc_block_size(global_env));
 
     int success = test_all(global_env);
     printf("Test %s\n", (success ? "passed" : "failed"));
 
-    destroy_OpenCLEnv(global_env);
+    OpenCLEnv_destroy(global_env);
 
     return (success ? EXIT_SUCCESS : -1);
 }

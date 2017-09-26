@@ -16,7 +16,7 @@ void load_program_cl(CipherFamily* fam, char* source_filename) {
         &ret);
     if(ret != CL_SUCCESS) error_fatal("Failed to create program; source: \"%s\" error: %d\n", source_filename, ret);
 
-    ret = clBuildProgram(fam->program, 1, fam->environment->selected_device, NULL, NULL, NULL);
+    ret = clBuildProgram(fam->program, 1, fam->environment->selected_device, "-Werror", NULL, NULL);
     if(ret != CL_SUCCESS) {
         if(ret != CL_SUCCESS) build_error_fatal(&ret, &(fam->program), fam->environment->selected_device);
     }
@@ -45,7 +45,7 @@ void load_program_aocx(CipherFamily* fam, char* source_filename) {
     }
 }
 
-CipherFamily* init_CipherFamily(struct OpenCLEnv* environment,
+CipherFamily* CipherFamily_init(struct OpenCLEnv* environment,
                                   char* source_filename,
                                   void (*cascade_init_fun)(struct CipherFamily*),
                                   void (*cascade_destroy_fun)(struct CipherFamily*)) {
@@ -63,7 +63,7 @@ CipherFamily* init_CipherFamily(struct OpenCLEnv* environment,
 }
 
 
-void destroy_CipherFamily(CipherFamily* fam) {
+void CipherFamily_destroy(CipherFamily* fam) {
     fam->cascade_destroy_fun(fam);
     clReleaseProgram(fam->program);
     free(fam->source_str);

@@ -25,8 +25,8 @@ typedef struct CipherMethod {
 } CipherMethod;
 
 
-CipherMethod* init_CipherMethod(struct CipherFamily* family, char* kernel_name);
-void destroy_CipherMethod(CipherMethod* meth);
+CipherMethod* CipherMethod_init(struct CipherFamily* family, char* kernel_name);
+void CipherMethod_destroy(CipherMethod* meth);
 
 
 

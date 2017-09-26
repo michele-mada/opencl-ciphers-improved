@@ -22,7 +22,6 @@ typedef struct AesState {
     cl_mem out;
     cl_mem exKey;
     cl_mem iv;
-    size_t local_item_size;
 } AesState;
 
 typedef struct {

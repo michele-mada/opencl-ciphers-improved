@@ -39,11 +39,17 @@ void prepare_buffers_des(CipherFamily* des_fam, size_t input_size, int mode) {
     prepare_buffer(context, &(state->in), CL_MEM_READ_WRITE, input_size * sizeof(uint8_t));
     prepare_buffer(context, &(state->out), CL_MEM_READ_WRITE, input_size * sizeof(uint8_t));
     prepare_buffer(context, &(state->key), CL_MEM_READ_WRITE, key_int_size * sizeof(uint32_t));
-    prepare_buffer(context, &(state->iv), CL_MEM_READ_WRITE, DES_IV_SIZE * sizeof(uint32_t));
+    prepare_buffer(context, &(state->iv), CL_MEM_READ_WRITE, DES_IV_SIZE * sizeof(uint8_t));
 }
 
 
-void load_des_input_key_iv(CipherFamily* des_fam, uint8_t* input, size_t input_size, void* context, int mode, int is_decrypt, uint8_t* iv) {
+void load_des_input_key_iv(CipherFamily* des_fam,
+                           uint8_t* input,
+                           size_t input_size,
+                           void* context,
+                           int mode,
+                           int is_decrypt,
+                           uint8_t* iv) {
     DesState *state = (DesState*) des_fam->state;
 
     size_t key_int_size = KEY_INT_SIZE();
@@ -66,23 +72,29 @@ void load_des_input_key_iv(CipherFamily* des_fam, uint8_t* input, size_t input_s
 }
 
 
-void prepare_kernel_des(CipherMethod* meth, int with_iv) {
+void prepare_kernel_des(CipherMethod* meth, cl_int input_size, int with_iv) {
     cl_int ret;
     CipherFamily *des_fam = meth->family;
     DesState *state = (DesState*) des_fam->state;
 
     size_t param_id = 0;
 
-    ret = clSetKernelArg(meth->kernel, param_id++, sizeof(cl_mem), (void *)&(state->key));
-    KERNEL_PARAM_ERRORCHECK()
 	ret = clSetKernelArg(meth->kernel, param_id++, sizeof(cl_mem), (void *)&(state->in));
     KERNEL_PARAM_ERRORCHECK()
+
+    ret = clSetKernelArg(meth->kernel, param_id++, sizeof(cl_mem), (void *)&(state->key));
+    KERNEL_PARAM_ERRORCHECK()
+
 	ret = clSetKernelArg(meth->kernel, param_id++, sizeof(cl_mem), (void *)&(state->out));
     KERNEL_PARAM_ERRORCHECK()
+
     if (with_iv) {
         ret = clSetKernelArg(meth->kernel, param_id++, sizeof(cl_mem), (void *)&(state->iv));
         KERNEL_PARAM_ERRORCHECK()
     }
+
+    ret = clSetKernelArg(meth->kernel, param_id++, sizeof(cl_int), &input_size);
+    KERNEL_PARAM_ERRORCHECK()
 }
 
 void gather_des_output(CipherFamily* des_fam, uint8_t* output, size_t output_size) {
@@ -93,14 +105,20 @@ void gather_des_output(CipherFamily* des_fam, uint8_t* output, size_t output_siz
 }
 
 
-void des_encrypt_decrypt_function(OpenCLEnv* env, DesMethodsId method_id, uint8_t* input, size_t input_size, void* context, uint8_t* output, uint8_t* iv, int mode, int is_decrypt) {
+void des_encrypt_decrypt_function(OpenCLEnv* env,
+                                  DesMethodsId method_id,
+                                  uint8_t* input,
+                                  size_t input_size,
+                                  void* context,
+                                  uint8_t* output,
+                                  uint8_t* iv,
+                                  int mode,
+                                  int is_decrypt) {
     CipherMethod* meth = env->ciphers[DES_CIPHERS]->methods[method_id];
-    size_t global_item_size = input_size / BLOCK_SIZE;
-    size_t local_item_size = ((DesState*)meth->family->state)->local_item_size;
     prepare_buffers_des(meth->family, input_size, mode);
-    prepare_kernel_des(meth, iv != NULL);
+    prepare_kernel_des(meth, (cl_int)input_size, iv != NULL);
     load_des_input_key_iv(meth->family, input, input_size, context, mode, is_decrypt, iv);
-    execute_meth_kernel(meth, global_item_size, local_item_size);
+    execute_meth_kernel(meth);
     gather_des_output(meth->family, output, input_size);
 }
 

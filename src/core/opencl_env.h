@@ -40,11 +40,12 @@ typedef struct OpenCLEnv {
 } OpenCLEnv;
 
 
-OpenCLEnv* init_OpenCLEnv();
-extern void cascade_init_environment(OpenCLEnv* env);
-void destroy_OpenCLEnv(OpenCLEnv* env);
+OpenCLEnv* OpenCLEnv_init();
+extern void OpenCLEnv_cascade_init_environment(OpenCLEnv* env);
+void OpenCLEnv_destroy(OpenCLEnv* env);
 
 void print_opencl_ciphers_build_info();
+size_t OpenCLEnv_get_enc_block_size(OpenCLEnv* env);
 
 
 #endif

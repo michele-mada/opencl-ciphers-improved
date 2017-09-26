@@ -635,7 +635,9 @@ __constant uchar Td4[256] = {
 }
 
 
-void addRoundKey(__private uint* state, __global uint* w, __private size_t i) {
+void addRoundKey(__private uint* state,
+                 __global uint* restrict w, 
+                 __private size_t i) {
     #pragma unroll
     for (size_t j = 0; j < NUM_WORDS; ++j) {
         state[j] ^= w[i + j];
@@ -649,7 +651,7 @@ void debug_round(size_t r, uint temp_state[NUM_WORDS], __global uint *w) {
 }
 
 void encrypt(__private uchar state_in[BLOCK_SIZE],
-             __global uint *w,
+             __global uint* restrict w,
              __private uchar state_out[BLOCK_SIZE],
              unsigned int num_rounds) {
 
@@ -682,7 +684,7 @@ void encrypt(__private uchar state_in[BLOCK_SIZE],
 }
 
 void decrypt(__private uchar state_in[BLOCK_SIZE],
-             __global uint *w,
+             __global uint* restrict w,
              __private uchar state_out[BLOCK_SIZE],
              unsigned int num_rounds) {
 
@@ -714,9 +716,9 @@ void decrypt(__private uchar state_in[BLOCK_SIZE],
 }
 
 
-__kernel void aesEncCipher(__global uchar* in,
-                           __global uint *w,
-                           __global uchar* out,
+__kernel void aesEncCipher(__global uchar* restrict in,
+                           __global uint* restrict w,
+                           __global uchar* restrict out,
                            unsigned int num_rounds) {
 
     __private size_t gid;
@@ -741,9 +743,9 @@ __kernel void aesEncCipher(__global uchar* in,
     }
 }
 
-__kernel void aesDecCipher(__global uchar* in,
-                           __global uint *w,
-                           __global uchar* out,
+__kernel void aesDecCipher(__global uchar* restrict in,
+                           __global uint* restrict w,
+                           __global uchar* restrict out,
                            unsigned int num_rounds) {
 
     __private size_t gid;
@@ -769,10 +771,10 @@ __kernel void aesDecCipher(__global uchar* in,
 }
 
 
-__kernel void aesCipherCtr(__global uchar* in,
-                              __global uint *w,
-                              __global uchar* out,
-                              __global uchar* IV,
+__kernel void aesCipherCtr(__global uchar* restrict in,
+                              __global uint* restrict w,
+                              __global uchar* restrict out,
+                              __global uchar* restrict IV,
                               unsigned int num_rounds) {
 
   __private size_t gid;

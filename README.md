@@ -23,20 +23,20 @@ The final version will be especially optimized for a FPGA device.
     | cl_device_id*     selected_device  |           +----------------------------------+     |
     | CipherFamily[]   ciphers          +----------->  CipherFamily                   <----------------------------------------------+
     +------------------------------------+           |                                  |     |                                        |
-    | init_OpenCLEnv()                  |           +----------------------------------+     |                                        |
-    | cascade_init_environment()         |           | struct OpenCLEnv*   environment +-----+                                        |
-    | destroy_OpenCLEnv()               |           | char*                source_str  |                                              |
+    | OpenCLEnv_init()                  |           +----------------------------------+     |                                        |
+    | OpenCLEnv_cascade_init_environment()         |           | struct OpenCLEnv*   environment +-----+                                        |
+    | OpenCLEnv_destroy()               |           | char*                source_str  |                                              |
     +------------------------------------+           | cl_program           program     |        +------------------------------+      |
                                                      | CipherMethod[]      methods     +-------->  CipherMethod               |      |
                                                      | void*                state       |        |                              |      |
                                                      |                                  |        +------------------------------+      |
                                                      +----------------------------------+        | struct CipherFamily* family +------+
-                                                     | init_CipherFamily()             |        | cl_kernel kernel             |
-                                                     | destroy_CipherFamily()          |        | void* state                  |
+                                                     | CipherFamily_init()             |        | cl_kernel kernel             |
+                                                     | CipherFamily_destroy()          |        | void* state                  |
                                                      +----------------------------------+        |                              |
                                                                                                  +------------------------------+
-                                                                                                 | init_CipherMethod()         |
-                                                                                                 | destroy_CipherMethod()      |
+                                                                                                 | CipherMethod_init()         |
+                                                                                                 | CipherMethod_destroy()      |
                                                                                                  +------------------------------+
 
 The core logic is structured in a series of nested object-like struct, to guarantee that:
@@ -71,4 +71,12 @@ As of now, no CipherMethod makes use of `void* state`
 
 **Work in progress**
 
-    ./test
+    ./opencl_ciphers
+
+## environment variables
+
+    OCC_ENC_BLOCK_SIZE
+
+Manually specify the value for ENC_BLOCK_SIZE; this value is used to fine-tune
+openssl internals, and is only needed when libopencl_ciphers.so is used to
+drive a custom openss engine

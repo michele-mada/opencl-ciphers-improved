@@ -16,15 +16,15 @@
 void init_aes_methods_and_state(CipherFamily* fam) {
     fam->methods = (CipherMethod**) malloc(sizeof(CipherMethod*) * NUM_AES_METHODS);
 
-    fam->methods[AES_128_ECB_ENC] = init_CipherMethod(fam, "aesEncCipher");
-    fam->methods[AES_192_ECB_ENC] = init_CipherMethod(fam, "aesEncCipher");
-    fam->methods[AES_256_ECB_ENC] = init_CipherMethod(fam, "aesEncCipher");
-    fam->methods[AES_128_ECB_DEC] = init_CipherMethod(fam, "aesDecCipher");
-    fam->methods[AES_192_ECB_DEC] = init_CipherMethod(fam, "aesDecCipher");
-    fam->methods[AES_256_ECB_DEC] = init_CipherMethod(fam, "aesDecCipher");
-    fam->methods[AES_128_CTR] = init_CipherMethod(fam, "aesCipherCtr");
-    fam->methods[AES_192_CTR] = init_CipherMethod(fam, "aesCipherCtr");
-    fam->methods[AES_256_CTR] = init_CipherMethod(fam, "aesCipherCtr");
+    fam->methods[AES_128_ECB_ENC] = CipherMethod_init(fam, "aesEncCipher");
+    fam->methods[AES_192_ECB_ENC] = CipherMethod_init(fam, "aesEncCipher");
+    fam->methods[AES_256_ECB_ENC] = CipherMethod_init(fam, "aesEncCipher");
+    fam->methods[AES_128_ECB_DEC] = CipherMethod_init(fam, "aesDecCipher");
+    fam->methods[AES_192_ECB_DEC] = CipherMethod_init(fam, "aesDecCipher");
+    fam->methods[AES_256_ECB_DEC] = CipherMethod_init(fam, "aesDecCipher");
+    fam->methods[AES_128_CTR] = CipherMethod_init(fam, "aesCipherCtr");
+    fam->methods[AES_192_CTR] = CipherMethod_init(fam, "aesCipherCtr");
+    fam->methods[AES_256_CTR] = CipherMethod_init(fam, "aesCipherCtr");
 
     fam->num_methods = NUM_AES_METHODS;
 
@@ -33,7 +33,6 @@ void init_aes_methods_and_state(CipherFamily* fam) {
     state->out = NULL;
     state->exKey = NULL;
     state->iv = NULL;
-    state->local_item_size = fam->environment->parameters->aes_local_item_size;
     fam->state = state;
 }
 
@@ -46,7 +45,7 @@ void destroy_aes_methods_and_state(CipherFamily* fam) {
     free(fam->state);
     size_t num_methods = fam->num_methods;
     for (size_t m = 0; m < num_methods; m++) {
-        destroy_CipherMethod(fam->methods[m]);
+        CipherMethod_destroy(fam->methods[m]);
     }
     free(fam->methods);
 }
@@ -54,8 +53,8 @@ void destroy_aes_methods_and_state(CipherFamily* fam) {
 
 
 CipherFamily* get_aes_family(struct OpenCLEnv* environment) {
-    char *kernel_path = aget_full_kernel_path(environment->parameters, "aes_ctr");
-    CipherFamily* aes = init_CipherFamily(environment, kernel_path, &init_aes_methods_and_state, &destroy_aes_methods_and_state);
+    char *kernel_path = ParamAtlas_aget_full_kernel_path(environment->parameters, "aes_swi");
+    CipherFamily* aes = CipherFamily_init(environment, kernel_path, &init_aes_methods_and_state, &destroy_aes_methods_and_state);
     free(kernel_path);
     return aes;
 }

@@ -35,11 +35,11 @@ typedef struct CipherFamily {
 } CipherFamily;
 
 
-CipherFamily* init_CipherFamily(struct OpenCLEnv* environment,
-                                  char* source_filename,
-                                  void (*cascade_init_fun)(struct CipherFamily*),
-                                  void (*cascade_destroy_fun)(struct CipherFamily*));
-void destroy_CipherFamily(CipherFamily* fam);
+CipherFamily* CipherFamily_init(struct OpenCLEnv* environment,
+                                char* source_filename,
+                                void (*cascade_init_fun)(struct CipherFamily*),
+                                void (*cascade_destroy_fun)(struct CipherFamily*));
+void CipherFamily_destroy(CipherFamily* fam);
 
 
 

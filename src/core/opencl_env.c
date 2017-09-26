@@ -38,13 +38,13 @@ void initialize_OpenCL_context(OpenCLEnv* env) {
     if(ret != CL_SUCCESS) error_fatal("Failed to create commandqueue\n");
 }
 
-OpenCLEnv* init_OpenCLEnv() {
+OpenCLEnv* OpenCLEnv_init() {
     OpenCLEnv* new_env = (OpenCLEnv*) malloc(sizeof(OpenCLEnv));
     new_env->num_ciphers = 0;
-    new_env->parameters = init_ParamAtlas();
+    new_env->parameters = ParamAtlas_init();
     select_OpenCL_platform_and_device(new_env);
     initialize_OpenCL_context(new_env);
-    cascade_init_environment(new_env);
+    OpenCLEnv_cascade_init_environment(new_env);
     return new_env;
 }
 
@@ -52,18 +52,23 @@ OpenCLEnv* init_OpenCLEnv() {
 void recursive_destroy_environment(OpenCLEnv* env) {
     size_t num_families = env->num_ciphers;
     for (size_t f = 0; f < num_families; f++) {
-        destroy_CipherFamily(env->ciphers[f]);
+        CipherFamily_destroy(env->ciphers[f]);
     }
     free(env->ciphers);
 }
 
-void destroy_OpenCLEnv(OpenCLEnv* env) {
+void OpenCLEnv_destroy(OpenCLEnv* env) {
     recursive_destroy_environment(env);
     clReleaseCommandQueue(env->command_queue);
     clReleaseContext(env->context);
-    destroy_ParamAtlas(env->parameters);
+    ParamAtlas_destroy(env->parameters);
     free(env->selected_device);
     free(env);
+}
+
+
+size_t OpenCLEnv_get_enc_block_size(OpenCLEnv* env) {
+    return env->parameters->enc_block_size;
 }
 
 
@@ -72,4 +77,5 @@ void print_opencl_ciphers_build_info() {
     printf("Build date: %s\n", BUILD_DATE);
     printf("Build machine: %s\n", BUILD_MACHINE);
     printf("Target opencl device: %s (%d)\n", (TARGET_DEVICE_TYPE == CL_DEVICE_TYPE_ACCELERATOR ? "fpga" : "cpu"), TARGET_DEVICE_TYPE);
+    printf("(work_dim/global_work_size/local_work_size): (%d/%d/%d)\n", WORK_DIM, GLOBAL_WORK_SIZE, LOCAL_WORK_SIZE);
 }

@@ -28,7 +28,7 @@ void prepare_buffers_aes(CipherFamily* aes_fam, size_t input_size, size_t ex_key
     prepare_buffer(context, &(state->in), CL_MEM_READ_WRITE, input_size * sizeof(uint8_t));
     prepare_buffer(context, &(state->exKey), CL_MEM_READ_WRITE, ex_key_size * sizeof(uint32_t));
     prepare_buffer(context, &(state->out), CL_MEM_READ_WRITE, input_size * sizeof(uint8_t));
-    prepare_buffer(context, &(state->iv), CL_MEM_READ_WRITE, AES_IV_SIZE * sizeof(uint32_t));
+    prepare_buffer(context, &(state->iv), CL_MEM_READ_WRITE, AES_IV_SIZE * sizeof(uint8_t));
 }
 
 void load_aes_input_key_iv(CipherFamily* aes_fam,
@@ -62,7 +62,7 @@ void load_aes_input_key_iv(CipherFamily* aes_fam,
     }
 }
 
-void prepare_kernel_aes(CipherMethod* meth, cl_int num_rounds, int with_iv) {
+void prepare_kernel_aes(CipherMethod* meth, cl_int input_size, cl_int num_rounds, int with_iv) {
     cl_int ret;
     CipherFamily *aes_fam = meth->family;
     AesState *state = (AesState*) aes_fam->state;
@@ -83,6 +83,9 @@ void prepare_kernel_aes(CipherMethod* meth, cl_int num_rounds, int with_iv) {
 
     ret = clSetKernelArg(meth->kernel, param_id++, sizeof(cl_int), &num_rounds);
     KERNEL_PARAM_ERRORCHECK()
+
+    ret = clSetKernelArg(meth->kernel, param_id++, sizeof(cl_int), &input_size);
+    KERNEL_PARAM_ERRORCHECK()
 }
 
 void gather_aes_output(CipherFamily* aes_fam, uint8_t* output, size_t output_size) {
@@ -102,12 +105,10 @@ void aes_encrypt_decrypt_function(OpenCLEnv* env,           // global opencl env
                                   int aes_mode,             // aes mode (128, 192 or 256), to compute the number of rounds
                                   int is_decrypt) {         // select which key to use, encrypt or decrypt
     CipherMethod* meth = env->ciphers[AES_CIPHERS]->methods[method_id];
-    size_t global_item_size = input_size / BLOCK_SIZE;
-    size_t local_item_size = ((AesState*)meth->family->state)->local_item_size;
     prepare_buffers_aes(meth->family, input_size, context->ex_key_dim);
-    prepare_kernel_aes(meth, KEYSIZE_TO_Nr(aes_mode), iv != NULL);
+    prepare_kernel_aes(meth, (cl_int)input_size, KEYSIZE_TO_Nr(aes_mode), iv != NULL);
     load_aes_input_key_iv(meth->family, input, input_size, context, iv, is_decrypt);
-    execute_meth_kernel(meth, global_item_size, local_item_size);
+    execute_meth_kernel(meth);
     gather_aes_output(meth->family, output, input_size);
 }
 
@@ -149,11 +150,11 @@ void opencl_aes_256_set_decrypt_key(const unsigned char *userKey, const int bits
 /* ----------------- begin iv manipulation ----------------- */
 
 void opencl_aes_update_iv_after_chunk_processed(aes_context *K, size_t chunk_size) {
-    size_t n = AES_IV_SIZE, c = chunk_size;
+    size_t n = AES_IV_SIZE, c = chunk_size / BLOCK_SIZE;
     do {
         --n;
         c += K->iv[n];
-        K->iv[n] = (char)c;
+        K->iv[n] = (uint8_t)(c & 0xFF);
         c >>= 8;
     } while (n);
 }
