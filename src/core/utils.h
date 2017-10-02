@@ -13,7 +13,7 @@
 #endif
 
 
-
+const char *get_cl_error_string(cl_int error);
 void error_fatal(const char *format, ...);
 void load_CL_program_source(char* fileName, unsigned char** source_str, size_t* source_size);
 void load_CL_program_binary(char* fileName, unsigned char** binary_str, size_t* binary_size);

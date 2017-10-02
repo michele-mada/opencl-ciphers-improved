@@ -14,7 +14,7 @@ void load_program_cl(CipherFamily* fam, char* source_filename) {
         (const char **) &(fam->source_str),
         (const size_t *) &source_size,
         &ret);
-    if(ret != CL_SUCCESS) error_fatal("Failed to create program; source: \"%s\" error: %d\n", source_filename, ret);
+    if(ret != CL_SUCCESS) error_fatal("Failed to create program; source: \"%s\" error = %s (%d)\n", source_filename, get_cl_error_string(ret), ret);
 
     ret = clBuildProgram(fam->program, 1, fam->environment->selected_device, "-Werror", NULL, NULL);
     if(ret != CL_SUCCESS) {
@@ -36,8 +36,8 @@ void load_program_aocx(CipherFamily* fam, char* source_filename) {
         (const unsigned char **) &(fam->source_str),
         &binary_status,
         &ret);
-    if(binary_status != CL_SUCCESS) error_fatal("Could not load binary, error: %d\n", ret);
-    if(ret != CL_SUCCESS) error_fatal("Failed to create program; binary: \"%s\" error: %d\n", source_filename, ret);
+    if(binary_status != CL_SUCCESS) error_fatal("Could not load binary, error = %s (%d)\n", get_cl_error_string(ret), ret);
+    if(ret != CL_SUCCESS) error_fatal("Failed to create program; binary: \"%s\" error = %s (%d)\n", source_filename, get_cl_error_string(ret), ret);
 
     ret = clBuildProgram(fam->program, 1, fam->environment->selected_device, NULL, NULL, NULL);
     if(ret != CL_SUCCESS) {

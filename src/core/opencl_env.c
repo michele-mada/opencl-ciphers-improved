@@ -32,10 +32,10 @@ void initialize_OpenCL_context(OpenCLEnv* env) {
     cl_int ret;
 	// Create OpenCL context
    	env->context = clCreateContext(NULL, 1, env->selected_device, NULL, NULL, &ret);
-   	if(ret != CL_SUCCESS) error_fatal("Failed to create context : %d\n",ret);
+   	if(ret != CL_SUCCESS) error_fatal("Failed to create context, error = %s (%d)\n", get_cl_error_string(ret), ret);
 	// Create Command Queue
    	env->command_queue = clCreateCommandQueue(env->context, *(env->selected_device), CL_QUEUE_PROFILING_ENABLE, &ret);
-    if(ret != CL_SUCCESS) error_fatal("Failed to create commandqueue\n");
+    if(ret != CL_SUCCESS) error_fatal("Failed to create commandqueue, error = %s (%d)\n",  get_cl_error_string(ret), ret);
 }
 
 OpenCLEnv* OpenCLEnv_init() {

@@ -9,6 +9,7 @@
 
 #include "../core/constants.h"
 #include "../core/cipher_method.h"
+#include "../core/utils.h"
 
 
 static inline void execute_meth_kernel(CipherMethod* meth) {
@@ -24,7 +25,7 @@ static inline void execute_meth_kernel(CipherMethod* meth) {
                                  &global_work_size,  // global work size
                                  &local_work_size,  // local work size
                                  0, NULL, &event);
-    if (ret != CL_SUCCESS) error_fatal("Failed to enqueue NDRangeKernel. Error code: %d\n", ret);
+    if (ret != CL_SUCCESS) error_fatal("Failed to enqueue NDRangeKernel. Error = %s (%d)\n", get_cl_error_string(ret), ret);
     clWaitForEvents(1, &event);
 }
 
