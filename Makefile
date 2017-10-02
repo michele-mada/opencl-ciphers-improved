@@ -7,7 +7,7 @@ BUILD_VERSION := $(shell git describe --dirty --always --tags)
 BUILD_DATE := $(shell date -R)
 
 # Generated binaries
-BIN_NAME := opencl_ciphers
+TESTBIN_NAME := opencl_ciphers_test
 LIB_NAME := libopencl_ciphers
 
 # Compiler used
@@ -19,7 +19,7 @@ SRC_PATH = src
 # Space-separated pkg-config libraries used by this project
 LIBS =
 # General compiler flags
-COMPILE_FLAGS = -fPIC -std=c99 -Wall -Wno-unused-variable -Wno-unknown-pragmas -g \
+COMPILE_FLAGS = -fPIC -std=gnu99 -Wall -Wno-unused-variable -Wno-unknown-pragmas -g \
  	-D BUILD_MACHINE="\"$(BUILD_MACHINE)\"" -D BUILD_VERSION="\"$(BUILD_VERSION)\"" \
 	-D BUILD_DATE="\"$(BUILD_DATE)\"" \
 	-D PLATFORM_CPU
@@ -188,35 +188,45 @@ uninstall:
 .PHONY: clean
 clean:
 	@echo "Deleting $(BIN_NAME) symlink"
-	@$(RM) $(BIN_NAME)
+	@$(RM) $(LIB_NAME).so
+	@$(RM) $(TESTBIN_NAME)
 	@echo "Deleting directories"
 	@$(RM) -r build
 	@$(RM) -r bin
 
 # Main rule, checks the executable and symlinks to the output
-all: $(BIN_PATH)/$(BIN_NAME)
-	@echo "Making symlink: $(BIN_NAME) -> $<"
-	@$(RM) $(BIN_NAME)
-	@ln -s $(BIN_PATH)/$(BIN_NAME) $(BIN_NAME)
+all: library test_executable
+library: $(BIN_PATH)/$(LIB_NAME)
+	@echo "Making symlink: $(LIB_NAME) -> $<"
+	@$(RM) $(LIB_NAME).so
+	@ln -s $(BIN_PATH)/$(LIB_NAME).so $(LIB_NAME).so
 	$(shell mkdir -p $(BIN_PATH)/bench_output)
 	$(shell cp -R ./src/src_cl $(BIN_PATH))
-	$(shell mv $(BIN_PATH)/$(BIN_NAME).so $(BIN_PATH)/lib$(BIN_NAME).so)
 	$(shell mkdir -p $(BIN_PATH)/include)
 	$(shell cp --parents -R ./src/ciphers/*/*_primitives.h $(BIN_PATH)/include/)
 	$(shell cp --parents -R ./src/ciphers/*/*_state.h $(BIN_PATH)/include/)
 	$(shell cp --parents -R ./src/core/*.h $(BIN_PATH)/include/)
 	$(shell cp --parents ./src/ciphers/primitives.h $(BIN_PATH)/include/)
 	$(shell cp ./src/opencl_ciphers.h $(BIN_PATH)/include/)
-#$(shell cp -R ./src/tests/ctr_test $(BIN_PATH))
+test_executable: $(BIN_PATH)/$(TESTBIN_NAME)
+	@echo "Making symlink: $(TESTBIN_NAME) -> $<"
+	@$(RM) $(TESTBIN_NAME)
+	@ln -s $(BIN_PATH)/$(TESTBIN_NAME) $(TESTBIN_NAME)
 
 
+# Link the library
+$(BIN_PATH)/$(LIB_NAME): $(OBJECTS)
+	@echo "Linking: $@"
+	@$(START_TIME)
+	$(CMD_PREFIX)$(CC) $(OBJECTS) $(LDFLAGS) -o $@.so -shared
+	@echo -en "\t Link time: "
+	@$(END_TIME)
 
 # Link the executable
-$(BIN_PATH)/$(BIN_NAME): $(OBJECTS)
+$(BIN_PATH)/$(TESTBIN_NAME): $(OBJECTS)
 	@echo "Linking: $@"
 	@$(START_TIME)
 	$(CMD_PREFIX)$(CC) $(OBJECTS) $(LDFLAGS) -o $@
-	$(CMD_PREFIX)$(CC) $(OBJECTS) $(LDFLAGS) -o $@.so -shared
 	@echo -en "\t Link time: "
 	@$(END_TIME)
 

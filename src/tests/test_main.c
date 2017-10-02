@@ -1,6 +1,7 @@
 
 #include "../core/opencl_env.h"
-#include "test_common.h"
+#include "validation/test_common.h"
+#include "tuning/tuning_common.h"
 
 
 int test_all(OpenCLEnv *global_env) {
@@ -9,10 +10,7 @@ int test_all(OpenCLEnv *global_env) {
 }
 
 
-int main(int argc, char* argv[]) {
-
-    print_opencl_ciphers_build_info();
-
+int run_validation() {
     OpenCLEnv *global_env = OpenCLEnv_init();
 
     printf("Running with enc_block_size=%lu\n", OpenCLEnv_get_enc_block_size(global_env));
@@ -23,4 +21,33 @@ int main(int argc, char* argv[]) {
     OpenCLEnv_destroy(global_env);
 
     return (success ? EXIT_SUCCESS : -1);
+}
+
+
+int run_tuning() {
+    OpenCLEnv *global_env = OpenCLEnv_init();
+
+    auto_tune(global_env, 1048576*4, "tuning_data.txt");  // stride = 1 * 4 MB
+
+    OpenCLEnv_destroy(global_env);
+
+    return EXIT_SUCCESS;
+}
+
+
+int main(int argc, char* argv[]) {
+    print_opencl_ciphers_build_info();
+
+    if (argc < 2) {
+        printf("Please provide an argument. (\"validation\", \"tuning\")\n");
+        exit(1);
+    } else {
+        if (strcmp(argv[1], "tuning") == 0) {
+            return run_tuning();
+        } else if (strcmp(argv[1], "validation") == 0) {
+            return run_validation();
+        }
+    }
+
+
 }

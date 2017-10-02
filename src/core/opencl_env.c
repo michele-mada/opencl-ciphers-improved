@@ -71,6 +71,10 @@ size_t OpenCLEnv_get_enc_block_size(OpenCLEnv* env) {
     return env->parameters->enc_block_size;
 }
 
+void OpenCLEnv_set_enc_block_size(OpenCLEnv* env, size_t enc_block_size) {
+    env->parameters->enc_block_size = enc_block_size;
+}
+
 
 void print_opencl_ciphers_build_info() {
     printf("Build version: %s\n", BUILD_VERSION);

@@ -24,7 +24,6 @@ void prepare_buffers_aes(CipherFamily* aes_fam, size_t input_size, size_t ex_key
     cl_int ret;
     cl_context context = aes_fam->environment->context;
     AesState *state = (AesState*) aes_fam->state;
-
     prepare_buffer(context, &(state->in), CL_MEM_READ_WRITE, input_size * sizeof(uint8_t));
     prepare_buffer(context, &(state->exKey), CL_MEM_READ_WRITE, ex_key_size * sizeof(uint32_t));
     prepare_buffer(context, &(state->out), CL_MEM_READ_WRITE, input_size * sizeof(uint8_t));

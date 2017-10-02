@@ -56,4 +56,5 @@ dkms.conf
 build/
 bin/
 test
-opencl_ciphers
+opencl_ciphers_test
+release

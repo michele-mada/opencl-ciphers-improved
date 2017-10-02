@@ -1,7 +1,9 @@
+#include <stdlib.h>
+
 #include "test_common.h"
 #include "des_test_data.h"
-#include "../core/opencl_env.h"
-#include "../ciphers/primitives.h"
+#include "../../core/opencl_env.h"
+#include "../../ciphers/primitives.h"
 
 
 #define KEYLENGTH 8
