@@ -38,6 +38,88 @@ void logBuildError(cl_int* ret, cl_program* program, cl_device_id* deviceId) {
 }
 
 
+void print_opencl_platforms_devices() {
+    cl_uint ret_num_devices;
+	cl_uint ret_num_platforms;
+	cl_platform_id platform_id[32];
+
+    const size_t attributeCount = 5;
+    const char* attributeNames[] = { "Name", "Vendor",
+        "Version", "Profile", "Extensions" };
+    const cl_platform_info attributeTypes[] = { CL_PLATFORM_NAME, CL_PLATFORM_VENDOR,
+        CL_PLATFORM_VERSION, CL_PLATFORM_PROFILE, CL_PLATFORM_EXTENSIONS };
+
+	cl_device_id* device_id;
+	// Get Platform and Device Info
+	cl_int ret = clGetPlatformIDs(1, platform_id, &ret_num_platforms);
+	// allocate memory, get list of platforms
+	cl_platform_id *platforms = (cl_platform_id*) malloc(ret_num_platforms * sizeof(platform_id));
+	clGetPlatformIDs(ret_num_platforms, platforms, NULL);
+	// iterate over platforms
+    for (cl_uint i = 0; i < ret_num_platforms; i++){
+        size_t infoSize;
+        char* info;
+
+        printf("+--Platform %d\n|  |\n|  +--Attributes:\n", i);
+        for (size_t attrid=0; attrid<attributeCount; attrid++) {
+            clGetPlatformInfo(platforms[i], attributeTypes[attrid], 0, NULL, &infoSize);
+            info = (char*) malloc(infoSize);
+            clGetPlatformInfo(platforms[i], attributeTypes[attrid], infoSize, info, NULL);
+            printf("|  |  +--%-11s: %s\n", attributeNames[attrid], info);
+            free(info);
+        }
+        printf("|  |\n|  +--Devices: (");
+
+        ret = clGetDeviceIDs(platforms[i], CL_DEVICE_TYPE_ALL, 0, NULL, &ret_num_devices);
+        if(ret == CL_SUCCESS) {
+            printf("%d)\n", ret_num_devices);
+            device_id = (cl_device_id*) malloc(sizeof(cl_device_id) * ret_num_devices);
+            clGetDeviceIDs(platforms[i], CL_DEVICE_TYPE_ALL, ret_num_devices, device_id, NULL);
+            for (size_t devid=0; devid<ret_num_devices; devid++) {
+                char* value;
+                cl_uint maxComputeUnits;
+                size_t valueSize;
+                // print device name
+                clGetDeviceInfo(device_id[devid], CL_DEVICE_NAME, 0, NULL, &valueSize);
+                value = (char*) malloc(valueSize);
+                clGetDeviceInfo(device_id[devid], CL_DEVICE_NAME, valueSize, value, NULL);
+                printf("|     +--Device: %s\n", value);
+                free(value);
+
+                // print hardware device version
+                clGetDeviceInfo(device_id[devid], CL_DEVICE_VERSION, 0, NULL, &valueSize);
+                value = (char*) malloc(valueSize);
+                clGetDeviceInfo(device_id[devid], CL_DEVICE_VERSION, valueSize, value, NULL);
+                printf("|     +--Hardware version: %s\n", value);
+                free(value);
+
+                // print software driver version
+                clGetDeviceInfo(device_id[devid], CL_DRIVER_VERSION, 0, NULL, &valueSize);
+                value = (char*) malloc(valueSize);
+                clGetDeviceInfo(device_id[devid], CL_DRIVER_VERSION, valueSize, value, NULL);
+                printf("|     +--Software version: %s\n", value);
+                free(value);
+
+                // print c version supported by compiler for device
+                clGetDeviceInfo(device_id[devid], CL_DEVICE_OPENCL_C_VERSION, 0, NULL, &valueSize);
+                value = (char*) malloc(valueSize);
+                clGetDeviceInfo(device_id[devid], CL_DEVICE_OPENCL_C_VERSION, valueSize, value, NULL);
+                printf("|     +--OpenCL C version: %s\n", value);
+                free(value);
+
+                // print parallel compute units
+                clGetDeviceInfo(device_id[devid], CL_DEVICE_MAX_COMPUTE_UNITS,
+                        sizeof(maxComputeUnits), &maxComputeUnits, NULL);
+                printf("|     +--Parallel compute units: %d\n", maxComputeUnits);
+            }
+        }
+        free(device_id);
+        printf("|\n");
+    }
+	free(platforms);
+}
+
+
 int is_buffer_compliant(cl_mem buffer, cl_mem_flags required_flags, size_t required_size) {
     cl_mem_flags old_flags;
     size_t old_size;

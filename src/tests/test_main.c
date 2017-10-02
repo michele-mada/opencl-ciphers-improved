@@ -1,5 +1,6 @@
 
 #include "../core/opencl_env.h"
+#include "../core/utils.h"
 #include "validation/test_common.h"
 #include "tuning/tuning_common.h"
 
@@ -35,17 +36,25 @@ int run_tuning() {
 }
 
 
+int run_clinfo() {
+    print_opencl_platforms_devices();
+    return EXIT_SUCCESS;
+}
+
+
 int main(int argc, char* argv[]) {
     print_opencl_ciphers_build_info();
 
     if (argc < 2) {
-        printf("Please provide an argument. (\"validation\", \"tuning\")\n");
+        printf("Please provide an argument. (\"validation\", \"tuning\", \"clinfo\")\n");
         exit(1);
     } else {
         if (strcmp(argv[1], "tuning") == 0) {
             return run_tuning();
         } else if (strcmp(argv[1], "validation") == 0) {
             return run_validation();
+        } else if (strcmp(argv[1], "clinfo") == 0) {
+            return run_clinfo();
         }
     }
 
