@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include "tuning_common.h"
 #include "../../ciphers/primitives.h"
 
@@ -42,8 +43,10 @@ void tuning_step(OpenCLEnv* global_env, size_t nbytes, FILE *logfile) {
 
     utility_function(global_env, payload, nbytes, REPETITIONS, trashcan, &K, &duration);
 
-    printf("Processed %lu B chunk in %ld.%09ld\n", nbytes, duration.tv_sec, duration.tv_nsec);
+    printf("Processed %d %lu B chunks in %ld.%09ld\n", REPETITIONS, nbytes, duration.tv_sec, duration.tv_nsec);
     fprintf(logfile, "%lu\t%ld.%09ld\n", nbytes, duration.tv_sec, duration.tv_nsec);
+    fflush(logfile);
+
     free(payload);
     free(trashcan);
 }

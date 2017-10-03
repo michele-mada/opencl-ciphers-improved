@@ -42,12 +42,17 @@ int run_clinfo() {
 }
 
 
+int complain_and_quit() {
+    printf("Please provide a valid argument. (\"validation\", \"tuning\", \"clinfo\")\n");
+    exit(1);
+}
+
+
 int main(int argc, char* argv[]) {
     print_opencl_ciphers_build_info();
 
     if (argc < 2) {
-        printf("Please provide an argument. (\"validation\", \"tuning\", \"clinfo\")\n");
-        exit(1);
+        complain_and_quit();
     } else {
         if (strcmp(argv[1], "tuning") == 0) {
             return run_tuning();
@@ -55,6 +60,9 @@ int main(int argc, char* argv[]) {
             return run_validation();
         } else if (strcmp(argv[1], "clinfo") == 0) {
             return run_clinfo();
+        } else {
+            printf("Option \"%s\" not recognized.\n", argv[1]);
+            complain_and_quit();
         }
     }
 
