@@ -1,6 +1,10 @@
 /*
 
-    Single Work Item variant
+    Single Work Item aes implementation
+
+    Medium footprint
+    Minimal t-tables used
+    t-tables rotated on-the-spot
 
 */
 
@@ -192,7 +196,7 @@ __constant uchar Td4[256] = {
 #define Td3(i) ROTATEU32(Td2(i))
 
 
-#define AES_LINEAR_ENC_ROUND(t, s)                                                                                  \
+#define AES_KEY_INDEPENDENT_ENC_ROUND(t, s)                                                                         \
 {                                                                                                                   \
     (t)[0] = Te0((s)[0] >> 24) ^ Te1(((s)[1] >> 16) & 0xff) ^ Te2(((s)[2] >>  8) & 0xff) ^ Te3((s)[3] & 0xff);      \
     (t)[1] = Te0((s)[1] >> 24) ^ Te1(((s)[2] >> 16) & 0xff) ^ Te2(((s)[3] >>  8) & 0xff) ^ Te3((s)[0] & 0xff);      \
@@ -200,7 +204,7 @@ __constant uchar Td4[256] = {
     (t)[3] = Te0((s)[3] >> 24) ^ Te1(((s)[0] >> 16) & 0xff) ^ Te2(((s)[1] >>  8) & 0xff) ^ Te3((s)[2] & 0xff);      \
 }
 
-#define AES_LINEAR_ENC_ROUND_FINAL(t, s)                                       \
+#define AES_KEY_INDEPENDENT_ENC_ROUND_FINAL(t, s)                              \
 {                                                                              \
     (t)[0] = (Te2( (s)[0] >> 24)         & 0xff000000) ^                       \
              (Te3(((s)[1] >> 16) & 0xff) & 0x00ff0000) ^                       \
@@ -220,7 +224,7 @@ __constant uchar Td4[256] = {
              (Te1( (s)[2]        & 0xff) & 0x000000ff);                        \
 }
 
-#define AES_LINEAR_DEC_ROUND(t, s)                                                                                  \
+#define AES_KEY_INDEPENDENT_DEC_ROUND(t, s)                                                                         \
 {                                                                                                                   \
     (t)[0] = Td0((s)[0] >> 24) ^ Td1(((s)[3] >> 16) & 0xff) ^ Td2(((s)[2] >>  8) & 0xff) ^ Td3((s)[1] & 0xff);      \
     (t)[1] = Td0((s)[1] >> 24) ^ Td1(((s)[0] >> 16) & 0xff) ^ Td2(((s)[3] >>  8) & 0xff) ^ Td3((s)[2] & 0xff);      \
@@ -228,7 +232,7 @@ __constant uchar Td4[256] = {
     (t)[3] = Td0((s)[3] >> 24) ^ Td1(((s)[2] >> 16) & 0xff) ^ Td2(((s)[1] >>  8) & 0xff) ^ Td3((s)[0] & 0xff);      \
 }
 
-#define AES_LINEAR_DEC_ROUND_FINAL(t, s)                                       \
+#define AES_KEY_INDEPENDENT_DEC_ROUND_FINAL(t, s)                              \
 {                                                                              \
     (t)[0] = (Td4[ (s)[0] >> 24]         << 24) ^                              \
              (Td4[((s)[3] >> 16) & 0xff] << 16) ^                              \
@@ -285,16 +289,16 @@ void encrypt(__private uchar state_in[BLOCK_SIZE],
     add_round_key(temp_state1, w, 0);
 
     for (size_t r = 0; r < (num_rounds - 2) >> 1; r++) {
-        AES_LINEAR_ENC_ROUND(temp_state2, temp_state1);
+        AES_KEY_INDEPENDENT_ENC_ROUND(temp_state2, temp_state1);
         add_round_key(temp_state2, w, (r * NUM_WORDS * 2) + NUM_WORDS);
 
-        AES_LINEAR_ENC_ROUND(temp_state1, temp_state2);
+        AES_KEY_INDEPENDENT_ENC_ROUND(temp_state1, temp_state2);
         add_round_key(temp_state1, w, (r * NUM_WORDS * 2) + (NUM_WORDS * 2));
     }
-    AES_LINEAR_ENC_ROUND(temp_state2, temp_state1);
+    AES_KEY_INDEPENDENT_ENC_ROUND(temp_state2, temp_state1);
     add_round_key(temp_state2, w, (num_rounds << 2) - NUM_WORDS);
 
-    AES_LINEAR_ENC_ROUND_FINAL(temp_state1, temp_state2);
+    AES_KEY_INDEPENDENT_ENC_ROUND_FINAL(temp_state1, temp_state2);
     add_round_key(temp_state1, w, num_rounds << 2);
 
     #pragma unroll
@@ -318,15 +322,15 @@ void decrypt(__private uchar state_in[BLOCK_SIZE],
     add_round_key(temp_state1, w, 0);
 
     for (size_t r = 0; r < (num_rounds - 2) >> 1; r++) {
-        AES_LINEAR_DEC_ROUND(temp_state2, temp_state1)
+        AES_KEY_INDEPENDENT_DEC_ROUND(temp_state2, temp_state1)
         add_round_key(temp_state2, w, (r * NUM_WORDS * 2) + NUM_WORDS);
-        AES_LINEAR_DEC_ROUND(temp_state1, temp_state2)
+        AES_KEY_INDEPENDENT_DEC_ROUND(temp_state1, temp_state2)
         add_round_key(temp_state1, w, (r * NUM_WORDS * 2) + (NUM_WORDS * 2));
     }
-    AES_LINEAR_DEC_ROUND(temp_state2, temp_state1)
+    AES_KEY_INDEPENDENT_DEC_ROUND(temp_state2, temp_state1)
     add_round_key(temp_state2, w, (num_rounds << 2) - NUM_WORDS);
 
-    AES_LINEAR_DEC_ROUND_FINAL(temp_state1, temp_state2)
+    AES_KEY_INDEPENDENT_DEC_ROUND_FINAL(temp_state1, temp_state2)
     add_round_key(temp_state1, w, num_rounds << 2);
 
     #pragma unroll
