@@ -646,11 +646,46 @@ __constant uchar Td4[256] = {
 
 
 void add_round_key(__private uint* state,
-                 __global uint* restrict w,
-                 __private size_t i) {
+                   __global uint* restrict w,
+                   __private size_t i) {
     #pragma unroll
     for (size_t j = 0; j < NUM_WORDS; ++j) {
         state[j] ^= w[i + j];
+    }
+}
+
+
+void add_round_key_inv(__private uint* state,
+                       __global uint* restrict w,
+                       __private size_t i) {
+    __private uint rk[NUM_WORDS];
+    #pragma unroll
+    for (size_t h = 0; h < NUM_WORDS; ++h) {
+        rk[h] = w[h + i];
+    }
+    rk[0] =
+        Td0[Te1[(rk[0] >> 24)       ] & 0xff] ^
+        Td1[Te1[(rk[0] >> 16) & 0xff] & 0xff] ^
+        Td2[Te1[(rk[0] >>  8) & 0xff] & 0xff] ^
+        Td3[Te1[(rk[0]      ) & 0xff] & 0xff];
+    rk[1] =
+        Td0[Te1[(rk[1] >> 24)       ] & 0xff] ^
+        Td1[Te1[(rk[1] >> 16) & 0xff] & 0xff] ^
+        Td2[Te1[(rk[1] >>  8) & 0xff] & 0xff] ^
+        Td3[Te1[(rk[1]      ) & 0xff] & 0xff];
+    rk[2] =
+        Td0[Te1[(rk[2] >> 24)       ] & 0xff] ^
+        Td1[Te1[(rk[2] >> 16) & 0xff] & 0xff] ^
+        Td2[Te1[(rk[2] >>  8) & 0xff] & 0xff] ^
+        Td3[Te1[(rk[2]      ) & 0xff] & 0xff];
+    rk[3] =
+        Td0[Te1[(rk[3] >> 24)       ] & 0xff] ^
+        Td1[Te1[(rk[3] >> 16) & 0xff] & 0xff] ^
+        Td2[Te1[(rk[3] >>  8) & 0xff] & 0xff] ^
+        Td3[Te1[(rk[3]      ) & 0xff] & 0xff];
+    #pragma unroll
+    for (size_t j = 0; j < NUM_WORDS; ++j) {
+        state[j] ^= rk[j];
     }
 }
 
@@ -704,12 +739,12 @@ void decrypt(__private uchar state_in[BLOCK_SIZE],
 
     for (size_t r = 0; r < (num_rounds - 2) >> 1; r++) {
         AES_KEY_INDEPENDENT_DEC_ROUND(temp_state2, temp_state1)
-        add_round_key(temp_state2, w, (r * NUM_WORDS * 2) + NUM_WORDS);
+        add_round_key_inv(temp_state2, w, (r * NUM_WORDS * 2) + NUM_WORDS);
         AES_KEY_INDEPENDENT_DEC_ROUND(temp_state1, temp_state2)
-        add_round_key(temp_state1, w, (r * NUM_WORDS * 2) + (NUM_WORDS * 2));
+        add_round_key_inv(temp_state1, w, (r * NUM_WORDS * 2) + (NUM_WORDS * 2));
     }
     AES_KEY_INDEPENDENT_DEC_ROUND(temp_state2, temp_state1)
-    add_round_key(temp_state2, w, (num_rounds << 2) - NUM_WORDS);
+    add_round_key_inv(temp_state2, w, (num_rounds << 2) - NUM_WORDS);
 
     AES_KEY_INDEPENDENT_DEC_ROUND_FINAL(temp_state1, temp_state2)
     add_round_key(temp_state1, w, num_rounds << 2);

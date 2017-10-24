@@ -9,7 +9,7 @@
 #define KEYLENGTH 8
 
 
-int validate_des_ecb(OpenCLEnv *global_env, TestDatum *datum) \
+TestResult validate_des_ecb(OpenCLEnv *global_env, TestDatum *datum) \
     VALIDATION_DECORATOR({
         des_context K;
         opencl_des_set_encrypt_key((unsigned char*) datum->key, KEYLENGTH, &K);
@@ -18,11 +18,12 @@ int validate_des_ecb(OpenCLEnv *global_env, TestDatum *datum) \
     })
 
 static int run_all_cases_ecb(OpenCLEnv *global_env) {
-    int succeeded = 0;
+    TestResult succeeded = {0, 0, 0};
+    int all_cases = NUM_CASES_ECB;
     printf("Testing DES ECB... ");
-    succeeded = test_all_cases(global_env, &validate_des_ecb, des_ecb_test_cases, NUM_CASES_ECB);
-    printf("passed: %d/%d\n", succeeded, NUM_CASES_ECB);
-    return succeeded == NUM_CASES_ECB;
+    TESTRESULT_ADD(succeeded, test_all_cases(global_env, &validate_des_ecb, des_ecb_test_cases, NUM_CASES_ECB));
+    printf("passed (encryptions, decryptions, total cases): %d / %d / %d\n", succeeded.encryptions_successful, succeeded.decryptions_successful, all_cases);
+    return (succeeded.encryptions_successful == all_cases) && (succeeded.decryptions_successful == all_cases);
 }
 
 int test_des(OpenCLEnv* global_env) {

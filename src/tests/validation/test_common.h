@@ -20,35 +20,54 @@ typedef struct TestDatum {
 } TestDatum;
 
 
+typedef struct TestResult {
+    int num_tests_done;
+    int encryptions_successful;
+    int decryptions_successful;
+} TestResult;
+
+
+#define TESTRESULT_ADD(addto, addfrom)                                          \
+{                                                                               \
+    addto.num_tests_done += addfrom.num_tests_done;                             \
+    addto.encryptions_successful += addfrom.encryptions_successful;             \
+    addto.decryptions_successful += addfrom.decryptions_successful;             \
+}
+
+
 #define VALIDATION_DECORATOR(body)                                                                              \
 {                                                                                                               \
-    int success = 0;                                                                                            \
+    TestResult result = {1, 0, 0};                                                                              \
     uint8_t *generated_ctx = (uint8_t*) aligned_alloc(AOCL_ALIGNMENT, sizeof(uint8_t) * datum->ctx_length);     \
     uint8_t *generated_ptx = (uint8_t*) aligned_alloc(AOCL_ALIGNMENT, sizeof(uint8_t) * datum->ptx_length);     \
                                                                                                                 \
     body                                                                                                        \
                                                                                                                 \
-    success = (memcmp(datum->ctx, generated_ctx, datum->ctx_length) == 0) &&                                    \
-               (memcmp(datum->ptx, generated_ptx, datum->ptx_length) == 0);                                     \
+    if (memcmp(datum->ctx, generated_ctx, datum->ctx_length) == 0) {                                            \
+        result.encryptions_successful = 1;                                                                      \
+    }                                                                                                           \
+    if (memcmp(datum->ptx, generated_ptx, datum->ptx_length) == 0) {                                            \
+        result.decryptions_successful = 1;                                                                      \
+    }                                                                                                           \
                                                                                                                 \
     free(generated_ctx);                                                                                        \
     free(generated_ptx);                                                                                        \
                                                                                                                 \
-    return success;                                                                                             \
+    return result;                                                                                              \
 }
 
 
-static inline int test_all_cases(OpenCLEnv* global_env,
-                                 int (*validator_fun)(OpenCLEnv*, TestDatum*),
-                                 TestDatum* cases_array,
-                                 size_t num_cases) {
-    int succeeded = 0;
+static inline TestResult test_all_cases(OpenCLEnv* global_env,
+                                        TestResult (*validator_fun)(OpenCLEnv*, TestDatum*),
+                                        TestDatum* cases_array,
+                                        size_t num_cases) {
+    TestResult total_result = {0, 0, 0};
+    TestResult partial_result;
     for (size_t step=0; step<num_cases; step++) {
-        if (validator_fun(global_env, cases_array + step)) {
-            succeeded++;
-        }
+        partial_result = validator_fun(global_env, cases_array + step);
+        TESTRESULT_ADD(total_result, partial_result);
     }
-    return succeeded;
+    return total_result;
 }
 
 

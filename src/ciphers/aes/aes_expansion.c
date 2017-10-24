@@ -111,29 +111,4 @@ void key_expansion_decrypt(const uint8_t* key, uint32_t* w, int Nk, int Nb, int 
         temp = rk[i + 2]; rk[i + 2] = rk[j + 2]; rk[j + 2] = temp;
         temp = rk[i + 3]; rk[i + 3] = rk[j + 3]; rk[j + 3] = temp;
     }
-
-    /* apply the inverse MixColumn transform to all round keys but the first and the last: */
-    for (i = 1; i < Nr; i++) {
-        rk += 4;
-        rk[0] =
-            Td0[Te1[(rk[0] >> 24)       ] & 0xff] ^
-            Td1[Te1[(rk[0] >> 16) & 0xff] & 0xff] ^
-            Td2[Te1[(rk[0] >>  8) & 0xff] & 0xff] ^
-            Td3[Te1[(rk[0]      ) & 0xff] & 0xff];
-        rk[1] =
-            Td0[Te1[(rk[1] >> 24)       ] & 0xff] ^
-            Td1[Te1[(rk[1] >> 16) & 0xff] & 0xff] ^
-            Td2[Te1[(rk[1] >>  8) & 0xff] & 0xff] ^
-            Td3[Te1[(rk[1]      ) & 0xff] & 0xff];
-        rk[2] =
-            Td0[Te1[(rk[2] >> 24)       ] & 0xff] ^
-            Td1[Te1[(rk[2] >> 16) & 0xff] & 0xff] ^
-            Td2[Te1[(rk[2] >>  8) & 0xff] & 0xff] ^
-            Td3[Te1[(rk[2]      ) & 0xff] & 0xff];
-        rk[3] =
-            Td0[Te1[(rk[3] >> 24)       ] & 0xff] ^
-            Td1[Te1[(rk[3] >> 16) & 0xff] & 0xff] ^
-            Td2[Te1[(rk[3] >>  8) & 0xff] & 0xff] ^
-            Td3[Te1[(rk[3]      ) & 0xff] & 0xff];
-    }
 }

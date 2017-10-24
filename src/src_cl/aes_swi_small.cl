@@ -9,9 +9,15 @@
 */
 
 
-#define NUM_WORDS 4
+#define NUM_WORDS 4u
+#define NUM_BYTES 4u
 
-#define BLOCK_SIZE 16
+#define AES_NUM_COLUMNS 4u
+#define AES_COLUMN_SIZE 4u
+
+#define BLOCK_SIZE 16u
+
+#define AES_REDUCE_BYTE 0x1Bu
 
 
 __constant uchar sbox[256] =
@@ -54,6 +60,9 @@ __constant uchar sbox_inv[256] =
    0x17, 0x2B, 0x04, 0x7E, 0xBA, 0x77, 0xD6, 0x26, 0xE1, 0x69, 0x14, 0x63, 0x55, 0x21, 0x0C, 0x7D
 };
 
+#define AES_MUL2(a) (((a) << 1u) ^ ((-((a) >= 0x80u)) & AES_REDUCE_BYTE))
+#define INV_U32(i) ((((i) & 0xFF000000) >> 24) | (((i) & 0x00FF0000) >> 8) | (((i) & 0x0000FF00) << 8) | (((i) & 0x000000FF) << 24))
+
 void sub_bytes(__private uchar* s){
     #pragma unroll
     for (int i = 0; i < BLOCK_SIZE; ++i) {
@@ -69,32 +78,58 @@ void sub_bytes_inv(__private uchar* s){
 }
 
 void mix_columns(__private uchar* arr) {
+    uchar byte_value, byte_value_2;
+    __private uchar temp_column[BLOCK_SIZE];
     #pragma unroll
-    for (int i = 0; i < NUM_WORDS; ++i) {
-        __private uchar *r = arr + NUM_WORDS*i;
-
-        uchar a[NUM_WORDS];
-        uchar b[NUM_WORDS];
-
-        uchar h;
-
+    for (size_t col = 0; col < AES_NUM_COLUMNS; col++) {
         #pragma unroll
-        for(int c = 0; c < NUM_WORDS; ++c) {
-            a[c] = r[c];
-            h = (uchar)((signed char)r[c] >> 7);
-            b[c] = r[c] << 1;
-            b[c] ^= 0x1B & h;
+        for (size_t i = 0; i < AES_COLUMN_SIZE; i++) {
+            temp_column[i] = 0;
         }
-
-        r[0] = b[0] ^ a[3] ^ a[2] ^ b[1] ^ a[1];
-        r[1] = b[1] ^ a[0] ^ a[3] ^ b[2] ^ a[2];
-        r[2] = b[2] ^ a[1] ^ a[0] ^ b[3] ^ a[3];
-        r[3] = b[3] ^ a[2] ^ a[1] ^ b[0] ^ a[0];
+        //printf("\ncolumn: ");
+        #pragma unroll
+        for (size_t j = 0; j < AES_COLUMN_SIZE; j++) {
+            byte_value = arr[col * AES_COLUMN_SIZE + j];
+            //printf("%d ", col + AES_COLUMN_SIZE * j);
+            byte_value_2 = AES_MUL2(byte_value);
+            temp_column[(j + 0 ) % AES_COLUMN_SIZE] ^= byte_value_2;
+            temp_column[(j + 1u) % AES_COLUMN_SIZE] ^= byte_value;
+            temp_column[(j + 2u) % AES_COLUMN_SIZE] ^= byte_value;
+            temp_column[(j + 3u) % AES_COLUMN_SIZE] ^= byte_value ^ byte_value_2;
+        }
+        //printf("\n");
+        #pragma unroll
+        for (size_t k = 0; k < AES_COLUMN_SIZE; k++) {
+            arr[col * AES_COLUMN_SIZE + k] = temp_column[k];
+        }
     }
 }
 
 void mix_columns_inv(__private uchar* arr) {
-
+    uchar byte_value, byte_value_2, byte_value_4, byte_value_8;
+    __private uchar temp_column[BLOCK_SIZE];
+    #pragma unroll
+    for (size_t col = 0; col < AES_NUM_COLUMNS; col++) {
+        #pragma unroll
+        for (size_t i = 0; i < AES_COLUMN_SIZE; i++) {
+            temp_column[i] = 0;
+        }
+        #pragma unroll
+        for (size_t j = 0; j < AES_COLUMN_SIZE; j++) {
+            byte_value = arr[col * AES_COLUMN_SIZE + j];
+            byte_value_2 = AES_MUL2(byte_value);
+            byte_value_4 = AES_MUL2(byte_value_2);
+            byte_value_8 = AES_MUL2(byte_value_4);
+            temp_column[(j + 0 ) % AES_COLUMN_SIZE] ^= byte_value_8 ^ byte_value_4 ^ byte_value_2;  // 14 = 1110b
+            temp_column[(j + 1u) % AES_COLUMN_SIZE] ^= byte_value_8 ^ byte_value;                   //  9 = 1001b
+            temp_column[(j + 2u) % AES_COLUMN_SIZE] ^= byte_value_8 ^ byte_value_4 ^ byte_value;    // 13 = 1101b
+            temp_column[(j + 3u) % AES_COLUMN_SIZE] ^= byte_value_8 ^ byte_value_2 ^ byte_value; // 11 = 1011b
+        }
+        #pragma unroll
+        for (size_t k = 0; k < AES_COLUMN_SIZE; k++) {
+            arr[col * AES_COLUMN_SIZE + k] = temp_column[k];
+        }
+    }
 }
 
 void shift_rows(__private uchar* s) {
@@ -141,12 +176,12 @@ void shift_rows_inv(__private uchar* s) {
 }
 
 void add_round_key(__private uchar* state,
-                 __global uint* restrict w,
-                 __private size_t i) {
+                   __global uint* restrict w,
+                   __private size_t i) {
     uint* s = (uint*) state;
     #pragma unroll
-    for (size_t j = 0; j < NUM_WORDS; ++j) {
-        s[j] ^= w[i + j];
+    for (size_t j = 0; j < NUM_BYTES; ++j) {
+        s[j] ^= INV_U32(w[i + j]);
     }
 }
 
@@ -156,28 +191,27 @@ void encrypt(__private uchar state[BLOCK_SIZE],
              unsigned int num_rounds) {
     add_round_key(state, w, 0);
 
-    for (size_t r = 0; r < num_rounds - 1; r++) {
+    for (size_t r = 1; r < num_rounds; r++) {
         AES_KEY_INDEPENDENT_ENC_ROUND(state);
-        add_round_key(state, w, (r * NUM_WORDS) + NUM_WORDS);
+        add_round_key(state, w, r * NUM_BYTES);
     }
 
     AES_KEY_INDEPENDENT_ENC_ROUND_FINAL(state);
-    add_round_key(state, w, num_rounds * NUM_WORDS);
+    add_round_key(state, w, num_rounds * NUM_BYTES);
 }
 
 void decrypt(__private uchar state[BLOCK_SIZE],
              __global uint* restrict w,
              unsigned int num_rounds) {
-    add_round_key(state, w, num_rounds * NUM_WORDS);
+    add_round_key(state, w, 0);
     AES_KEY_INDEPENDENT_DEC_ROUND_INITIAL(state);
 
-    for (size_t r = 0; r < num_rounds - 1; r++) {
-        size_t r_inv = num_rounds - 2 - r;
-        add_round_key(state, w, (r_inv * NUM_WORDS) + NUM_WORDS);
+    for (size_t r = 1; r < num_rounds; r++) {
+        add_round_key(state, w, r * NUM_WORDS);
         AES_KEY_INDEPENDENT_DEC_ROUND(state);
     }
 
-    add_round_key(state, w, 0);
+    add_round_key(state, w, num_rounds * NUM_WORDS);
 }
 
 
