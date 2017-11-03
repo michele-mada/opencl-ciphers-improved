@@ -7,6 +7,7 @@
 
 */
 
+#define MAX_EXKEY_SIZE_WORDS 60
 
 #define NUM_WORDS 4
 
@@ -646,7 +647,7 @@ __constant uchar Td4[256] = {
 
 
 void add_round_key(__private uint* state,
-                   __global uint* restrict w,
+                   __private uint* w,
                    __private size_t i) {
     #pragma unroll
     for (size_t j = 0; j < NUM_WORDS; ++j) {
@@ -654,44 +655,36 @@ void add_round_key(__private uint* state,
     }
 }
 
-
-void add_round_key_inv(__private uint* state,
-                       __global uint* restrict w,
-                       __private size_t i) {
-    __private uint rk[NUM_WORDS];
+void finalize_inverted_key(__private uint* w, unsigned int num_rounds) {
     #pragma unroll
-    for (size_t h = 0; h < NUM_WORDS; ++h) {
-        rk[h] = w[h + i];
-    }
-    rk[0] =
-        Td0[Te1[(rk[0] >> 24)       ] & 0xff] ^
-        Td1[Te1[(rk[0] >> 16) & 0xff] & 0xff] ^
-        Td2[Te1[(rk[0] >>  8) & 0xff] & 0xff] ^
-        Td3[Te1[(rk[0]      ) & 0xff] & 0xff];
-    rk[1] =
-        Td0[Te1[(rk[1] >> 24)       ] & 0xff] ^
-        Td1[Te1[(rk[1] >> 16) & 0xff] & 0xff] ^
-        Td2[Te1[(rk[1] >>  8) & 0xff] & 0xff] ^
-        Td3[Te1[(rk[1]      ) & 0xff] & 0xff];
-    rk[2] =
-        Td0[Te1[(rk[2] >> 24)       ] & 0xff] ^
-        Td1[Te1[(rk[2] >> 16) & 0xff] & 0xff] ^
-        Td2[Te1[(rk[2] >>  8) & 0xff] & 0xff] ^
-        Td3[Te1[(rk[2]      ) & 0xff] & 0xff];
-    rk[3] =
-        Td0[Te1[(rk[3] >> 24)       ] & 0xff] ^
-        Td1[Te1[(rk[3] >> 16) & 0xff] & 0xff] ^
-        Td2[Te1[(rk[3] >>  8) & 0xff] & 0xff] ^
-        Td3[Te1[(rk[3]      ) & 0xff] & 0xff];
-    #pragma unroll
-    for (size_t j = 0; j < NUM_WORDS; ++j) {
-        state[j] ^= rk[j];
+    for (size_t i = 1; i < num_rounds; i++) {
+        __private uint* rk = w + (i*4);
+        rk[0] =
+            Td0[Te1[(rk[0] >> 24)       ] & 0xff] ^
+            Td1[Te1[(rk[0] >> 16) & 0xff] & 0xff] ^
+            Td2[Te1[(rk[0] >>  8) & 0xff] & 0xff] ^
+            Td3[Te1[(rk[0]      ) & 0xff] & 0xff];
+        rk[1] =
+            Td0[Te1[(rk[1] >> 24)       ] & 0xff] ^
+            Td1[Te1[(rk[1] >> 16) & 0xff] & 0xff] ^
+            Td2[Te1[(rk[1] >>  8) & 0xff] & 0xff] ^
+            Td3[Te1[(rk[1]      ) & 0xff] & 0xff];
+        rk[2] =
+            Td0[Te1[(rk[2] >> 24)       ] & 0xff] ^
+            Td1[Te1[(rk[2] >> 16) & 0xff] & 0xff] ^
+            Td2[Te1[(rk[2] >>  8) & 0xff] & 0xff] ^
+            Td3[Te1[(rk[2]      ) & 0xff] & 0xff];
+        rk[3] =
+            Td0[Te1[(rk[3] >> 24)       ] & 0xff] ^
+            Td1[Te1[(rk[3] >> 16) & 0xff] & 0xff] ^
+            Td2[Te1[(rk[3] >>  8) & 0xff] & 0xff] ^
+            Td3[Te1[(rk[3]      ) & 0xff] & 0xff];
     }
 }
 
 
 void encrypt(__private uchar state_in[BLOCK_SIZE],
-             __global uint* restrict w,
+             __private uint* w,
              __private uchar state_out[BLOCK_SIZE],
              unsigned int num_rounds) {
 
@@ -701,7 +694,6 @@ void encrypt(__private uchar state_in[BLOCK_SIZE],
     for (size_t chunk=0; chunk<NUM_WORDS; chunk++) {
         temp_state1[chunk] = GETU32((state_in + (chunk << 2)));
     }
-
     add_round_key(temp_state1, w, 0);
 
     for (size_t r = 0; r < (num_rounds - 2) >> 1; r++) {
@@ -724,7 +716,7 @@ void encrypt(__private uchar state_in[BLOCK_SIZE],
 }
 
 void decrypt(__private uchar state_in[BLOCK_SIZE],
-             __global uint* restrict w,
+             __private uint* w,
              __private uchar state_out[BLOCK_SIZE],
              unsigned int num_rounds) {
 
@@ -739,12 +731,12 @@ void decrypt(__private uchar state_in[BLOCK_SIZE],
 
     for (size_t r = 0; r < (num_rounds - 2) >> 1; r++) {
         AES_KEY_INDEPENDENT_DEC_ROUND(temp_state2, temp_state1)
-        add_round_key_inv(temp_state2, w, (r * NUM_WORDS * 2) + NUM_WORDS);
+        add_round_key(temp_state2, w, (r * NUM_WORDS * 2) + NUM_WORDS);
         AES_KEY_INDEPENDENT_DEC_ROUND(temp_state1, temp_state2)
-        add_round_key_inv(temp_state1, w, (r * NUM_WORDS * 2) + (NUM_WORDS * 2));
+        add_round_key(temp_state1, w, (r * NUM_WORDS * 2) + (NUM_WORDS * 2));
     }
     AES_KEY_INDEPENDENT_DEC_ROUND(temp_state2, temp_state1)
-    add_round_key_inv(temp_state2, w, (num_rounds << 2) - NUM_WORDS);
+    add_round_key(temp_state2, w, (num_rounds << 2) - NUM_WORDS);
 
     AES_KEY_INDEPENDENT_DEC_ROUND_FINAL(temp_state1, temp_state2)
     add_round_key(temp_state1, w, num_rounds << 2);
@@ -752,6 +744,14 @@ void decrypt(__private uchar state_in[BLOCK_SIZE],
     #pragma unroll
     for (size_t chunk=0; chunk<NUM_WORDS; chunk++) {
         PUT32((state_out + (chunk << 2)), temp_state1[chunk]);
+    }
+}
+
+
+void copy_extkey_to_local(__private uint* local_w, __global uint* restrict w) {
+    #pragma unroll
+    for (size_t i = 0; i < MAX_EXKEY_SIZE_WORDS; ++i) {
+        local_w[i] = w[i];
     }
 }
 
@@ -764,6 +764,8 @@ __kernel void aesEncCipher(__global uchar* restrict in,
                            unsigned int input_size) {
     __private uchar state_in[BLOCK_SIZE];
     __private uchar state_out[BLOCK_SIZE];
+    __private uint local_w[MAX_EXKEY_SIZE_WORDS];
+    copy_extkey_to_local(local_w, w);
 
     for (size_t blockid=0; blockid < input_size / BLOCK_SIZE; blockid++) {
        #pragma unroll
@@ -771,7 +773,7 @@ __kernel void aesEncCipher(__global uchar* restrict in,
            size_t offset = blockid * BLOCK_SIZE + i;
            state_in[i] = in[offset];
        }
-       encrypt(state_in, w, state_out, num_rounds);
+       encrypt(state_in, local_w, state_out, num_rounds);
        #pragma unroll
        for(size_t i = 0; i < BLOCK_SIZE; i++) {
            size_t offset = blockid * BLOCK_SIZE + i;
@@ -788,6 +790,9 @@ __kernel void aesDecCipher(__global uchar* restrict in,
                            unsigned int input_size) {
     __private uchar state_in[BLOCK_SIZE];
     __private uchar state_out[BLOCK_SIZE];
+    __private uint local_w[MAX_EXKEY_SIZE_WORDS];
+    copy_extkey_to_local(local_w, w);
+    finalize_inverted_key(local_w, num_rounds);
 
     for (size_t blockid=0; blockid < input_size / BLOCK_SIZE; blockid++) {
         #pragma unroll
@@ -795,7 +800,7 @@ __kernel void aesDecCipher(__global uchar* restrict in,
             size_t offset = blockid * BLOCK_SIZE + i;
             state_in[i] = in[offset];
         }
-        decrypt(state_in, w, state_out, num_rounds);
+        decrypt(state_in, local_w, state_out, num_rounds);
         #pragma unroll
         for(size_t i = 0; i < BLOCK_SIZE; i++) {
             size_t offset = blockid * BLOCK_SIZE + i;
@@ -826,6 +831,8 @@ __kernel void aesCipherCtr(__global uchar* restrict in,
                            unsigned int input_size) {
     __private uchar counter[BLOCK_SIZE];
     __private uchar outCipher[BLOCK_SIZE];
+    __private uint local_w[MAX_EXKEY_SIZE_WORDS];
+    copy_extkey_to_local(local_w, w);
     /* initialize counter */
     #pragma unroll
     for (size_t i = 0; i < BLOCK_SIZE; i++) {
@@ -833,7 +840,7 @@ __kernel void aesCipherCtr(__global uchar* restrict in,
     }
 
     for (size_t blockid=0; blockid < input_size / BLOCK_SIZE; blockid++) {
-        encrypt(counter, w, outCipher, num_rounds);
+        encrypt(counter, local_w, outCipher, num_rounds);
         #pragma unroll
         for (size_t i = 0; i < BLOCK_SIZE; i++) {
             size_t offset = blockid * BLOCK_SIZE + i;

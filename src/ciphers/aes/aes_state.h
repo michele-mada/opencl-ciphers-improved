@@ -10,7 +10,7 @@
 #include <CL/cl.h>
 #endif
 
-
+#define MAX_EXKEY_SIZE_WORDS 60
 #define AES_IV_SIZE 16
 #define KEYSIZE_TO_Nr(keysize) (((keysize) / 32) + 6)
 #define Nr_TO_EXKEYSIZE(Nr) ((Nr + 1) * 4)
@@ -25,8 +25,8 @@ typedef struct AesState {
 } AesState;
 
 typedef struct {
-    uint32_t expanded_key_encrypt[60];
-    uint32_t expanded_key_decrypt[60];
+    uint32_t expanded_key_encrypt[MAX_EXKEY_SIZE_WORDS];
+    uint32_t expanded_key_decrypt[MAX_EXKEY_SIZE_WORDS];
     size_t ex_key_dim;
     uint8_t iv[AES_IV_SIZE];
 } aes_context;
