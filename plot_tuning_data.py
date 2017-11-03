@@ -1,10 +1,11 @@
 import matplotlib.pyplot as plt
+import sys
 import numpy as np
 
 repetitions = 100
 convert_to_megs = 1.0/1048576
 
-with open("autotune.txt", "r") as fp:
+with open(sys.argv[1] or "autotune.txt", "r") as fp:
     all_data = np.loadtxt(fp, delimiter="\t", skiprows=1)
 
 block_sizes = all_data[:,0]
