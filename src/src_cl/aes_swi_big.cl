@@ -656,7 +656,6 @@ void add_round_key(__private uint* state,
 }
 
 void finalize_inverted_key(__private uint* w, unsigned int num_rounds) {
-    #pragma unroll
     for (size_t i = 1; i < num_rounds; i++) {
         __private uint* rk = w + (i*4);
         rk[0] =
