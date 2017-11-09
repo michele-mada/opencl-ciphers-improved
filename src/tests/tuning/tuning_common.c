@@ -16,13 +16,7 @@ uint8_t* alloc_random_payload(size_t nbytes) {
         exit(4);
     }
 
-    size_t offset = 0;
-
-    offset += fread(payload+offset, sizeof(uint8_t), nbytes-offset, fp);
-    while (offset < nbytes) {
-        offset += fread(payload+offset, sizeof(uint8_t), nbytes-offset, fp);
-    }
-
+    fread(payload, sizeof(uint8_t), nbytes, fp);
     fclose(fp);
 
     return payload;

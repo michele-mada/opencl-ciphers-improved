@@ -43,7 +43,7 @@ int run_clinfo() {
 
 
 int complain_and_quit() {
-    printf("Please provide a valid argument. (\"validation\", \"tuning\", \"clinfo\")\n");
+    printf("Please provide a valid argument. (\"validation\", \"tuning\", \"clinfo\", \"all\")\n");
     exit(1);
 }
 
@@ -60,6 +60,10 @@ int main(int argc, char* argv[]) {
             return run_validation();
         } else if (strcmp(argv[1], "clinfo") == 0) {
             return run_clinfo();
+        } else if (strcmp(argv[1], "all") == 0) {
+            run_clinfo();
+            run_validation();
+            return run_tuning();
         } else {
             printf("Option \"%s\" not recognized.\n", argv[1]);
             complain_and_quit();
