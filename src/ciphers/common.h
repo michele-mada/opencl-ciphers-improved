@@ -32,5 +32,4 @@ static inline void execute_meth_kernel(CipherMethod* meth) {
 #define KERNEL_PARAM_ERRORCHECK() if (ret != CL_SUCCESS) error_fatal("Failed to set kernel parameter %d, err = %s (%d)\n", param_id-1, get_cl_error_string(ret), ret);
 
 
-
 #endif

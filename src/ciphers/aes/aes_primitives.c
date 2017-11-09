@@ -21,7 +21,6 @@
 
 
 void prepare_buffers_aes(CipherFamily* aes_fam, size_t input_size, size_t ex_key_size) {
-    cl_int ret;
     cl_context context = aes_fam->environment->context;
     AesState *state = (AesState*) aes_fam->state;
     prepare_buffer(context, &(state->in), CL_MEM_READ_WRITE, input_size * sizeof(uint8_t));
@@ -37,6 +36,7 @@ void load_aes_input_key_iv(CipherFamily* aes_fam,
                            uint8_t* iv,
                            int is_decrypt) {
     AesState *state = (AesState*) aes_fam->state;
+    cl_int ret;
     uint32_t* key;
 
     if (is_decrypt) {
@@ -45,19 +45,22 @@ void load_aes_input_key_iv(CipherFamily* aes_fam,
         key = context->expanded_key_encrypt;
     }
 
-    clEnqueueWriteBuffer(aes_fam->environment->command_queue,
-                         state->exKey,
-                         CL_TRUE, 0, context->ex_key_dim * sizeof(uint32_t),
-                         key, 0, NULL, NULL);
-	clEnqueueWriteBuffer(aes_fam->environment->command_queue,
-                         state->in,
-                         CL_TRUE, 0, input_size * sizeof(uint8_t),
-                         input, 0, NULL, NULL);
+    ret = clEnqueueWriteBuffer(aes_fam->environment->command_queue,
+                               state->exKey,
+                               CL_TRUE, 0, context->ex_key_dim * sizeof(uint32_t),
+                               key, 0, NULL, NULL);
+    if (ret != CL_SUCCESS) error_fatal("Failed to enqueue clEnqueueWriteBuffer (state->exKey) . Error = %s (%d)\n", get_cl_error_string(ret), ret);
+	ret = clEnqueueWriteBuffer(aes_fam->environment->command_queue,
+                               state->in,
+                               CL_TRUE, 0, input_size * sizeof(uint8_t),
+                               input, 0, NULL, NULL);
+    if (ret != CL_SUCCESS) error_fatal("Failed to enqueue clEnqueueWriteBuffer (state->in) . Error = %s (%d)\n", get_cl_error_string(ret), ret);
     if (iv != NULL) {
-        clEnqueueWriteBuffer(aes_fam->environment->command_queue,
-                             state->iv,
-                             CL_TRUE, 0, AES_IV_SIZE * sizeof(uint8_t),
-                             iv, 0, NULL, NULL);
+        ret = clEnqueueWriteBuffer(aes_fam->environment->command_queue,
+                                   state->iv,
+                                   CL_TRUE, 0, AES_IV_SIZE * sizeof(uint8_t),
+                                   iv, 0, NULL, NULL);
+        if (ret != CL_SUCCESS) error_fatal("Failed to enqueue clEnqueueWriteBuffer (state->iv) . Error = %s (%d)\n", get_cl_error_string(ret), ret);    
     }
 }
 
