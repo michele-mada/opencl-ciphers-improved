@@ -50,12 +50,15 @@ void tuning_step(OpenCLEnv* global_env, size_t nbytes, FILE *logfile) {
     struct timespec duration;
     aes_context K;
     opencl_aes_128_set_encrypt_key((unsigned char*) key_128, 128, &K);
+    printf("Allocating %luB x 2...\r", nbytes);
     uint8_t *payload = alloc_random_payload(nbytes);
     uint8_t *trashcan = (uint8_t*) aligned_alloc(AOCL_ALIGNMENT, sizeof(uint8_t) * nbytes);
 
+    printf("Testing %luB block x %d repetitions...\r", nbytes, REPETITIONS);
     utility_function(global_env, payload, nbytes, REPETITIONS, trashcan, &K, &duration);
 
-    printf("Processed %d %lu B chunks in %ld.%09ld\n", REPETITIONS, nbytes, duration.tv_sec, duration.tv_nsec);
+    printf("Processed %d %lu B chunks in %ld.%09ld           \n",
+            REPETITIONS, nbytes, duration.tv_sec, duration.tv_nsec);
     fprintf(logfile, "%lu\t%ld.%09ld\n", nbytes, duration.tv_sec, duration.tv_nsec);
     fflush(logfile);
 

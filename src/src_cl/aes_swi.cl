@@ -1,1 +1,1 @@
-./aes_swi_medium.cl
+./aes_swi_big.cl
