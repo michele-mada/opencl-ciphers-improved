@@ -43,17 +43,17 @@ void utility_function(OpenCLEnv* global_env,
 void tuning_step(OpenCLEnv* global_env, size_t nbytes, FILE *logfile) {
     struct timespec duration;
     aes_context K;
-    printf("Host-side key schedule...\r", nbytes); fflush(stdin);
+    printf("Host-side key schedule...\r", nbytes); fflush(stdout);
     opencl_aes_128_set_encrypt_key((unsigned char*) key_128, 128, &K);
-    printf("Allocating %luB x 2...\r", nbytes); fflush(stdin);
+    printf("Allocating %luB x 2...\r", nbytes); fflush(stdout);
     uint8_t *payload = alloc_random_payload(nbytes);
     uint8_t *trashcan = (uint8_t*) aligned_alloc(AOCL_ALIGNMENT, sizeof(uint8_t) * nbytes);
 
-    printf("Testing %luB block x %d repetitions...\r", nbytes, REPETITIONS); fflush(stdin);
+    printf("Testing %luB block x %d repetitions...\r", nbytes, REPETITIONS); fflush(stdout);
     utility_function(global_env, payload, nbytes, REPETITIONS, trashcan, &K, &duration);
 
     printf("Processed %d %lu B chunks in %ld.%09ld           \n",
-            REPETITIONS, nbytes, duration.tv_sec, duration.tv_nsec); fflush(stdin);
+            REPETITIONS, nbytes, duration.tv_sec, duration.tv_nsec); fflush(stdout);
     fprintf(logfile, "%lu\t%ld.%09ld\n", nbytes, duration.tv_sec, duration.tv_nsec);
     fflush(logfile);
 
@@ -69,7 +69,7 @@ int auto_tune(OpenCLEnv* global_env, size_t stride, const char* logfile_name) {
 
     logfile = fopen(LOGFILE, "w");
     fprintf(logfile, "# block_size (B)\trun_time (S)\t(with REPETITIONS=%d)\n", REPETITIONS);
-    printf("Logging to file: %s\n", LOGFILE); fflush(stdin);
+    printf("Logging to file: %s\n", LOGFILE); fflush(stdout);
 
     for (size_t nbytes=stride; nbytes<=PAYLOAD_MAX_SIZE; nbytes+=stride) {
         tuning_step(global_env, nbytes, logfile);
