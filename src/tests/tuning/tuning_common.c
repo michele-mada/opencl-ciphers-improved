@@ -5,12 +5,24 @@
 
 uint8_t* alloc_random_payload(size_t nbytes) {
     uint8_t *payload = (uint8_t*) aligned_alloc(AOCL_ALIGNMENT, sizeof(uint8_t) * nbytes);
-    if (payload == NULL) return NULL;
+    if (payload == NULL) {
+        printf("Cannot allocate payload! (size=%lu, align=%u)\n", sizeof(uint8_t) * nbytes, AOCL_ALIGNMENT);
+        exit(3);
+    }
 
     FILE *fp = fopen(RANDOM_SOURCE, "rb");
-    if (fp == NULL) return NULL;
+    if (fp == NULL) {
+        printf("Cannot open random source! (file=%s, mode=rb)\n", RANDOM_SOURCE);
+        exit(4);
+    }
 
-    fread(payload, sizeof(uint8_t), nbytes, fp);
+    size_t offset = 0;
+
+    offset += fread(payload+offset, sizeof(uint8_t), nbytes-offset, fp);
+    while (offset < nbytes) {
+        offset += fread(payload+offset, sizeof(uint8_t), nbytes-offset, fp);
+    }
+
     fclose(fp);
 
     return payload;
