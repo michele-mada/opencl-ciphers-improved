@@ -49,6 +49,7 @@ void utility_function(OpenCLEnv* global_env,
 void tuning_step(OpenCLEnv* global_env, size_t nbytes, FILE *logfile) {
     struct timespec duration;
     aes_context K;
+    printf("Host-side key schedule...\r", nbytes);
     opencl_aes_128_set_encrypt_key((unsigned char*) key_128, 128, &K);
     printf("Allocating %luB x 2...\r", nbytes);
     uint8_t *payload = alloc_random_payload(nbytes);
@@ -74,6 +75,7 @@ int auto_tune(OpenCLEnv* global_env, size_t stride, const char* logfile_name) {
 
     logfile = fopen(LOGFILE, "w");
     fprintf(logfile, "# block_size (B)\trun_time (S)\t(with REPETITIONS=%d)\n", REPETITIONS);
+    printf("Logging to file: %s\n", LOGFILE);
 
     for (size_t nbytes=stride; nbytes<=PAYLOAD_MAX_SIZE; nbytes+=stride) {
         tuning_step(global_env, nbytes, logfile);
