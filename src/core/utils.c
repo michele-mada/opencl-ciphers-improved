@@ -4,7 +4,7 @@
 
 void load_CL_program_source(char* fileName, unsigned char** source_str, size_t* source_size) {
     FILE *fp = fopen(fileName, "r");
-    if (!fp) error_fatal("Failed to load program source\n");
+    if (!fp) error_fatal("Failed to load program source (%s)\n", strerror(errno));
     fseek(fp,0,SEEK_END);
     *source_size = ftell(fp);
     *source_str = (unsigned char*) malloc(*source_size * sizeof(unsigned char));
@@ -15,7 +15,7 @@ void load_CL_program_source(char* fileName, unsigned char** source_str, size_t* 
 
 void load_CL_program_binary(char* fileName, unsigned char** binary_str, size_t* binary_size) {
     FILE *fp = fopen(fileName, "rb");
-    if (!fp) error_fatal("Failed to load program binary\n");
+    if (!fp) error_fatal("Failed to load program binary (%s)\n", strerror(errno));
     fseek(fp,0,SEEK_END);
     *binary_size = ftell(fp);
     *binary_str = (unsigned char*) malloc(*binary_size * sizeof(unsigned char));

@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
+#include <errno.h>
 
 #ifdef __APPLE__
 #include <OpenCL/opencl.h>
