@@ -1,7 +1,7 @@
 #!/bin/bash
 
 
-AOCFLAGS="--profile -v --no-interleaving"
+AOCFLAGS="--profile -v --no-interleaving default"
 
 
 array=( "aes_swi_big" "aes_swi_medium" "aes_swi_small" "aes_swi_tiny" "des_swi_default" )
