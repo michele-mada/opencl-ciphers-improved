@@ -64,21 +64,21 @@ __constant uchar sbox_inv[256] =
 #define AES_MUL2(a) (((a) << 1u) ^ ((-((a) >= 0x80u)) & AES_REDUCE_BYTE))
 #define INV_U32(i) ((((i) & 0xFF000000) >> 24) | (((i) & 0x00FF0000) >> 8) | (((i) & 0x0000FF00) << 8) | (((i) & 0x000000FF) << 24))
 
-void sub_bytes(__private uchar* s){
+void sub_bytes(__private uchar* in, __private uchar* out){
     #pragma unroll
     for (int i = 0; i < BLOCK_SIZE; ++i) {
-        s[i] = sbox[s[i]];
+        out[i] = sbox[in[i]];
     }
 }
 
-void sub_bytes_inv(__private uchar* s){
+void sub_bytes_inv(__private uchar* in, __private uchar* out){
     #pragma unroll
     for (int i = 0; i < BLOCK_SIZE; ++i) {
-        s[i] = sbox_inv[s[i]];
+        out[i] = sbox_inv[in[i]];
     }
 }
 
-void mix_columns(__private uchar* arr) {
+void mix_columns(__private uchar* in, __private uchar* out) {
     uchar byte_value, byte_value_2;
     __private uchar temp_column[BLOCK_SIZE];
     #pragma unroll
@@ -90,7 +90,7 @@ void mix_columns(__private uchar* arr) {
         //printf("\ncolumn: ");
         #pragma unroll
         for (size_t j = 0; j < AES_COLUMN_SIZE; j++) {
-            byte_value = arr[col * AES_COLUMN_SIZE + j];
+            byte_value = in[col * AES_COLUMN_SIZE + j];
             //printf("%d ", col + AES_COLUMN_SIZE * j);
             byte_value_2 = AES_MUL2(byte_value);
             temp_column[(j + 0 ) % AES_COLUMN_SIZE] ^= byte_value_2;
@@ -101,12 +101,12 @@ void mix_columns(__private uchar* arr) {
         //printf("\n");
         #pragma unroll
         for (size_t k = 0; k < AES_COLUMN_SIZE; k++) {
-            arr[col * AES_COLUMN_SIZE + k] = temp_column[k];
+            out[col * AES_COLUMN_SIZE + k] = temp_column[k];
         }
     }
 }
 
-void mix_columns_inv(__private uchar* arr) {
+void mix_columns_inv(__private uchar* in, __private uchar* out) {
     uchar byte_value, byte_value_2, byte_value_4, byte_value_8;
     __private uchar temp_column[BLOCK_SIZE];
     #pragma unroll
@@ -117,7 +117,7 @@ void mix_columns_inv(__private uchar* arr) {
         }
         #pragma unroll
         for (size_t j = 0; j < AES_COLUMN_SIZE; j++) {
-            byte_value = arr[col * AES_COLUMN_SIZE + j];
+            byte_value = in[col * AES_COLUMN_SIZE + j];
             byte_value_2 = AES_MUL2(byte_value);
             byte_value_4 = AES_MUL2(byte_value_2);
             byte_value_8 = AES_MUL2(byte_value_4);
@@ -128,91 +128,128 @@ void mix_columns_inv(__private uchar* arr) {
         }
         #pragma unroll
         for (size_t k = 0; k < AES_COLUMN_SIZE; k++) {
-            arr[col * AES_COLUMN_SIZE + k] = temp_column[k];
+            out[col * AES_COLUMN_SIZE + k] = temp_column[k];
         }
     }
 }
 
-void shift_rows(__private uchar* s) {
-    uchar t;
-    t = s[ 1]; s[ 1] = s[ 5]; s[ 5] = s[ 9]; s[ 9] = s[13]; s[13] = t;
-    t = s[ 2]; s[ 2] = s[10]; s[10] = t;
-    t = s[ 6]; s[ 6] = s[14]; s[14] = t;
-    t = s[ 7]; s[ 7] = s[ 3]; s[ 3] = s[15]; s[15] = s[11]; s[11] = t;
+void shift_rows(__private uchar* in, __private uchar* out) {
+    out[ 0] = in[ 0];
+    out[ 1] = in[ 5];
+    out[ 2] = in[10];
+    out[ 3] = in[15];
+    out[ 4] = in[ 4];
+    out[ 5] = in[ 9];
+    out[ 6] = in[14];
+    out[ 7] = in[ 3];
+    out[ 8] = in[ 8];
+    out[ 9] = in[13];
+    out[10] = in[ 2];
+    out[11] = in[ 7];
+    out[12] = in[12];
+    out[13] = in[ 1];
+    out[14] = in[ 6];
+    out[15] = in[11];
 }
 
-void shift_rows_inv(__private uchar* s) {
-    uchar t;
-    t = s[13]; s[13] = s[ 9]; s[ 9] = s[ 5]; s[ 5] = s[ 1]; s[ 1] = t;
-    t = s[10]; s[10] = s[ 2]; s[ 2] = t;
-    t = s[14]; s[14] = s[ 6]; s[ 6] = t;
-    t = s[11]; s[11] = s[15]; s[15] = s[ 3]; s[ 3] = s[ 7]; s[ 7] = t;
+void shift_rows_inv(__private uchar* in, __private uchar* out) {
+    out[ 0] = in[ 0];
+    out[ 1] = in[13];
+    out[ 2] = in[10];
+    out[ 3] = in[7];
+    out[ 4] = in[ 4];
+    out[ 5] = in[ 1];
+    out[ 6] = in[14];
+    out[ 7] = in[11];
+    out[ 8] = in[ 8];
+    out[ 9] = in[ 5];
+    out[10] = in[ 2];
+    out[11] = in[15];
+    out[12] = in[12];
+    out[13] = in[ 9];
+    out[14] = in[ 6];
+    out[15] = in[ 3];
 }
 
 
-#define AES_KEY_INDEPENDENT_ENC_ROUND(t)                                       \
-{                                                                              \
-    sub_bytes(t);                                                              \
-    shift_rows(t);                                                             \
-    mix_columns(t);                                                            \
+void aes_key_independent_enc_round(__private uchar* state_in,
+                                   __private uchar* state_out) {
+    __private uchar temp1[BLOCK_SIZE];
+    __private uchar temp2[BLOCK_SIZE];
+    sub_bytes(state_in, temp1);
+    shift_rows(temp1, temp2);
+    mix_columns(temp2, state_out);
 }
 
-#define AES_KEY_INDEPENDENT_ENC_ROUND_FINAL(t)                                 \
-{                                                                              \
-    sub_bytes(t);                                                              \
-    shift_rows(t);                                                             \
+void aes_key_independent_enc_round_final(__private uchar* state_in,
+                                         __private uchar* state_out) {
+    __private uchar temp1[BLOCK_SIZE];
+    sub_bytes(state_in, temp1);
+    shift_rows(temp1, state_out);
+
 }
 
-#define AES_KEY_INDEPENDENT_DEC_ROUND(t)                                       \
-{                                                                              \
-    mix_columns_inv(t);                                                        \
-    shift_rows_inv(t);                                                         \
-    sub_bytes_inv(t);                                                          \
+void aes_key_independent_dec_round(__private uchar* state_in,
+                                   __private uchar* state_out) {
+    __private uchar temp1[BLOCK_SIZE];
+    __private uchar temp2[BLOCK_SIZE];
+    mix_columns_inv(state_in, temp1);
+    shift_rows_inv(temp1, temp2);
+    sub_bytes_inv(temp2, state_out);
 }
 
-#define AES_KEY_INDEPENDENT_DEC_ROUND_INITIAL(t)                               \
-{                                                                              \
-    shift_rows_inv(t);                                                         \
-    sub_bytes_inv(t);                                                          \
+void aes_key_independent_dec_round_initial(__private uchar* state_in,
+                                           __private uchar* state_out) {
+    __private uchar temp1[BLOCK_SIZE];
+    shift_rows_inv(state_in, temp1);
+    sub_bytes_inv(temp1, state_out);
 }
 
-void add_round_key(__private uchar* state,
+
+void add_round_key(__private uchar* state_in,
                    __private uint* w,
+                   __private uchar* state_out,
                    __private size_t i) {
-    uint* s = (uint*) state;
+    uint* intstate_in = (uint*) state_in;  //TODO: check if pointer conversion causes performance loss
+    uint* intstate_out = (uint*) state_out;
     #pragma unroll
     for (size_t j = 0; j < NUM_BYTES; ++j) {
-        s[j] ^= INV_U32(w[i + j]);
+        intstate_out[j] = intstate_in[j] ^ INV_U32(w[i + j]);
     }
 }
 
 
-void encrypt(__private uchar state[BLOCK_SIZE],
+void encrypt(__private uchar state_in[BLOCK_SIZE],
              __private uint* w,
+             __private uchar state_out[BLOCK_SIZE],
              unsigned int num_rounds) {
-    add_round_key(state, w, 0);
-
+    __private uchar temp1[BLOCK_SIZE];
+    __private uchar temp2[BLOCK_SIZE];
+    add_round_key(state_in, w, temp1, 0);
     for (size_t r = 1; r < num_rounds; r++) {
-        AES_KEY_INDEPENDENT_ENC_ROUND(state);
-        add_round_key(state, w, r * NUM_BYTES);
+        aes_key_independent_enc_round(temp1, temp2);
+        add_round_key(temp2, w, temp1, r * NUM_BYTES);
     }
 
-    AES_KEY_INDEPENDENT_ENC_ROUND_FINAL(state);
-    add_round_key(state, w, num_rounds * NUM_BYTES);
+    aes_key_independent_enc_round_final(temp1, temp2);
+    add_round_key(temp2, w, state_out, num_rounds * NUM_BYTES);
 }
 
-void decrypt(__private uchar state[BLOCK_SIZE],
+void decrypt(__private uchar state_in[BLOCK_SIZE],
              __private uint* w,
+             __private uchar state_out[BLOCK_SIZE],
              unsigned int num_rounds) {
-    add_round_key(state, w, 0);
-    AES_KEY_INDEPENDENT_DEC_ROUND_INITIAL(state);
+    __private uchar temp1[BLOCK_SIZE];
+    __private uchar temp2[BLOCK_SIZE];
+    add_round_key(state_in, w, temp1, 0);
+    aes_key_independent_dec_round_initial(temp1, temp2);
 
     for (size_t r = 1; r < num_rounds; r++) {
-        add_round_key(state, w, r * NUM_WORDS);
-        AES_KEY_INDEPENDENT_DEC_ROUND(state);
+        add_round_key(temp2, w, temp1, r * NUM_WORDS);
+        aes_key_independent_dec_round(temp1, temp2);
     }
 
-    add_round_key(state, w, num_rounds * NUM_WORDS);
+    add_round_key(temp2, w, state_out, num_rounds * NUM_WORDS);
 }
 
 
@@ -230,7 +267,8 @@ __kernel void aesEncCipher(__global uchar* restrict in,
                            __global uchar* restrict out,
                            unsigned int num_rounds,
                            unsigned int input_size) {
-    __private uchar state[BLOCK_SIZE];
+    __private uchar state_in[BLOCK_SIZE];
+    __private uchar state_out[BLOCK_SIZE];
     __private uint local_w[MAX_EXKEY_SIZE_WORDS];
     copy_extkey_to_local(local_w, w);
 
@@ -238,13 +276,13 @@ __kernel void aesEncCipher(__global uchar* restrict in,
        #pragma unroll
        for (size_t i = 0; i < BLOCK_SIZE; ++i) {
            size_t offset = blockid * BLOCK_SIZE + i;
-           state[i] = in[offset];
+           state_in[i] = in[offset];
        }
-       encrypt(state, local_w, num_rounds);
+       encrypt(state_in, local_w, state_out, num_rounds);
        #pragma unroll
        for(size_t i = 0; i < BLOCK_SIZE; i++) {
            size_t offset = blockid * BLOCK_SIZE + i;
-           out[offset] = state[i];
+           out[offset] = state_out[i];
        }
     }
 }
@@ -255,7 +293,8 @@ __kernel void aesDecCipher(__global uchar* restrict in,
                            __global uchar* restrict out,
                            unsigned int num_rounds,
                            unsigned int input_size) {
-    __private uchar state[BLOCK_SIZE];
+    __private uchar state_in[BLOCK_SIZE];
+    __private uchar state_out[BLOCK_SIZE];
     __private uint local_w[MAX_EXKEY_SIZE_WORDS];
     copy_extkey_to_local(local_w, w);
 
@@ -263,13 +302,13 @@ __kernel void aesDecCipher(__global uchar* restrict in,
         #pragma unroll
         for (size_t i = 0; i < BLOCK_SIZE; ++i) {
             size_t offset = blockid * BLOCK_SIZE + i;
-            state[i] = in[offset];
+            state_in[i] = in[offset];
         }
-        decrypt(state, local_w, num_rounds);
+        decrypt(state_in, local_w, state_out, num_rounds);
         #pragma unroll
         for(size_t i = 0; i < BLOCK_SIZE; i++) {
             size_t offset = blockid * BLOCK_SIZE + i;
-            out[offset] = state[i];
+            out[offset] = state_out[i];
         }
     }
 }
@@ -295,7 +334,8 @@ __kernel void aesCipherCtr(__global uchar* restrict in,
                            unsigned int num_rounds,
                            unsigned int input_size) {
     __private uchar counter[BLOCK_SIZE];
-    __private uchar state[BLOCK_SIZE];
+    __private uchar state_in[BLOCK_SIZE];
+    __private uchar state_out[BLOCK_SIZE];
     __private uchar outCipher[BLOCK_SIZE];
     __private uint local_w[MAX_EXKEY_SIZE_WORDS];
     copy_extkey_to_local(local_w, w);
@@ -307,14 +347,14 @@ __kernel void aesCipherCtr(__global uchar* restrict in,
 
     for (size_t blockid=0; blockid < input_size / BLOCK_SIZE; blockid++) {
         #pragma unroll
-        for (size_t i = 0; i < BLOCK_SIZE; ++i) {
-            state[i] = counter[i];
+        for (size_t i = 0; i < BLOCK_SIZE; ++i) {  //TODO: modify so that I can safely skip and encrypt directly the counter buffer
+            state_in[i] = counter[i];
         }
-        encrypt(state, local_w, num_rounds);
+        encrypt(state_in, local_w, state_out, num_rounds);
         #pragma unroll
         for (size_t i = 0; i < BLOCK_SIZE; i++) {
             size_t offset = blockid * BLOCK_SIZE + i;
-            out[offset] = state[i] ^ in[offset];
+            out[offset] = state_out[i] ^ in[offset];
         }
         increment_counter(counter, 1);
     }
