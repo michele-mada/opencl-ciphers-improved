@@ -1,1 +1,1 @@
-./aes_swi_small_alt.cl
+./aes_swi_tiny.cl

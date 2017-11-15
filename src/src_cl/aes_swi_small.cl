@@ -214,7 +214,8 @@ void add_round_key(__private uchar* state_in,
     uint* intstate_out = (uint*) state_out;
     #pragma unroll
     for (size_t j = 0; j < NUM_BYTES; ++j) {
-        intstate_out[j] = intstate_in[j] ^ INV_U32(w[i + j]);
+        uint keyword = w[i + j];
+        intstate_out[j] = intstate_in[j] ^ INV_U32(keyword);
     }
 }
 
@@ -225,14 +226,14 @@ void encrypt(__private uchar state_in[BLOCK_SIZE],
              unsigned int num_rounds) {
     __private uchar temp1[BLOCK_SIZE];
     __private uchar temp2[BLOCK_SIZE];
+
     add_round_key(state_in, w, temp1, 0);
     for (size_t r = 1; r < num_rounds; r++) {
         aes_key_independent_enc_round(temp1, temp2);
-        add_round_key(temp2, w, temp1, r * NUM_BYTES);
+        add_round_key(temp2, w, temp1, r * NUM_WORDS);
     }
-
     aes_key_independent_enc_round_final(temp1, temp2);
-    add_round_key(temp2, w, state_out, num_rounds * NUM_BYTES);
+    add_round_key(temp2, w, state_out, num_rounds * NUM_WORDS);
 }
 
 void decrypt(__private uchar state_in[BLOCK_SIZE],
