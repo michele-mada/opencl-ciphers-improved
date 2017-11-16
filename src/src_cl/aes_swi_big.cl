@@ -646,13 +646,12 @@ __constant uchar Td4[256] = {
 }
 
 
-void add_round_key(__private uint* state_in,
+void add_round_key(__private uint* state,
                    __private uint* w,
-                   __private uint* state_out,
                    __private size_t i) {
     #pragma unroll
     for (size_t j = 0; j < NUM_WORDS; ++j) {
-        state_out[j] = state_in[j] ^ w[i + j];
+        state[j] ^= w[i + j];
     }
 }
 
@@ -688,20 +687,26 @@ void encrypt(__private uchar state_in[BLOCK_SIZE],
              __private uchar state_out[BLOCK_SIZE],
              unsigned int num_rounds) {
 
-    uint temp_state1[NUM_WORDS], temp_state2[NUM_WORDS];
+    uint temp_state_a[NUM_WORDS], temp_state_b[NUM_WORDS];
+    uint *temp_state1 = temp_state_a;
+    uint *temp_state2 = temp_state_b;
+    uint *temp_state_swap;
 
     #pragma unroll
     for (size_t chunk=0; chunk<NUM_WORDS; chunk++) {
         temp_state1[chunk] = GETU32((state_in + (chunk << 2)));
     }
 
-    add_round_key(temp_state1, w, temp_state2, 0);
+    add_round_key(temp_state1, w, 0);
     for (size_t r = 1; r < num_rounds; r++) {
-        AES_KEY_INDEPENDENT_ENC_ROUND(temp_state2, temp_state1);
-        add_round_key(temp_state1, w, temp_state2, r * NUM_WORDS);
+        AES_KEY_INDEPENDENT_ENC_ROUND(temp_state1, temp_state2);
+        add_round_key(temp_state2, w, r * NUM_WORDS);
+        temp_state_swap = temp_state2;
+        temp_state2 = temp_state1;
+        temp_state1 = temp_state_swap;
     }
-    AES_KEY_INDEPENDENT_ENC_ROUND_FINAL(temp_state2, temp_state1);
-    add_round_key(temp_state1, w, temp_state2, num_rounds * NUM_WORDS);
+    AES_KEY_INDEPENDENT_ENC_ROUND_FINAL(temp_state1, temp_state2);
+    add_round_key(temp_state2, w, num_rounds * NUM_WORDS);
 
     #pragma unroll
     for (size_t chunk=0; chunk<NUM_WORDS; chunk++) {
@@ -714,20 +719,26 @@ void decrypt(__private uchar state_in[BLOCK_SIZE],
              __private uchar state_out[BLOCK_SIZE],
              unsigned int num_rounds) {
 
-    uint temp_state1[NUM_WORDS], temp_state2[NUM_WORDS];
+    uint temp_state_a[NUM_WORDS], temp_state_b[NUM_WORDS];
+    uint *temp_state1 = temp_state_a;
+    uint *temp_state2 = temp_state_b;
+    uint *temp_state_swap;
 
     #pragma unroll
     for (size_t chunk=0; chunk<NUM_WORDS; chunk++) {
         temp_state1[chunk] = GETU32((state_in + (chunk << 2)));
     }
 
-    add_round_key(temp_state1, w, temp_state2, 0);
+    add_round_key(temp_state1, w, 0);
     for (size_t r = 1; r < num_rounds; r++) {
-        AES_KEY_INDEPENDENT_DEC_ROUND(temp_state2, temp_state1)
-        add_round_key(temp_state1, w, temp_state2, r * NUM_WORDS);
+        AES_KEY_INDEPENDENT_DEC_ROUND(temp_state1, temp_state2)
+        add_round_key(temp_state2, w, r * NUM_WORDS);
+        temp_state_swap = temp_state2;
+        temp_state2 = temp_state1;
+        temp_state1 = temp_state_swap;
     }
-    AES_KEY_INDEPENDENT_DEC_ROUND_FINAL(temp_state2, temp_state1)
-    add_round_key(temp_state1, w, temp_state2, num_rounds * NUM_WORDS);
+    AES_KEY_INDEPENDENT_DEC_ROUND_FINAL(temp_state1, temp_state2)
+    add_round_key(temp_state2, w, num_rounds * NUM_WORDS);
 
     #pragma unroll
     for (size_t chunk=0; chunk<NUM_WORDS; chunk++) {
