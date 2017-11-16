@@ -28,7 +28,14 @@ int run_validation() {
 int run_tuning() {
     OpenCLEnv *global_env = OpenCLEnv_init();
 
-    auto_tune(global_env, 1048576*4, "tuning_data.txt");  // stride = 1 * 4 MB
+    size_t stride = 1048576*4;  // stride = 1 * 4 MB
+
+    char *custom_stride = getenv("TUNING_STRIDE");
+    if (custom_stride != NULL) {
+        stride = atol(custom_stride);
+    }
+
+    auto_tune(global_env, stride, "tuning_data.txt");
 
     OpenCLEnv_destroy(global_env);
 
@@ -44,6 +51,7 @@ int run_clinfo() {
 
 int complain_and_quit() {
     printf("Please provide a valid argument. (\"validation\", \"tuning\", \"clinfo\", \"all\")\n");
+    printf("Environment: TUNING_STRIDE=num_bytes (default 4MB)\n");
     exit(1);
 }
 
