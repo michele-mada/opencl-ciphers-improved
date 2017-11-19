@@ -7,7 +7,8 @@
 
 */
 
-#define MAX_EXKEY_SIZE_WORDS 60
+// actually it's 60, but 64 is a power of 2 (need it for banking)
+#define MAX_EXKEY_SIZE_WORDS 64
 
 #define NUM_WORDS 4
 
