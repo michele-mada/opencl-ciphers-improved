@@ -684,30 +684,30 @@ void finalize_inverted_key(__local uint* w, unsigned int num_rounds) {
 }
 
 
-#define INNER_AES_LOOP(num_rounds, key_independent_part)                        \
+#define INNER_AES_LOOP(step1, step2)                                            \
 {                                                                               \
     if (num_rounds == 10) {                                                     \
         _Pragma("unroll")                                                       \
         for (size_t r = 1; r < 10; r++) {                                       \
-            key_independent_part(temp_state2, temp_state1);                     \
-            add_round_key(temp_state1, w, temp_state2, r * NUM_WORDS);          \
+            step1;                                                              \
+            step2;                                                              \
         }                                                                       \
     } else if (num_rounds == 12) {                                              \
         _Pragma("unroll")                                                       \
         for (size_t r = 1; r < 12; r++) {                                       \
-            key_independent_part(temp_state2, temp_state1);                     \
-            add_round_key(temp_state1, w, temp_state2, r * NUM_WORDS);          \
+            step1;                                                              \
+            step2;                                                              \
         }                                                                       \
     } else if (num_rounds == 14) {                                              \
         _Pragma("unroll")                                                       \
         for (size_t r = 1; r < 14; r++) {                                       \
-            key_independent_part(temp_state2, temp_state1);                     \
-            add_round_key(temp_state1, w, temp_state2, r * NUM_WORDS);          \
+            step1;                                                              \
+            step2;                                                              \
         }                                                                       \
     } else {                                                                    \
         for (size_t r = 1; r < num_rounds; r++) {                               \
-            key_independent_part(temp_state2, temp_state1);                     \
-            add_round_key(temp_state1, w, temp_state2, r * NUM_WORDS);          \
+            step1;                                                              \
+            step2;                                                              \
         }                                                                       \
     }                                                                           \
 }
@@ -726,7 +726,10 @@ void encrypt(__private uchar state_in[BLOCK_SIZE],
     }
 
     add_round_key(temp_state1, w, temp_state2, 0);
-    INNER_AES_LOOP(num_rounds, AES_KEY_INDEPENDENT_ENC_ROUND);
+    INNER_AES_LOOP(
+                   AES_KEY_INDEPENDENT_ENC_ROUND(temp_state2, temp_state1),
+                   add_round_key(temp_state1, w, temp_state2, r * NUM_WORDS)
+                   );
     AES_KEY_INDEPENDENT_ENC_ROUND_FINAL(temp_state2, temp_state1);
     add_round_key(temp_state1, w, temp_state2, num_rounds * NUM_WORDS);
 
@@ -749,7 +752,10 @@ void decrypt(__private uchar state_in[BLOCK_SIZE],
     }
 
     add_round_key(temp_state1, w, temp_state2, 0);
-    INNER_AES_LOOP(num_rounds, AES_KEY_INDEPENDENT_DEC_ROUND);
+    INNER_AES_LOOP(
+                   AES_KEY_INDEPENDENT_DEC_ROUND(temp_state2, temp_state1),
+                   add_round_key(temp_state1, w, temp_state2, r * NUM_WORDS)
+                   );
     AES_KEY_INDEPENDENT_DEC_ROUND_FINAL(temp_state2, temp_state1)
     add_round_key(temp_state1, w, temp_state2, num_rounds * NUM_WORDS);
 

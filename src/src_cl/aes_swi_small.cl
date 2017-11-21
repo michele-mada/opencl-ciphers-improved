@@ -207,7 +207,7 @@ void aes_key_independent_dec_round_initial(__private uchar* state_in,
 
 
 void add_round_key(__private uchar* state_in,
-                   __private uint* w,
+                   __local uint* w,
                    __private uchar* state_out,
                    __private size_t i) {
     uint* intstate_in = (uint*) state_in;  //TODO: check if pointer conversion causes performance loss
@@ -220,41 +220,69 @@ void add_round_key(__private uchar* state_in,
 }
 
 
+#define INNER_AES_LOOP(step1, step2)                                            \
+{                                                                               \
+    if (num_rounds == 10) {                                                     \
+        _Pragma("unroll")                                                       \
+        for (size_t r = 1; r < 10; r++) {                                       \
+            step1;                                                              \
+            step2;                                                              \
+        }                                                                       \
+    } else if (num_rounds == 12) {                                              \
+        _Pragma("unroll")                                                       \
+        for (size_t r = 1; r < 12; r++) {                                       \
+            step1;                                                              \
+            step2;                                                              \
+        }                                                                       \
+    } else if (num_rounds == 14) {                                              \
+        _Pragma("unroll")                                                       \
+        for (size_t r = 1; r < 14; r++) {                                       \
+            step1;                                                              \
+            step2;                                                              \
+        }                                                                       \
+    } else {                                                                    \
+        for (size_t r = 1; r < num_rounds; r++) {                               \
+            step1;                                                              \
+            step2;                                                              \
+        }                                                                       \
+    }                                                                           \
+}
+
+
 void encrypt(__private uchar state_in[BLOCK_SIZE],
-             __private uint* w,
+             __local uint* w,
              __private uchar state_out[BLOCK_SIZE],
              unsigned int num_rounds) {
-    __private uchar temp1[BLOCK_SIZE];
-    __private uchar temp2[BLOCK_SIZE];
+    __private uchar temp_state1[BLOCK_SIZE];
+    __private uchar temp_state2[BLOCK_SIZE];
 
-    add_round_key(state_in, w, temp1, 0);
-    for (size_t r = 1; r < num_rounds; r++) {
-        aes_key_independent_enc_round(temp1, temp2);
-        add_round_key(temp2, w, temp1, r * NUM_WORDS);
-    }
-    aes_key_independent_enc_round_final(temp1, temp2);
-    add_round_key(temp2, w, state_out, num_rounds * NUM_WORDS);
+    add_round_key(state_in, w, temp_state2, 0);
+    INNER_AES_LOOP(
+                   aes_key_independent_enc_round(temp_state2, temp_state1),
+                   add_round_key(temp_state1, w, temp_state2, r * NUM_WORDS)
+                   );
+    aes_key_independent_enc_round_final(temp_state2, temp_state1);
+    add_round_key(temp_state1, w, state_out, num_rounds * NUM_WORDS);
 }
 
 void decrypt(__private uchar state_in[BLOCK_SIZE],
-             __private uint* w,
+             __local uint* w,
              __private uchar state_out[BLOCK_SIZE],
              unsigned int num_rounds) {
-    __private uchar temp1[BLOCK_SIZE];
-    __private uchar temp2[BLOCK_SIZE];
-    add_round_key(state_in, w, temp1, 0);
-    aes_key_independent_dec_round_initial(temp1, temp2);
+    __private uchar temp_state1[BLOCK_SIZE];
+    __private uchar temp_state2[BLOCK_SIZE];
 
-    for (size_t r = 1; r < num_rounds; r++) {
-        add_round_key(temp2, w, temp1, r * NUM_WORDS);
-        aes_key_independent_dec_round(temp1, temp2);
-    }
-
-    add_round_key(temp2, w, state_out, num_rounds * NUM_WORDS);
+    add_round_key(state_in, w, temp_state1, 0);
+    aes_key_independent_dec_round_initial(temp_state1, temp_state2);
+    INNER_AES_LOOP(
+                   add_round_key(temp_state2, w, temp_state1, r * NUM_WORDS),
+                   aes_key_independent_dec_round(temp_state1, temp_state2)
+                   );
+    add_round_key(temp_state2, w, state_out, num_rounds * NUM_WORDS);
 }
 
 
-void copy_extkey_to_local(__private uint* local_w, __global uint* restrict w) {
+void copy_extkey_to_local(__local uint* local_w, __global uint* restrict w) {
     #pragma unroll
     for (size_t i = 0; i < MAX_EXKEY_SIZE_WORDS; ++i) {
         local_w[i] = w[i];
@@ -270,7 +298,7 @@ __kernel void aesEncCipher(__global uchar* restrict in,
                            unsigned int input_size) {
     __private uchar state_in[BLOCK_SIZE];
     __private uchar state_out[BLOCK_SIZE];
-    __private uint local_w[MAX_EXKEY_SIZE_WORDS];
+    __local uint __attribute__((numbanks(MAX_EXKEY_SIZE_WORDS), bankwidth(4))) local_w[MAX_EXKEY_SIZE_WORDS];
     copy_extkey_to_local(local_w, w);
 
     for (size_t blockid=0; blockid < input_size / BLOCK_SIZE; blockid++) {
@@ -296,7 +324,7 @@ __kernel void aesDecCipher(__global uchar* restrict in,
                            unsigned int input_size) {
     __private uchar state_in[BLOCK_SIZE];
     __private uchar state_out[BLOCK_SIZE];
-    __private uint local_w[MAX_EXKEY_SIZE_WORDS];
+    __local uint __attribute__((numbanks(MAX_EXKEY_SIZE_WORDS), bankwidth(4))) local_w[MAX_EXKEY_SIZE_WORDS];
     copy_extkey_to_local(local_w, w);
 
     for (size_t blockid=0; blockid < input_size / BLOCK_SIZE; blockid++) {
@@ -338,7 +366,7 @@ __kernel void aesCipherCtr(__global uchar* restrict in,
     __private uchar state_in[BLOCK_SIZE];
     __private uchar state_out[BLOCK_SIZE];
     __private uchar outCipher[BLOCK_SIZE];
-    __private uint local_w[MAX_EXKEY_SIZE_WORDS];
+    __local uint __attribute__((numbanks(MAX_EXKEY_SIZE_WORDS), bankwidth(4))) local_w[MAX_EXKEY_SIZE_WORDS];
     copy_extkey_to_local(local_w, w);
     /* initialize counter */
     #pragma unroll
