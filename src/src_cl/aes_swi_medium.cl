@@ -8,7 +8,7 @@
 
 */
 
-#define MAX_EXKEY_SIZE_WORDS 60
+#define MAX_EXKEY_SIZE_WORDS 64
 
 #define NUM_WORDS 4
 
