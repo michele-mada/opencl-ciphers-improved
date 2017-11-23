@@ -58,3 +58,5 @@ bin/
 test
 opencl_ciphers_test
 release
+src/src_cl/aes_swi.cl
+src/src_cl/des_swi.cl
