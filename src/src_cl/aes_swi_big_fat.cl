@@ -5,6 +5,9 @@
     Large footprint
     Multiple t-tables used
 
+    WARNING: only supports num_rounds of 10, 12 and 14
+    (it should be fine with aes 128, 192 and 256)
+
 */
 
 // actually it's 60, but 64 is a power of 2 (need it for banking)
@@ -687,54 +690,33 @@ void finalize_inverted_key(__local uint* w, unsigned int num_rounds) {
 #define INNER_AES_LOOP(step1, step2)                                            \
 {                                                                               \
     size_t r = 1;                                                               \
-    if (num_rounds == 10) {                                                     \
-        _Pragma("unroll")                                                       \
-        for (size_t c = 0; c < 4; c++) {                                        \
-            step1;                                                              \
-            step2;                                                              \
-            ++r;                                                                \
-            step1;                                                              \
-            step2;                                                              \
-            ++r;                                                                \
-        }                                                                       \
+    _Pragma("unroll")                                                           \
+    for (size_t c = 0; c < 4; c++) {                                            \
         step1;                                                                  \
         step2;                                                                  \
-    } else if (num_rounds == 12) {                                              \
-        _Pragma("unroll")                                                       \
-        for (size_t c = 0; c < 5; c++) {                                        \
-            step1;                                                              \
-            step2;                                                              \
-            ++r;                                                                \
-            step1;                                                              \
-            step2;                                                              \
-            ++r;                                                                \
-        }                                                                       \
+        ++r;                                                                    \
         step1;                                                                  \
         step2;                                                                  \
-    } else if (num_rounds == 14) {                                              \
-        _Pragma("unroll")                                                       \
-        for (size_t c = 0; c < 6; c++) {                                        \
-            step1;                                                              \
-            step2;                                                              \
-            ++r;                                                                \
-            step1;                                                              \
-            step2;                                                              \
-            ++r;                                                                \
-        }                                                                       \
-        step1;                                                                  \
-        step2;                                                                  \
-    } else {                                                                    \
-        for (size_t c = 0; c < (num_rounds / 2) - 1; c++) {                     \
-            step1;                                                              \
-            step2;                                                              \
-            ++r;                                                                \
-            step1;                                                              \
-            step2;                                                              \
-            ++r;                                                                \
-        }                                                                       \
-        step1;                                                                  \
-        step2;                                                                  \
+        ++r;                                                                    \
     }                                                                           \
+    if (num_rounds >= 12) {                                                     \
+        step1;                                                                  \
+        step2;                                                                  \
+        ++r;                                                                    \
+        step1;                                                                  \
+        step2;                                                                  \
+        ++r;                                                                    \
+    }                                                                           \
+    if (num_rounds >= 14) {                                                     \
+        step1;                                                                  \
+        step2;                                                                  \
+        ++r;                                                                    \
+        step1;                                                                  \
+        step2;                                                                  \
+        ++r;                                                                    \
+    }                                                                           \
+    step1;                                                                      \
+    step2;                                                                      \
 }
 
 

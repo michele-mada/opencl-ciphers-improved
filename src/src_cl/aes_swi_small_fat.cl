@@ -219,35 +219,20 @@ void add_round_key(__private uchar* state_in,
     }
 }
 
-// WARNING WARNING WARNING
-// this design uses a lot of resources
-// compilation may fail
+
 #define INNER_AES_LOOP(step1, step2)                                            \
 {                                                                               \
-    if (num_rounds == 10) {                                                     \
-        _Pragma("unroll")                                                       \
-        for (size_t r = 1; r < 10; r++) {                                       \
-            step1;                                                              \
-            step2;                                                              \
-        }                                                                       \
-    } else if (num_rounds == 12) {                                              \
-        _Pragma("unroll")                                                       \
-        for (size_t r = 1; r < 12; r++) {                                       \
-            step1;                                                              \
-            step2;                                                              \
-        }                                                                       \
-    } else if (num_rounds == 14) {                                              \
-        _Pragma("unroll")                                                       \
-        for (size_t r = 1; r < 14; r++) {                                       \
-            step1;                                                              \
-            step2;                                                              \
-        }                                                                       \
-    } else {                                                                    \
-        for (size_t r = 1; r < num_rounds; r++) {                               \
-            step1;                                                              \
-            step2;                                                              \
-        }                                                                       \
+    size_t r = 1;                                                               \
+    for (size_t c = 0; c < (num_rounds / 2) - 1; c++) {                         \
+        step1;                                                                  \
+        step2;                                                                  \
+        ++r;                                                                    \
+        step1;                                                                  \
+        step2;                                                                  \
+        ++r;                                                                    \
     }                                                                           \
+    step1;                                                                      \
+    step2;                                                                      \
 }
 
 
