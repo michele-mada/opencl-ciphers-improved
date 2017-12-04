@@ -407,7 +407,7 @@ __kernel void aesEncCipher(__global uchar* restrict in,
                            unsigned int input_size) {
     __private uchar state_in[BLOCK_SIZE];
     __private uchar state_out[BLOCK_SIZE];
-    __local uint __attribute__((numbanks(MAX_EXKEY_SIZE_WORDS), bankwidth(4))) local_w[MAX_EXKEY_SIZE_WORDS];
+    __local uint __attribute__((register)) local_w[MAX_EXKEY_SIZE_WORDS];
     copy_extkey_to_local(local_w, w);
 
     for (size_t blockid=0; blockid < input_size / BLOCK_SIZE; blockid++) {
@@ -433,7 +433,7 @@ __kernel void aesDecCipher(__global uchar* restrict in,
                            unsigned int input_size) {
     __private uchar state_in[BLOCK_SIZE];
     __private uchar state_out[BLOCK_SIZE];
-    __local uint __attribute__((numbanks(MAX_EXKEY_SIZE_WORDS), bankwidth(4))) local_w[MAX_EXKEY_SIZE_WORDS];
+    __local uint __attribute__((register)) local_w[MAX_EXKEY_SIZE_WORDS];
     copy_extkey_to_local(local_w, w);
     finalize_inverted_key(local_w, num_rounds);
 
@@ -474,7 +474,7 @@ __kernel void aesCipherCtr(__global uchar* restrict in,
                            unsigned int input_size) {
     __private uchar counter[BLOCK_SIZE];
     __private uchar outCipher[BLOCK_SIZE];
-    __local uint __attribute__((numbanks(MAX_EXKEY_SIZE_WORDS), bankwidth(4))) local_w[MAX_EXKEY_SIZE_WORDS];
+    __local uint __attribute__((register)) local_w[MAX_EXKEY_SIZE_WORDS];
     copy_extkey_to_local(local_w, w);
     /* initialize counter */
     #pragma unroll
