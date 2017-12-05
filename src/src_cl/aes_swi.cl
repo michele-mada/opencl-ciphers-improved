@@ -1,1 +1,1 @@
-./aes_swi_medium_fat.cl
+./aes_swi_giant.cl

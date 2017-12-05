@@ -6,8 +6,7 @@
     Minimal t-tables used
     t-tables rotated on-the-spot
 
-    WARNING: only supports num_rounds of 10, 12 and 14
-    (it should be fine with aes 128, 192 and 256)
+    WARNING WARNING WARNING: this took 135 hours and ~75GB of memory to compile
 
 */
 
