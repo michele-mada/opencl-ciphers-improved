@@ -302,27 +302,11 @@ void finalize_inverted_key(__private uint* w, unsigned int num_rounds) {
 }
 
 
-#define INNER_AES_LOOP(step1, step2)                                            \
+#define INNER_AES_LOOP(num_rounds, step1, step2)                                \
 {                                                                               \
     size_t r = 1;                                                               \
     _Pragma("unroll")                                                           \
-    for (size_t c = 0; c < 4; c++) {                                            \
-        step1;                                                                  \
-        step2;                                                                  \
-        ++r;                                                                    \
-        step1;                                                                  \
-        step2;                                                                  \
-        ++r;                                                                    \
-    }                                                                           \
-    if (num_rounds >= 12) {                                                     \
-        step1;                                                                  \
-        step2;                                                                  \
-        ++r;                                                                    \
-        step1;                                                                  \
-        step2;                                                                  \
-        ++r;                                                                    \
-    }                                                                           \
-    if (num_rounds >= 14) {                                                     \
+    for (size_t c = 0; c < ((num_rounds/2)-1); c++) {                           \
         step1;                                                                  \
         step2;                                                                  \
         ++r;                                                                    \
@@ -335,57 +319,83 @@ void finalize_inverted_key(__private uint* w, unsigned int num_rounds) {
 }
 
 
-void encrypt(__private uchar state_in[BLOCK_SIZE],
-             __private uint* w,
-             __private uchar state_out[BLOCK_SIZE],
-             unsigned int num_rounds) {
-
-    uint temp_state1[NUM_WORDS], temp_state2[NUM_WORDS];
-
-    #pragma unroll
-    for (size_t chunk=0; chunk<NUM_WORDS; chunk++) {
-        temp_state1[chunk] = GETU32((state_in + (chunk << 2)));
-    }
-
-    add_round_key(temp_state1, w, temp_state2, 0);
-    INNER_AES_LOOP(
-                   AES_KEY_INDEPENDENT_ENC_ROUND(temp_state2, temp_state1),
-                   add_round_key(temp_state1, w, temp_state2, r * NUM_WORDS)
-                   );
-    AES_KEY_INDEPENDENT_ENC_ROUND_FINAL(temp_state2, temp_state1);
-    add_round_key(temp_state1, w, temp_state2, num_rounds * NUM_WORDS);
-
-    #pragma unroll
-    for (size_t chunk=0; chunk<NUM_WORDS; chunk++) {
-        PUT32((state_out + (chunk << 2)), temp_state2[chunk]);
-    }
+#define AES_BLOCK_ENCRYPT_BOILERPLATE(num_rounds)                               \
+{                                                                               \
+    uint temp_state1[NUM_WORDS], temp_state2[NUM_WORDS];                        \
+                                                                                \
+    _Pragma("unroll")                                                           \
+    for (size_t chunk=0; chunk<NUM_WORDS; chunk++) {                            \
+        temp_state1[chunk] = GETU32((state_in + (chunk << 2)));                 \
+    }                                                                           \
+                                                                                \
+    add_round_key(temp_state1, w, temp_state2, 0);                              \
+    INNER_AES_LOOP(num_rounds,                                                  \
+          AES_KEY_INDEPENDENT_ENC_ROUND(temp_state2, temp_state1),              \
+          add_round_key(temp_state1, w, temp_state2, r * NUM_WORDS)             \
+          );                                                                    \
+    AES_KEY_INDEPENDENT_ENC_ROUND_FINAL(temp_state2, temp_state1);              \
+    add_round_key(temp_state1, w, temp_state2, num_rounds * NUM_WORDS);         \
+                                                                                \
+    _Pragma("unroll")                                                           \
+    for (size_t chunk=0; chunk<NUM_WORDS; chunk++) {                            \
+        PUT32((state_out + (chunk << 2)), temp_state2[chunk]);                  \
+    }                                                                           \
 }
 
-void decrypt(__private uchar state_in[BLOCK_SIZE],
-             __private uint* w,
-             __private uchar state_out[BLOCK_SIZE],
-             unsigned int num_rounds) {
 
-    uint temp_state1[NUM_WORDS], temp_state2[NUM_WORDS];
+void encrypt_128(__private uchar state_in[BLOCK_SIZE],
+                 __private uint* w,
+                 __private uchar state_out[BLOCK_SIZE]) \
+    AES_BLOCK_ENCRYPT_BOILERPLATE(10)
 
-    #pragma unroll
-    for (size_t chunk=0; chunk<NUM_WORDS; chunk++) {
-        temp_state1[chunk] = GETU32((state_in + (chunk << 2)));
-    }
+void encrypt_192(__private uchar state_in[BLOCK_SIZE],
+                 __private uint* w,
+                 __private uchar state_out[BLOCK_SIZE]) \
+    AES_BLOCK_ENCRYPT_BOILERPLATE(12)
 
-    add_round_key(temp_state1, w, temp_state2, 0);
-    INNER_AES_LOOP(
-                   AES_KEY_INDEPENDENT_DEC_ROUND(temp_state2, temp_state1),
-                   add_round_key(temp_state1, w, temp_state2, r * NUM_WORDS)
-                   );
-    AES_KEY_INDEPENDENT_DEC_ROUND_FINAL(temp_state2, temp_state1)
-    add_round_key(temp_state1, w, temp_state2, num_rounds * NUM_WORDS);
+void encrypt_256(__private uchar state_in[BLOCK_SIZE],
+                 __private uint* w,
+                 __private uchar state_out[BLOCK_SIZE]) \
+    AES_BLOCK_ENCRYPT_BOILERPLATE(14)
 
-    #pragma unroll
-    for (size_t chunk=0; chunk<NUM_WORDS; chunk++) {
-        PUT32((state_out + (chunk << 2)), temp_state2[chunk]);
-    }
+
+#define AES_BLOCK_DECRYPT_BOILERPLATE(num_rounds)                               \
+{                                                                               \
+    uint temp_state1[NUM_WORDS], temp_state2[NUM_WORDS];                        \
+                                                                                \
+    _Pragma("unroll")                                                           \
+    for (size_t chunk=0; chunk<NUM_WORDS; chunk++) {                            \
+        temp_state1[chunk] = GETU32((state_in + (chunk << 2)));                 \
+    }                                                                           \
+                                                                                \
+    add_round_key(temp_state1, w, temp_state2, 0);                              \
+    INNER_AES_LOOP(num_rounds,                                                  \
+          AES_KEY_INDEPENDENT_DEC_ROUND(temp_state2, temp_state1),              \
+          add_round_key(temp_state1, w, temp_state2, r * NUM_WORDS)             \
+          );                                                                    \
+    AES_KEY_INDEPENDENT_DEC_ROUND_FINAL(temp_state2, temp_state1)               \
+    add_round_key(temp_state1, w, temp_state2, num_rounds * NUM_WORDS);         \
+                                                                                \
+    _Pragma("unroll")                                                           \
+    for (size_t chunk=0; chunk<NUM_WORDS; chunk++) {                            \
+        PUT32((state_out + (chunk << 2)), temp_state2[chunk]);                  \
+    }                                                                           \
 }
+
+void decrypt_128(__private uchar state_in[BLOCK_SIZE],
+                 __private uint* w,
+                 __private uchar state_out[BLOCK_SIZE]) \
+    AES_BLOCK_DECRYPT_BOILERPLATE(10)
+
+void decrypt_192(__private uchar state_in[BLOCK_SIZE],
+                 __private uint* w,
+                 __private uchar state_out[BLOCK_SIZE]) \
+    AES_BLOCK_DECRYPT_BOILERPLATE(12)
+
+void decrypt_256(__private uchar state_in[BLOCK_SIZE],
+                 __private uint* w,
+                 __private uchar state_out[BLOCK_SIZE]) \
+    AES_BLOCK_DECRYPT_BOILERPLATE(14)
 
 
 void copy_extkey_to_local(__private uint* local_w, __global uint* restrict w) {
@@ -395,60 +405,94 @@ void copy_extkey_to_local(__private uint* local_w, __global uint* restrict w) {
     }
 }
 
+/*
 
-__attribute__((reqd_work_group_size(1, 1, 1)))
-__kernel void aesEncCipher(__global uchar* restrict in,
-                           __global uint* restrict w,
-                           __global uchar* restrict out,
-                           unsigned int num_rounds,
-                           unsigned int input_size) {
-    __private uchar state_in[BLOCK_SIZE];
-    __private uchar state_out[BLOCK_SIZE];
-    uint __attribute__((register)) local_w[MAX_EXKEY_SIZE_WORDS];
-    copy_extkey_to_local(local_w, w);
+    ######  ####  #####     #    # ###### ##### #    #  ####  #####   ####
+    #      #    # #    #    ##  ## #        #   #    # #    # #    # #
+    #####  #      #####     # ## # #####    #   ###### #    # #    #  ####
+    #      #      #    #    #    # #        #   #    # #    # #    #      #
+    #      #    # #    #    #    # #        #   #    # #    # #    # #    #
+    ######  ####  #####     #    # ######   #   #    #  ####  #####   ####
 
-    for (size_t blockid=0; blockid < input_size / BLOCK_SIZE; blockid++) {
-       #pragma unroll
-       for (size_t i = 0; i < BLOCK_SIZE; ++i) {
-           size_t offset = blockid * BLOCK_SIZE + i;
-           state_in[i] = in[offset];
-       }
-       encrypt(state_in, local_w, state_out, num_rounds);
-       #pragma unroll
-       for(size_t i = 0; i < BLOCK_SIZE; i++) {
-           size_t offset = blockid * BLOCK_SIZE + i;
-           out[offset] = state_out[i];
-       }
-    }
+ */
+
+#define AES_ECB_BOILERPLATE(cipherfun, key_finalization)                        \
+{                                                                               \
+    __private uchar state_in[BLOCK_SIZE];                                       \
+    __private uchar state_out[BLOCK_SIZE];                                      \
+    uint __attribute__((register)) local_w[MAX_EXKEY_SIZE_WORDS];               \
+    copy_extkey_to_local(local_w, w);                                           \
+    key_finalization;                                                           \
+                                                                                \
+    for (size_t blockid=0; blockid < input_size / BLOCK_SIZE; blockid++) {      \
+        _Pragma("unroll")                                                       \
+        for (size_t i = 0; i < BLOCK_SIZE; ++i) {                               \
+            size_t offset = blockid * BLOCK_SIZE + i;                           \
+            state_in[i] = in[offset];                                           \
+        }                                                                       \
+        cipherfun(state_in, local_w, state_out);                                \
+        _Pragma("unroll")                                                       \
+        for(size_t i = 0; i < BLOCK_SIZE; i++) {                                \
+            size_t offset = blockid * BLOCK_SIZE + i;                           \
+            out[offset] = state_out[i];                                         \
+        }                                                                       \
+    }                                                                           \
 }
 
+
 __attribute__((reqd_work_group_size(1, 1, 1)))
-__kernel void aesDecCipher(__global uchar* restrict in,
-                           __global uint* restrict w,
-                           __global uchar* restrict out,
-                           unsigned int num_rounds,
-                           unsigned int input_size) {
-    __private uchar state_in[BLOCK_SIZE];
-    __private uchar state_out[BLOCK_SIZE];
-    uint __attribute__((register)) local_w[MAX_EXKEY_SIZE_WORDS];
-    copy_extkey_to_local(local_w, w);
-    finalize_inverted_key(local_w, num_rounds);
+__kernel void aes128EncCipher(__global uchar* restrict in,
+                              __global uint* restrict w,
+                              __global uchar* restrict out,
+                              unsigned int input_size) \
+    AES_ECB_BOILERPLATE(encrypt_128, ((void)0))
 
-    for (size_t blockid=0; blockid < input_size / BLOCK_SIZE; blockid++) {
-        #pragma unroll
-        for (size_t i = 0; i < BLOCK_SIZE; ++i) {
-            size_t offset = blockid * BLOCK_SIZE + i;
-            state_in[i] = in[offset];
-        }
-        decrypt(state_in, local_w, state_out, num_rounds);
-        #pragma unroll
-        for(size_t i = 0; i < BLOCK_SIZE; i++) {
-            size_t offset = blockid * BLOCK_SIZE + i;
-            out[offset] = state_out[i];
-        }
-    }
-}
+__attribute__((reqd_work_group_size(1, 1, 1)))
+__kernel void aes192EncCipher(__global uchar* restrict in,
+                              __global uint* restrict w,
+                              __global uchar* restrict out,
+                              unsigned int input_size) \
+    AES_ECB_BOILERPLATE(encrypt_192, ((void)0))
 
+__attribute__((reqd_work_group_size(1, 1, 1)))
+__kernel void aes256EncCipher(__global uchar* restrict in,
+                              __global uint* restrict w,
+                              __global uchar* restrict out,
+                              unsigned int input_size) \
+    AES_ECB_BOILERPLATE(encrypt_256, ((void)0))
+
+__attribute__((reqd_work_group_size(1, 1, 1)))
+__kernel void aes128DecCipher(__global uchar* restrict in,
+                              __global uint* restrict w,
+                              __global uchar* restrict out,
+                              unsigned int input_size) \
+    AES_ECB_BOILERPLATE(decrypt_128, finalize_inverted_key(local_w, 10))
+
+__attribute__((reqd_work_group_size(1, 1, 1)))
+__kernel void aes192DecCipher(__global uchar* restrict in,
+                              __global uint* restrict w,
+                              __global uchar* restrict out,
+                              unsigned int input_size) \
+    AES_ECB_BOILERPLATE(decrypt_192, finalize_inverted_key(local_w, 12))
+
+__attribute__((reqd_work_group_size(1, 1, 1)))
+__kernel void aes256DecCipher(__global uchar* restrict in,
+                              __global uint* restrict w,
+                              __global uchar* restrict out,
+                              unsigned int input_size) \
+    AES_ECB_BOILERPLATE(decrypt_256, finalize_inverted_key(local_w, 14))
+
+
+/*
+
+     ####  ##### #####     #    # ###### ##### #    #  ####  #####   ####
+    #    #   #   #    #    ##  ## #        #   #    # #    # #    # #
+    #        #   #    #    # ## # #####    #   ###### #    # #    #  ####
+    #        #   #####     #    # #        #   #    # #    # #    #      #
+    #    #   #   #   #     #    # #        #   #    # #    # #    # #    #
+     ####    #   #    #    #    # ######   #   #    #  ####  #####   ####
+
+*/
 
 void increment_counter(__private uchar* counter, size_t amount) {
     size_t n = BLOCK_SIZE, c = amount;
@@ -462,30 +506,49 @@ void increment_counter(__private uchar* counter, size_t amount) {
 }
 
 
-__attribute__((reqd_work_group_size(1, 1, 1)))
-__kernel void aesCipherCtr(__global uchar* restrict in,
-                           __global uint* restrict w,
-                           __global uchar* restrict out,
-                           __global uchar* restrict IV,
-                           unsigned int num_rounds,
-                           unsigned int input_size) {
-    __private uchar counter[BLOCK_SIZE];
-    __private uchar outCipher[BLOCK_SIZE];
-    uint __attribute__((register)) local_w[MAX_EXKEY_SIZE_WORDS];
-    copy_extkey_to_local(local_w, w);
-    /* initialize counter */
-    #pragma unroll
-    for (size_t i = 0; i < BLOCK_SIZE; i++) {
-        counter[i] = IV[i];
-    }
-
-    for (size_t blockid=0; blockid < input_size / BLOCK_SIZE; blockid++) {
-        encrypt(counter, local_w, outCipher, num_rounds);
-        #pragma unroll
-        for (size_t i = 0; i < BLOCK_SIZE; i++) {
-            size_t offset = blockid * BLOCK_SIZE + i;
-            out[offset] = outCipher[i] ^ in[offset];
-        }
-        increment_counter(counter, 1);
-    }
+#define AES_CTR_BOILERPLATE(cipherfun)                                          \
+{                                                                               \
+    __private uchar counter[BLOCK_SIZE];                                        \
+    __private uchar outCipher[BLOCK_SIZE];                                      \
+    uint __attribute__((register)) local_w[MAX_EXKEY_SIZE_WORDS];               \
+    copy_extkey_to_local(local_w, w);                                           \
+    /* initialize counter */                                                    \
+    _Pragma("unroll")                                                           \
+    for (size_t i = 0; i < BLOCK_SIZE; i++) {                                   \
+        counter[i] = IV[i];                                                     \
+    }                                                                           \
+                                                                                \
+    for (size_t blockid=0; blockid < input_size / BLOCK_SIZE; blockid++) {      \
+        cipherfun(counter, local_w, outCipher);                                 \
+        _Pragma("unroll")                                                       \
+        for (size_t i = 0; i < BLOCK_SIZE; i++) {                               \
+            size_t offset = blockid * BLOCK_SIZE + i;                           \
+            out[offset] = outCipher[i] ^ in[offset];                            \
+        }                                                                       \
+        increment_counter(counter, 1);                                          \
+    }                                                                           \
 }
+
+__attribute__((reqd_work_group_size(1, 1, 1)))
+__kernel void aes128CipherCtr(__global uchar* restrict in,
+                              __global uint* restrict w,
+                              __global uchar* restrict out,
+                              __global uchar* restrict IV,
+                              unsigned int input_size) \
+    AES_CTR_BOILERPLATE(encrypt_128)
+
+__attribute__((reqd_work_group_size(1, 1, 1)))
+__kernel void aes192CipherCtr(__global uchar* restrict in,
+                              __global uint* restrict w,
+                              __global uchar* restrict out,
+                              __global uchar* restrict IV,
+                              unsigned int input_size) \
+    AES_CTR_BOILERPLATE(encrypt_192)
+
+__attribute__((reqd_work_group_size(1, 1, 1)))
+__kernel void aes256CipherCtr(__global uchar* restrict in,
+                              __global uint* restrict w,
+                              __global uchar* restrict out,
+                              __global uchar* restrict IV,
+                              unsigned int input_size) \
+    AES_CTR_BOILERPLATE(encrypt_256)

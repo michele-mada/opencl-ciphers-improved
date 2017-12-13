@@ -60,11 +60,11 @@ void load_aes_input_key_iv(CipherFamily* aes_fam,
                                    state->iv,
                                    CL_TRUE, 0, AES_IV_SIZE * sizeof(uint8_t),
                                    iv, 0, NULL, NULL);
-        if (ret != CL_SUCCESS) error_fatal("Failed to enqueue clEnqueueWriteBuffer (state->iv) . Error = %s (%d)\n", get_cl_error_string(ret), ret);    
+        if (ret != CL_SUCCESS) error_fatal("Failed to enqueue clEnqueueWriteBuffer (state->iv) . Error = %s (%d)\n", get_cl_error_string(ret), ret);
     }
 }
 
-void prepare_kernel_aes(CipherMethod* meth, cl_int input_size, cl_int num_rounds, int with_iv) {
+void prepare_kernel_aes(CipherMethod* meth, cl_int input_size, int with_iv) {
     cl_int ret;
     CipherFamily *aes_fam = meth->family;
     AesState *state = (AesState*) aes_fam->state;
@@ -83,8 +83,8 @@ void prepare_kernel_aes(CipherMethod* meth, cl_int input_size, cl_int num_rounds
         KERNEL_PARAM_ERRORCHECK()
     }
 
-    ret = clSetKernelArg(meth->kernel, param_id++, sizeof(cl_int), &num_rounds);
-    KERNEL_PARAM_ERRORCHECK()
+    /*ret = clSetKernelArg(meth->kernel, param_id++, sizeof(cl_int), &num_rounds);
+    KERNEL_PARAM_ERRORCHECK()*/
 
     ret = clSetKernelArg(meth->kernel, param_id++, sizeof(cl_int), &input_size);
     KERNEL_PARAM_ERRORCHECK()
@@ -108,7 +108,7 @@ void aes_encrypt_decrypt_function(OpenCLEnv* env,           // global opencl env
                                   int is_decrypt) {         // select which key to use, encrypt or decrypt
     CipherMethod* meth = env->ciphers[AES_CIPHERS]->methods[method_id];
     prepare_buffers_aes(meth->family, input_size, context->ex_key_dim);
-    prepare_kernel_aes(meth, (cl_int)input_size, KEYSIZE_TO_Nr(aes_mode), iv != NULL);
+    prepare_kernel_aes(meth, (cl_int)input_size, iv != NULL);
     load_aes_input_key_iv(meth->family, input, input_size, context, iv, is_decrypt);
     execute_meth_kernel(meth);
     gather_aes_output(meth->family, output, input_size);

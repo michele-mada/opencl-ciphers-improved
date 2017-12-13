@@ -16,15 +16,15 @@
 void init_aes_methods_and_state(CipherFamily* fam) {
     fam->methods = (CipherMethod**) malloc(sizeof(CipherMethod*) * NUM_AES_METHODS);
 
-    fam->methods[AES_128_ECB_ENC] = CipherMethod_init(fam, "aesEncCipher");
-    fam->methods[AES_192_ECB_ENC] = CipherMethod_init(fam, "aesEncCipher");
-    fam->methods[AES_256_ECB_ENC] = CipherMethod_init(fam, "aesEncCipher");
-    fam->methods[AES_128_ECB_DEC] = CipherMethod_init(fam, "aesDecCipher");
-    fam->methods[AES_192_ECB_DEC] = CipherMethod_init(fam, "aesDecCipher");
-    fam->methods[AES_256_ECB_DEC] = CipherMethod_init(fam, "aesDecCipher");
-    fam->methods[AES_128_CTR] = CipherMethod_init(fam, "aesCipherCtr");
-    fam->methods[AES_192_CTR] = CipherMethod_init(fam, "aesCipherCtr");
-    fam->methods[AES_256_CTR] = CipherMethod_init(fam, "aesCipherCtr");
+    fam->methods[AES_128_ECB_ENC] = CipherMethod_init(fam, "aes128EncCipher");
+    fam->methods[AES_192_ECB_ENC] = CipherMethod_init(fam, "aes192EncCipher");
+    fam->methods[AES_256_ECB_ENC] = CipherMethod_init(fam, "aes256EncCipher");
+    fam->methods[AES_128_ECB_DEC] = CipherMethod_init(fam, "aes128DecCipher");
+    fam->methods[AES_192_ECB_DEC] = CipherMethod_init(fam, "aes192DecCipher");
+    fam->methods[AES_256_ECB_DEC] = CipherMethod_init(fam, "aes256DecCipher");
+    fam->methods[AES_128_CTR] = CipherMethod_init(fam, "aes128CipherCtr");
+    fam->methods[AES_192_CTR] = CipherMethod_init(fam, "aes192CipherCtr");
+    fam->methods[AES_256_CTR] = CipherMethod_init(fam, "aes256CipherCtr");
 
     fam->num_methods = NUM_AES_METHODS;
 
