@@ -8,7 +8,7 @@
 #endif
 
 
-#define GLOBAL_WORK_SIZE 1
+#define GLOBAL_WORK_SIZE 2
 #define LOCAL_WORK_SIZE 1
 #define WORK_DIM 1
 
