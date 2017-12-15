@@ -33,9 +33,15 @@ void initialize_OpenCL_context(OpenCLEnv* env) {
 	// Create OpenCL context
    	env->context = clCreateContext(NULL, 1, env->selected_device, NULL, NULL, &ret);
    	if(ret != CL_SUCCESS) error_fatal("Failed to create context, error = %s (%d)\n", get_cl_error_string(ret), ret);
-	// Create Command Queue
-   	env->command_queue = clCreateCommandQueue(env->context, *(env->selected_device), CL_QUEUE_PROFILING_ENABLE, &ret);
-    if(ret != CL_SUCCESS) error_fatal("Failed to create commandqueue, error = %s (%d)\n",  get_cl_error_string(ret), ret);
+	// Create Command Queue(s)
+    for (size_t c=0; c<NUM_CONCURRENT_KERNELS; c++) {
+        env->command_queue[c] = clCreateCommandQueue(
+            env->context,
+            *(env->selected_device),
+            CL_QUEUE_PROFILING_ENABLE,
+            &ret);
+        if(ret != CL_SUCCESS) error_fatal("Failed to create commandqueue, error = %s (%d)\n",  get_cl_error_string(ret), ret);
+    }
 }
 
 OpenCLEnv* OpenCLEnv_init() {
@@ -59,7 +65,9 @@ void recursive_destroy_environment(OpenCLEnv* env) {
 
 void OpenCLEnv_destroy(OpenCLEnv* env) {
     recursive_destroy_environment(env);
-    clReleaseCommandQueue(env->command_queue);
+    for (size_t c=0; c<NUM_CONCURRENT_KERNELS; c++) {
+        clReleaseCommandQueue(env->command_queue[c]);
+    }
     clReleaseContext(env->context);
     ParamAtlas_destroy(env->parameters);
     free(env->selected_device);
@@ -82,4 +90,5 @@ void print_opencl_ciphers_build_info() {
     printf("Build machine: %s\n", BUILD_MACHINE);
     printf("Target opencl device: %s (%d)\n", (TARGET_DEVICE_TYPE == CL_DEVICE_TYPE_ACCELERATOR ? "fpga" : "cpu"), TARGET_DEVICE_TYPE);
     printf("(work_dim/global_work_size/local_work_size): (%d/%d/%d)\n", WORK_DIM, GLOBAL_WORK_SIZE, LOCAL_WORK_SIZE);
+    printf("num_concurrent_kernels: %d\n", NUM_CONCURRENT_KERNELS);
 }

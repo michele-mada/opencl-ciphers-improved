@@ -11,6 +11,7 @@
 #endif
 
 #include "cipher_family.h"
+#include "constants.h"
 
 /*
     documentation
@@ -20,7 +21,7 @@
 
 typedef struct CipherMethod {
     struct CipherFamily* family;
-    cl_kernel kernel;
+    cl_kernel kernel[NUM_CONCURRENT_KERNELS];
     void *state;
 } CipherMethod;
 

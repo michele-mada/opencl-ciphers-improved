@@ -396,21 +396,19 @@ void copy_extkey_to_local(__private uint* local_w, __global uint* restrict w) {
 }
 
 
+__attribute__((reqd_work_group_size(1, 1, 1)))
 __kernel void aesEncCipher(__global uchar* restrict in,
                            __global uint* restrict w,
                            __global uchar* restrict out,
                            unsigned int num_rounds,
-                           unsigned int input_size) {
+                           unsigned int input_size,
+                           unsigned int start_blockid) {
     __private uchar state_in[BLOCK_SIZE];
     __private uchar state_out[BLOCK_SIZE];
     uint __attribute__((register)) local_w[MAX_EXKEY_SIZE_WORDS];
     copy_extkey_to_local(local_w, w);
 
-    size_t blockid=0;
-    size_t gid = get_global_id(0);
-    if (gid % 2 == 1) blockid = 1;
-
-    for (; blockid < input_size / BLOCK_SIZE; blockid+=2) {
+    for (size_t blockid=start_blockid; blockid < input_size / BLOCK_SIZE; blockid+=2) {
        #pragma unroll
        for (size_t i = 0; i < BLOCK_SIZE; ++i) {
            size_t offset = blockid * BLOCK_SIZE + i;
@@ -425,22 +423,20 @@ __kernel void aesEncCipher(__global uchar* restrict in,
     }
 }
 
+__attribute__((reqd_work_group_size(1, 1, 1)))
 __kernel void aesDecCipher(__global uchar* restrict in,
                            __global uint* restrict w,
                            __global uchar* restrict out,
                            unsigned int num_rounds,
-                           unsigned int input_size) {
+                           unsigned int input_size,
+                           unsigned int start_blockid) {
     __private uchar state_in[BLOCK_SIZE];
     __private uchar state_out[BLOCK_SIZE];
     uint __attribute__((register)) local_w[MAX_EXKEY_SIZE_WORDS];
     copy_extkey_to_local(local_w, w);
     finalize_inverted_key(local_w, num_rounds);
 
-    size_t blockid=0;
-    size_t gid = get_global_id(0);
-    if (gid % 2 == 1) blockid = 1;
-
-    for (; blockid < input_size / BLOCK_SIZE; blockid+=2) {
+    for (size_t blockid=start_blockid; blockid < input_size / BLOCK_SIZE; blockid+=2) {
         #pragma unroll
         for (size_t i = 0; i < BLOCK_SIZE; ++i) {
             size_t offset = blockid * BLOCK_SIZE + i;
@@ -468,12 +464,14 @@ void increment_counter(__private uchar* counter, size_t amount) {
 }
 
 
+__attribute__((reqd_work_group_size(1, 1, 1)))
 __kernel void aesCipherCtr(__global uchar* restrict in,
                            __global uint* restrict w,
                            __global uchar* restrict out,
                            __global uchar* restrict IV,
                            unsigned int num_rounds,
-                           unsigned int input_size) {
+                           unsigned int input_size,
+                           unsigned int start_blockid) {
     __private uchar counter[BLOCK_SIZE];
     __private uchar outCipher[BLOCK_SIZE];
     uint __attribute__((register)) local_w[MAX_EXKEY_SIZE_WORDS];
@@ -484,11 +482,7 @@ __kernel void aesCipherCtr(__global uchar* restrict in,
         counter[i] = IV[i];
     }
 
-    size_t blockid=0;
-    size_t gid = get_global_id(0);
-    if (gid % 2 == 1) blockid = 1;
-
-    for (; blockid < input_size / BLOCK_SIZE; blockid+=2) {
+    for (size_t blockid=start_blockid; blockid < input_size / BLOCK_SIZE; blockid+=2) {
         encrypt(counter, local_w, outCipher, num_rounds);
         #pragma unroll
         for (size_t i = 0; i < BLOCK_SIZE; i++) {

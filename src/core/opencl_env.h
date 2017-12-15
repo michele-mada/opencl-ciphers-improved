@@ -12,6 +12,7 @@
 
 #include "cipher_family.h"
 #include "param_atlas.h"
+#include "constants.h"
 
 /*
     Data structure used to manage the OpenCL environment, as well as the
@@ -31,7 +32,7 @@
 
 typedef struct OpenCLEnv {
     cl_context context;
-    cl_command_queue command_queue;
+    cl_command_queue command_queue[NUM_CONCURRENT_KERNELS];
     cl_platform_id selected_platform;
     cl_device_id* selected_device;
     size_t num_ciphers;

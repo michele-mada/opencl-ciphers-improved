@@ -45,55 +45,63 @@ void load_aes_input_key_iv(CipherFamily* aes_fam,
         key = context->expanded_key_encrypt;
     }
 
-    ret = clEnqueueWriteBuffer(aes_fam->environment->command_queue,
+    ret = clEnqueueWriteBuffer(aes_fam->environment->command_queue[IO_COMMAND_QUEUE_ID],
                                state->exKey,
                                CL_TRUE, 0, context->ex_key_dim * sizeof(uint32_t),
                                key, 0, NULL, NULL);
     if (ret != CL_SUCCESS) error_fatal("Failed to enqueue clEnqueueWriteBuffer (state->exKey) . Error = %s (%d)\n", get_cl_error_string(ret), ret);
-	ret = clEnqueueWriteBuffer(aes_fam->environment->command_queue,
+	ret = clEnqueueWriteBuffer(aes_fam->environment->command_queue[IO_COMMAND_QUEUE_ID],
                                state->in,
                                CL_TRUE, 0, input_size * sizeof(uint8_t),
                                input, 0, NULL, NULL);
     if (ret != CL_SUCCESS) error_fatal("Failed to enqueue clEnqueueWriteBuffer (state->in) . Error = %s (%d)\n", get_cl_error_string(ret), ret);
     if (iv != NULL) {
-        ret = clEnqueueWriteBuffer(aes_fam->environment->command_queue,
+        ret = clEnqueueWriteBuffer(aes_fam->environment->command_queue[IO_COMMAND_QUEUE_ID],
                                    state->iv,
                                    CL_TRUE, 0, AES_IV_SIZE * sizeof(uint8_t),
                                    iv, 0, NULL, NULL);
-        if (ret != CL_SUCCESS) error_fatal("Failed to enqueue clEnqueueWriteBuffer (state->iv) . Error = %s (%d)\n", get_cl_error_string(ret), ret);    
+        if (ret != CL_SUCCESS) error_fatal("Failed to enqueue clEnqueueWriteBuffer (state->iv) . Error = %s (%d)\n", get_cl_error_string(ret), ret);
     }
 }
 
-void prepare_kernel_aes(CipherMethod* meth, cl_int input_size, cl_int num_rounds, int with_iv) {
+void prepare_kernel_aes(CipherMethod* meth,
+                        cl_int input_size,
+                        cl_int num_rounds,
+                        int with_iv) {
     cl_int ret;
     CipherFamily *aes_fam = meth->family;
     AesState *state = (AesState*) aes_fam->state;
 
-    size_t param_id = 0;
+    for (int kern_id=0; kern_id<NUM_CONCURRENT_KERNELS; kern_id++) {
+        size_t param_id = 0;
 
-	ret = clSetKernelArg(meth->kernel, param_id++, sizeof(cl_mem), (void *)&(state->in));
-    KERNEL_PARAM_ERRORCHECK()
-    ret = clSetKernelArg(meth->kernel, param_id++, sizeof(cl_mem), (void *)&(state->exKey));
-    KERNEL_PARAM_ERRORCHECK()
-	ret = clSetKernelArg(meth->kernel, param_id++, sizeof(cl_mem), (void *)&(state->out));
-    KERNEL_PARAM_ERRORCHECK()
+    	ret = clSetKernelArg(meth->kernel[kern_id], param_id++, sizeof(cl_mem), (void *)&(state->in));
+        KERNEL_PARAM_ERRORCHECK()
+        ret = clSetKernelArg(meth->kernel[kern_id], param_id++, sizeof(cl_mem), (void *)&(state->exKey));
+        KERNEL_PARAM_ERRORCHECK()
+    	ret = clSetKernelArg(meth->kernel[kern_id], param_id++, sizeof(cl_mem), (void *)&(state->out));
+        KERNEL_PARAM_ERRORCHECK()
 
-    if (with_iv) {
-        ret = clSetKernelArg(meth->kernel, param_id++, sizeof(cl_mem), (void *)&(state->iv));
+        if (with_iv) {
+            ret = clSetKernelArg(meth->kernel[kern_id], param_id++, sizeof(cl_mem), (void *)&(state->iv));
+            KERNEL_PARAM_ERRORCHECK()
+        }
+
+        ret = clSetKernelArg(meth->kernel[kern_id], param_id++, sizeof(cl_int), &num_rounds);
+        KERNEL_PARAM_ERRORCHECK()
+
+        ret = clSetKernelArg(meth->kernel[kern_id], param_id++, sizeof(cl_int), &input_size);
+        KERNEL_PARAM_ERRORCHECK()
+
+        ret = clSetKernelArg(meth->kernel[kern_id], param_id++, sizeof(cl_int), &kern_id);
         KERNEL_PARAM_ERRORCHECK()
     }
-
-    ret = clSetKernelArg(meth->kernel, param_id++, sizeof(cl_int), &num_rounds);
-    KERNEL_PARAM_ERRORCHECK()
-
-    ret = clSetKernelArg(meth->kernel, param_id++, sizeof(cl_int), &input_size);
-    KERNEL_PARAM_ERRORCHECK()
 }
 
 void gather_aes_output(CipherFamily* aes_fam, uint8_t* output, size_t output_size) {
     cl_event event;
     AesState *state = (AesState*) aes_fam->state;
-    clEnqueueReadBuffer(aes_fam->environment->command_queue, state->out, CL_TRUE, 0, output_size, output, 0, NULL, &event);
+    clEnqueueReadBuffer(aes_fam->environment->command_queue[IO_COMMAND_QUEUE_ID], state->out, CL_TRUE, 0, output_size, output, 0, NULL, &event);
     clWaitForEvents(1, &event);
 }
 
@@ -110,7 +118,7 @@ void aes_encrypt_decrypt_function(OpenCLEnv* env,           // global opencl env
     prepare_buffers_aes(meth->family, input_size, context->ex_key_dim);
     prepare_kernel_aes(meth, (cl_int)input_size, KEYSIZE_TO_Nr(aes_mode), iv != NULL);
     load_aes_input_key_iv(meth->family, input, input_size, context, iv, is_decrypt);
-    execute_meth_kernel(meth);
+    execute_meth_kernel(meth, NUM_CONCURRENT_KERNELS);
     gather_aes_output(meth->family, output, input_size);
 }
 

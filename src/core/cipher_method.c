@@ -5,8 +5,13 @@
 
 void load_kernel(CipherMethod* meth, char* kernel_name) {
     cl_int ret;
-    meth->kernel = clCreateKernel(meth->family->program, kernel_name, &ret);
-    if (ret != CL_SUCCESS) error_fatal("Failed to create kernel, error = %s (%d)\n", get_cl_error_string(ret), ret);
+    for (size_t k=0; k<NUM_CONCURRENT_KERNELS; k++) {
+        meth->kernel[k] = clCreateKernel(
+            meth->family->program,
+            kernel_name,
+            &ret);
+        if (ret != CL_SUCCESS) error_fatal("Failed to create kernel, error = %s (%d)\n", get_cl_error_string(ret), ret);
+    }
 }
 
 CipherMethod* CipherMethod_init(struct CipherFamily* family, char* kernel_name) {
@@ -19,6 +24,8 @@ CipherMethod* CipherMethod_init(struct CipherFamily* family, char* kernel_name) 
 
 
 void CipherMethod_destroy(CipherMethod* meth) {
-    clReleaseKernel(meth->kernel);
+    for (size_t k=0; k<NUM_CONCURRENT_KERNELS; k++) {
+        clReleaseKernel(meth->kernel[k]);
+    }
     free(meth);
 }

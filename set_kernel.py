@@ -7,7 +7,7 @@ import argparse
 source_folder = "./src_cl"
 bin_folder = "./bin_cl"
 
-kerneltype = "2wi"
+kerneltype = "dwi"
 
 
 def parsecli():
