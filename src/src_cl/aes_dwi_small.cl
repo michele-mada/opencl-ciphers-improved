@@ -307,7 +307,6 @@ __kernel void aesEncCipher(__global uchar* restrict in,
     copy_extkey_to_local(local_w, w);
 
     for (size_t blockid=start_blockid; blockid < input_size / BLOCK_SIZE; blockid+=2) {
-        printf("block %u\n", blockid);
         #pragma unroll
         for (size_t i = 0; i < BLOCK_SIZE; ++i) {
            size_t offset = blockid * BLOCK_SIZE + i;
