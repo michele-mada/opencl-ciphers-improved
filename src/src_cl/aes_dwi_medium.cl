@@ -397,6 +397,7 @@ void copy_extkey_to_local(__private uint* local_w, __global uint* restrict w) {
 
 
 __attribute__((reqd_work_group_size(1, 1, 1)))
+__attribute__((num_compute_units(2))
 __kernel void aesEncCipher(__global uchar* restrict in,
                            __global uint* restrict w,
                            __global uchar* restrict out,
@@ -424,6 +425,7 @@ __kernel void aesEncCipher(__global uchar* restrict in,
 }
 
 __attribute__((reqd_work_group_size(1, 1, 1)))
+__attribute__((num_compute_units(2))
 __kernel void aesDecCipher(__global uchar* restrict in,
                            __global uint* restrict w,
                            __global uchar* restrict out,
@@ -465,6 +467,7 @@ void increment_counter(__private uchar* counter, size_t amount) {
 
 
 __attribute__((reqd_work_group_size(1, 1, 1)))
+__attribute__((num_compute_units(2))
 __kernel void aesCipherCtr(__global uchar* restrict in,
                            __global uint* restrict w,
                            __global uchar* restrict out,
