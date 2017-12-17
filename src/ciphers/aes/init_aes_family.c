@@ -53,7 +53,7 @@ void destroy_aes_methods_and_state(CipherFamily* fam) {
 
 
 CipherFamily* get_aes_family(struct OpenCLEnv* environment) {
-    char *kernel_path = ParamAtlas_aget_full_kernel_path(environment->parameters, "aes_dwi");
+    char *kernel_path = ParamAtlas_aget_full_kernel_path(environment->parameters, "aes_swix2");
     CipherFamily* aes = CipherFamily_init(environment, kernel_path, &init_aes_methods_and_state, &destroy_aes_methods_and_state);
     free(kernel_path);
     return aes;

@@ -14,7 +14,7 @@
 /*
     NOTE: the num_concurrent_units is passed as a parameter (instead of just
     using NUM_CONCURRENT_KERNELS) for compatibility with cipher families not
-    (yet) using the kernel-parallel feature
+    using the kernel-parallel feature
 */
 static inline void execute_meth_kernel(CipherMethod* meth, size_t num_concurrent_units) {
     cl_event event[NUM_CONCURRENT_KERNELS];
@@ -22,7 +22,7 @@ static inline void execute_meth_kernel(CipherMethod* meth, size_t num_concurrent
     size_t global_work_size = GLOBAL_WORK_SIZE;
     size_t local_work_size = LOCAL_WORK_SIZE;
     size_t work_dim = WORK_DIM;
-    
+
     for (size_t n=0; n<num_concurrent_units; n++) {
         ret = clEnqueueNDRangeKernel(meth->family->environment->command_queue[n],
                                      meth->kernel[n],
