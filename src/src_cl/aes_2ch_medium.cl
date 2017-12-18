@@ -494,7 +494,7 @@ __kernel void resultCollector(__global uchar* restrict out,
 
 #define DECLARE_WORKER_ENC(ID)                                                  \
 __attribute__((reqd_work_group_size(1, 1, 1)))                                  \
-__kernel void aesEncCipher_ #ID (__global uint* restrict w,                        \
+__kernel void aesEncCipher_##ID (__global uint* restrict w,                        \
                               unsigned int num_rounds,                          \
                               unsigned int input_size) {                        \
     __private uchar state_in[BLOCK_SIZE];                                       \
@@ -517,7 +517,7 @@ __kernel void aesEncCipher_ #ID (__global uint* restrict w,                     
 
 #define DECLARE_WORKER_DEC(ID)                                                  \
 __attribute__((reqd_work_group_size(1, 1, 1)))                                  \
-__kernel void aesEncCipher_ #ID (__global uint* restrict w,                        \
+__kernel void aesEncCipher_##ID (__global uint* restrict w,                        \
                               unsigned int num_rounds,                          \
                               unsigned int input_size) {                        \
     __private uchar state_in[BLOCK_SIZE];                                       \
@@ -556,7 +556,7 @@ void increment_counter(__private uchar* counter, size_t amount) {
 */
 #define DECLARE_WORKER_CTR(ID)                                                  \
 __attribute__((reqd_work_group_size(1, 1, 1)))                                  \
-__kernel void aesCipherCtr_ #ID (__global uint* restrict w,                        \
+__kernel void aesCipherCtr_##ID (__global uint* restrict w,                        \
                               __global uchar* restrict IV,                      \
                               unsigned int num_rounds,                          \
                               unsigned int input_size) {                        \
