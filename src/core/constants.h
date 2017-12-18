@@ -7,6 +7,10 @@
 #include <CL/cl.h>
 #endif
 
+#define NUM_MODES_OF_OPERATION 3
+static char *operation_mode_names[3] = {"enc",  // ecb encryption
+                                        "dec",  // ecb decryption
+                                        "ctr"}; // counter
 
 #define GLOBAL_WORK_SIZE 1
 #define LOCAL_WORK_SIZE 1
@@ -20,6 +24,7 @@
 
 #define WORK_FEEDER_KERNEL_ID 0
 #define RESULT_COLLECTOR_KERNEL_ID 1
+
 
 #define BASE_ENC_BLOCK_SIZE 4096
 

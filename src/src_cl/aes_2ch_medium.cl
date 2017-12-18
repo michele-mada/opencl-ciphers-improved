@@ -462,8 +462,8 @@ FOREACH_WORKER(PRODUCT_METHOD, MAKECHANNEL_RESULT)
 
 #define DECLARE_WORK_FEEDER(_, METH)                                            \
 __attribute__((reqd_work_group_size(1, 1, 1)))                                  \
-__kernel void workFeeder(__global uchar* restrict in,                           \
-                         unsigned int input_size) {                             \
+__kernel void workFeeder_##METH (__global uchar* restrict in,                           \
+                                 unsigned int input_size) {                             \
     uchar __attribute__((register)) work_preload[MULTIBLOCK_BYTES];             \
                                                                                 \
     for (size_t blockid=0; blockid < input_size / MULTIBLOCK_BYTES; blockid++) {\
@@ -480,8 +480,8 @@ __kernel void workFeeder(__global uchar* restrict in,                           
 
 #define DECLARE_RESULT_COLLECTOR(_, METH)                                       \
 __attribute__((reqd_work_group_size(1, 1, 1)))                                  \
-__kernel void resultCollector(__global uchar* restrict out,                     \
-                              unsigned int input_size) {                        \
+__kernel void resultCollector_##METH (__global uchar* restrict out,                     \
+                                      unsigned int input_size) {                        \
     uchar __attribute__((register)) result_preload[MULTIBLOCK_BYTES];           \
                                                                                 \
     for (size_t blockid=0; blockid < input_size / MULTIBLOCK_BYTES; blockid++) {\

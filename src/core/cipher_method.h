@@ -22,11 +22,12 @@
 typedef struct CipherMethod {
     struct CipherFamily* family;
     cl_kernel kernel[NUM_CONCURRENT_KERNELS];
+    int support_selector;
     void *state;
 } CipherMethod;
 
 
-CipherMethod* CipherMethod_init(struct CipherFamily* family, char* kernel_name);
+CipherMethod* CipherMethod_init(struct CipherFamily* family, char* kernel_name, int support_selector);
 void CipherMethod_destroy(CipherMethod* meth);
 
 
