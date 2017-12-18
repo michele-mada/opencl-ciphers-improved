@@ -425,25 +425,30 @@ Memory            |     X        |                          |   WORKERS)   |    
 // number of bytes consumed by the feeder / collector in each iteration
 #define MULTIBLOCK_BYTES (NUM_WORKERS * BLOCK_SIZE)
 
-#define FOREACH_WORKER(APPLIEDMACRO) \
-    APPLIEDMACRO(0) \
-    APPLIEDMACRO(1) \
+#define FOREACH_WORKER(APPLIEDMACRO_LVL1, PARAM2) \
+    APPLIEDMACRO_LVL1(0, PARAM2) \
+    APPLIEDMACRO_LVL1(1, PARAM2) \
 
-#define MAKECHANNEL_FEED(ID) channel uchar work_feed_chan_##ID;
-#define MAKECHANNEL_RESULT(ID) channel uchar result_feed_chan_##ID;
+#define PRODUCT_METHOD(ID, APPLIEDMACRO) \
+    APPLIEDMACRO(ID, enc) \
+    APPLIEDMACRO(ID, dec) \
+    APPLIEDMACRO(ID, ctr) \
 
-#define MAKE_FEEDER_LOOP(ID)                                                        \
+#define MAKECHANNEL_FEED(ID, METH) channel uchar work_feed_chan_##METH##_##ID;
+#define MAKECHANNEL_RESULT(ID, METH) channel uchar result_feed_chan_##METH##_##ID;
+
+#define MAKE_FEEDER_LOOP(ID, METH)                                                        \
 {                                                                                   \
     _Pragma("unroll")                                                               \
     for (size_t f = 0; f < BLOCK_SIZE; ++f) {                                       \
-        write_channel_altera(work_feed_chan_##ID, work_preload[f + ID*BLOCK_SIZE]);   \
+        write_channel_altera(work_feed_chan_##METH##_##ID, work_preload[f + ID*BLOCK_SIZE]);   \
     }                                                                               \
 }
-#define MAKE_COLLECTOR_LOOP(ID)                                                     \
+#define MAKE_COLLECTOR_LOOP(ID, METH)                                                     \
 {                                                                                   \
     _Pragma("unroll")                                                               \
     for (size_t c = 0; c < BLOCK_SIZE; ++c) {                                       \
-        result_preload[c + ID*BLOCK_SIZE] = read_channel_altera(result_feed_chan_##ID); \
+        result_preload[c + ID*BLOCK_SIZE] = read_channel_altera(result_feed_chan_##METH##_##ID); \
     }                                                                               \
 }
 
@@ -452,47 +457,53 @@ Memory            |     X        |                          |   WORKERS)   |    
 */
 
 // declare the channels used
-FOREACH_WORKER(MAKECHANNEL_FEED)
-FOREACH_WORKER(MAKECHANNEL_RESULT)
+FOREACH_WORKER(PRODUCT_METHOD, MAKECHANNEL_FEED)
+FOREACH_WORKER(PRODUCT_METHOD, MAKECHANNEL_RESULT)
 
-__attribute__((reqd_work_group_size(1, 1, 1)))
-__kernel void workFeeder(__global uchar* restrict in,
-                         unsigned int input_size) {
-    uchar __attribute__((register)) work_preload[MULTIBLOCK_BYTES];
-
-    for (size_t blockid=0; blockid < input_size / MULTIBLOCK_BYTES; blockid++) {
-        // cache the work to be sent to workers
-        #pragma unroll
-        for (size_t i = 0; i < MULTIBLOCK_BYTES; ++i) {
-            size_t offset = blockid * MULTIBLOCK_BYTES + i;
-            work_preload[i] = in[offset];
-        }
-        // feed the work to the workers
-        FOREACH_WORKER(MAKE_FEEDER_LOOP);
-    }
+#define DECLARE_WORK_FEEDER(_, METH)                                            \
+__attribute__((reqd_work_group_size(1, 1, 1)))                                  \
+__kernel void workFeeder(__global uchar* restrict in,                           \
+                         unsigned int input_size) {                             \
+    uchar __attribute__((register)) work_preload[MULTIBLOCK_BYTES];             \
+                                                                                \
+    for (size_t blockid=0; blockid < input_size / MULTIBLOCK_BYTES; blockid++) {\
+        /* cache the work to be sent to workers */                              \
+        _Pragma("unroll")                                                       \
+        for (size_t i = 0; i < MULTIBLOCK_BYTES; ++i) {                         \
+            size_t offset = blockid * MULTIBLOCK_BYTES + i;                     \
+            work_preload[i] = in[offset];                                       \
+        }                                                                       \
+        /* feed the work to the workers */                                      \
+        FOREACH_WORKER(MAKE_FEEDER_LOOP, METH);                                 \
+    }                                                                           \
 }
 
-__attribute__((reqd_work_group_size(1, 1, 1)))
-__kernel void resultCollector(__global uchar* restrict out,
-                              unsigned int input_size) {
-    uchar __attribute__((register)) result_preload[MULTIBLOCK_BYTES];
-
-    for (size_t blockid=0; blockid < input_size / MULTIBLOCK_BYTES; blockid++) {
-        // collect the results from the workers
-        FOREACH_WORKER(MAKE_COLLECTOR_LOOP);
-        #pragma unroll
-        for(size_t i = 0; i < MULTIBLOCK_BYTES; i++) {
-            size_t offset = blockid * MULTIBLOCK_BYTES + i;
-            out[offset] = result_preload[i];
-        }
-    }
+#define DECLARE_RESULT_COLLECTOR(_, METH)                                       \
+__attribute__((reqd_work_group_size(1, 1, 1)))                                  \
+__kernel void resultCollector(__global uchar* restrict out,                     \
+                              unsigned int input_size) {                        \
+    uchar __attribute__((register)) result_preload[MULTIBLOCK_BYTES];           \
+                                                                                \
+    for (size_t blockid=0; blockid < input_size / MULTIBLOCK_BYTES; blockid++) {\
+        /* collect the results from the workers */                              \
+        FOREACH_WORKER(MAKE_COLLECTOR_LOOP, METH);                              \
+        _Pragma("unroll")                                                       \
+        for(size_t i = 0; i < MULTIBLOCK_BYTES; i++) {                          \
+            size_t offset = blockid * MULTIBLOCK_BYTES + i;                     \
+            out[offset] = result_preload[i];                                    \
+        }                                                                       \
+    }                                                                           \
 }
+
+PRODUCT_METHOD(_, DECLARE_WORK_FEEDER)
+PRODUCT_METHOD(_, DECLARE_RESULT_COLLECTOR)
+
 
 /*
     declaration of the actual workers
 */
 
-#define DECLARE_WORKER_ENC(ID)                                                  \
+#define DECLARE_WORKER_ENC(ID, _)                                                  \
 __attribute__((reqd_work_group_size(1, 1, 1)))                                  \
 __kernel void aesEncCipher_##ID (__global uint* restrict w,                        \
                               unsigned int num_rounds,                          \
@@ -505,17 +516,17 @@ __kernel void aesEncCipher_##ID (__global uint* restrict w,                     
     for (size_t blockid=ID; blockid < input_size / BLOCK_SIZE; blockid+=NUM_WORKERS) {  \
        _Pragma("unroll")                                                        \
        for (size_t i = 0; i < BLOCK_SIZE; ++i) {                                \
-           state_in[i] = read_channel_altera(work_feed_chan_##ID);                \
+           state_in[i] = read_channel_altera(work_feed_chan_enc_##ID);                \
        }                                                                        \
        encrypt(state_in, local_w, state_out, num_rounds);                       \
        _Pragma("unroll")                                                        \
        for(size_t i = 0; i < BLOCK_SIZE; i++) {                                 \
-           write_channel_altera(result_feed_chan_##ID, state_out[i]);             \
+           write_channel_altera(result_feed_chan_enc_##ID, state_out[i]);             \
        }                                                                        \
     }                                                                           \
 }
 
-#define DECLARE_WORKER_DEC(ID)                                                  \
+#define DECLARE_WORKER_DEC(ID, _)                                                  \
 __attribute__((reqd_work_group_size(1, 1, 1)))                                  \
 __kernel void aesDecCipher_##ID (__global uint* restrict w,                        \
                               unsigned int num_rounds,                          \
@@ -528,12 +539,12 @@ __kernel void aesDecCipher_##ID (__global uint* restrict w,                     
     for (size_t blockid=ID; blockid < input_size / BLOCK_SIZE; blockid+=NUM_WORKERS) {  \
        _Pragma("unroll")                                                        \
        for (size_t i = 0; i < BLOCK_SIZE; ++i) {                                \
-           state_in[i] = read_channel_altera(work_feed_chan_##ID);                \
+           state_in[i] = read_channel_altera(work_feed_chan_dec_##ID);                \
        }                                                                        \
        decrypt(state_in, local_w, state_out, num_rounds);                       \
        _Pragma("unroll")                                                        \
        for(size_t i = 0; i < BLOCK_SIZE; i++) {                                 \
-           write_channel_altera(result_feed_chan_##ID, state_out[i]);             \
+           write_channel_altera(result_feed_chan_dec_##ID, state_out[i]);             \
        }                                                                        \
     }                                                                           \
 }
@@ -554,7 +565,7 @@ void increment_counter(__private uchar* counter, size_t amount) {
     NOTE: unlike the non-channelled version, here state_in is cached locally.
     This is because channel operation are blocking
 */
-#define DECLARE_WORKER_CTR(ID)                                                  \
+#define DECLARE_WORKER_CTR(ID, _)                                                  \
 __attribute__((reqd_work_group_size(1, 1, 1)))                                  \
 __kernel void aesCipherCtr_##ID (__global uint* restrict w,                        \
                               __global uchar* restrict IV,                      \
@@ -574,12 +585,12 @@ __kernel void aesCipherCtr_##ID (__global uint* restrict w,                     
     for (size_t blockid=ID; blockid < input_size / BLOCK_SIZE; blockid+=NUM_WORKERS) {  \
         _Pragma("unroll")                                                       \
         for (size_t i = 0; i < BLOCK_SIZE; ++i) {                               \
-            state_in[i] = read_channel_altera(work_feed_chan_##ID);               \
+            state_in[i] = read_channel_altera(work_feed_chan_ctr_##ID);               \
         }                                                                       \
         encrypt(counter, local_w, outCipher, num_rounds);                       \
         _Pragma("unroll")                                                       \
         for (size_t i = 0; i < BLOCK_SIZE; i++) {                               \
-            write_channel_altera(result_feed_chan_##ID, outCipher[i] ^ state_in[i]);     \
+            write_channel_altera(result_feed_chan_ctr_##ID, outCipher[i] ^ state_in[i]);     \
         }                                                                       \
         increment_counter(counter, 1);                                          \
     }                                                                           \
@@ -587,6 +598,6 @@ __kernel void aesCipherCtr_##ID (__global uint* restrict w,                     
 
 
 
-FOREACH_WORKER(DECLARE_WORKER_ENC)
-FOREACH_WORKER(DECLARE_WORKER_DEC)
-FOREACH_WORKER(DECLARE_WORKER_CTR)
+FOREACH_WORKER(DECLARE_WORKER_ENC, _)
+FOREACH_WORKER(DECLARE_WORKER_DEC, _)
+FOREACH_WORKER(DECLARE_WORKER_CTR, _)
