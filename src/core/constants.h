@@ -12,8 +12,14 @@
 #define LOCAL_WORK_SIZE 1
 #define WORK_DIM 1
 
-#define NUM_CONCURRENT_KERNELS 1
+#define NUM_WORKERS 2           // inner parallel worker kernels
+#define NUM_OVH_KERNELS 2       // structural support kernels
+#define NUM_CONCURRENT_KERNELS (NUM_WORKERS + NUM_OVH_KERNELS)
+
 #define IO_COMMAND_QUEUE_ID 0
+
+#define WORK_FEEDER_KERNEL_ID 0
+#define RESULT_COLLECTOR_KERNEL_ID 1
 
 #define BASE_ENC_BLOCK_SIZE 4096
 

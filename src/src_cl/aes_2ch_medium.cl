@@ -396,60 +396,146 @@ void copy_extkey_to_local(__private uint* local_w, __global uint* restrict w) {
 }
 
 
+/*
+    channelling part
 
-__attribute__((num_compute_units(2)))
-__kernel void aesEncCipher(__global uchar* restrict in,
-                           __global uint* restrict w,
-                           __global uchar* restrict out,
-                           unsigned int num_rounds,
-                           unsigned int input_size,
-                           unsigned int start_blockid) {
-    __private uchar state_in[BLOCK_SIZE];
-    __private uchar state_out[BLOCK_SIZE];
-    uint __attribute__((register)) local_w[MAX_EXKEY_SIZE_WORDS];
-    copy_extkey_to_local(local_w, w);
+                enqueued by the host application (each kernel on its own queue)
+                          +                 + +  +                   +
+                          |                 | |  |                   |
+                          |                 | |  |                   |
+                          |                 | |  |                   |
+                          v                 | |  |                   v
+                 __kernel workFeeder        | |  |      __kernel resultCollector
+                  +--------------+          v v  v          +--------------+
+                  |              +------> worker_0+----------->Cache       |
+        mem access|  Cache       |                          |  (BLOCK      | mem access
+Global+------------->(BLOCK      +------> worker_1 +---------->   X     +--------------->Global
+Memory            |     X        |                          |   WORKERS)   |             Memory
+                  |   WORKERS)   +------> ... +--------------->            |
+                  |              |                          |              |
+                  +--------------+                          +--------------+
+                                  Altera            Altera
+                                  channels          channels
 
-    for (size_t blockid=start_blockid; blockid < input_size / BLOCK_SIZE; blockid++) {
-       #pragma unroll
-       for (size_t i = 0; i < BLOCK_SIZE; ++i) {
-           size_t offset = blockid * BLOCK_SIZE + i;
-           state_in[i] = in[offset];
-       }
-       encrypt(state_in, local_w, state_out, num_rounds);
-       #pragma unroll
-       for(size_t i = 0; i < BLOCK_SIZE; i++) {
-           size_t offset = blockid * BLOCK_SIZE + i;
-           out[offset] = state_out[i];
-       }
+
+*/
+
+// number of worker kernels used
+#define NUM_WORKERS 2
+// number of bytes consumed by the feeder / collector in each iteration
+#define MULTIBLOCK_BYTES (NUM_WORKERS * BLOCK_SIZE)
+
+#define FOREACH_WORKER(APPLIEDMACRO) \
+    APPLIEDMACRO(0) \
+    APPLIEDMACRO(1) \
+
+#define MAKECHANNEL_FEED(ID) channel uchar work_feed_chan_ID;
+#define MAKECHANNEL_RESULT(ID) channel uchar result_feed_chan_ID;
+
+#define MAKE_FEEDER_LOOP(ID)                                                        \
+{                                                                                   \
+    _Pragma("unroll")                                                               \
+    for (size_t f = 0; f < BLOCK_SIZE; ++f) {                                       \
+        write_channel_altera(work_feed_chan_ID, work_preload[f + ID*BLOCK_SIZE]);   \
+    }                                                                               \
+}
+#define MAKE_COLLECTOR_LOOP(ID)                                                     \
+{                                                                                   \
+    _Pragma("unroll")                                                               \
+    for (size_t c = 0; c < BLOCK_SIZE; ++c) {                                       \
+        result_preload[c + ID*BLOCK_SIZE] = read_channel_altera(result_feed_chan_ID); \
+    }                                                                               \
+}
+
+/*
+    intrastructural part of the channelling system
+*/
+
+// declare the channels used
+FOREACH_WORKER(MAKECHANNEL_FEED)
+FOREACH_WORKER(MAKECHANNEL_RESULT)
+
+__attribute__((reqd_work_group_size(1, 1, 1)))
+__kernel void workFeeder(__global uchar* restrict in,
+                         unsigned int input_size) {
+    uchar __attribute__((register)) work_preload[MULTIBLOCK_BYTES];
+
+    for (size_t blockid=0; blockid < input_size / MULTIBLOCK_BYTES; blockid++) {
+        // cache the work to be sent to workers
+        #pragma unroll
+        for (size_t i = 0; i < MULTIBLOCK_BYTES; ++i) {
+            size_t offset = blockid * MULTIBLOCK_BYTES + i;
+            work_preload[i] = in[offset];
+        }
+        // feed the work to the workers
+        FOREACH_WORKER(MAKE_FEEDER_LOOP);
     }
 }
 
-__attribute__((num_compute_units(2)))
-__kernel void aesDecCipher(__global uchar* restrict in,
-                           __global uint* restrict w,
-                           __global uchar* restrict out,
-                           unsigned int num_rounds,
-                           unsigned int input_size,
-                           unsigned int start_blockid) {
-    __private uchar state_in[BLOCK_SIZE];
-    __private uchar state_out[BLOCK_SIZE];
-    uint __attribute__((register)) local_w[MAX_EXKEY_SIZE_WORDS];
-    copy_extkey_to_local(local_w, w);
-    finalize_inverted_key(local_w, num_rounds);
+__attribute__((reqd_work_group_size(1, 1, 1)))
+__kernel void resultCollector(__global uchar* restrict out,
+                              unsigned int input_size) {
+    uchar __attribute__((register)) result_preload[MULTIBLOCK_BYTES];
 
-    for (size_t blockid=start_blockid; blockid < input_size / BLOCK_SIZE; blockid++) {
+    for (size_t blockid=0; blockid < input_size / MULTIBLOCK_BYTES; blockid++) {
+        // collect the results from the workers
+        FOREACH_WORKER(MAKE_COLLECTOR_LOOP);
         #pragma unroll
-        for (size_t i = 0; i < BLOCK_SIZE; ++i) {
-            size_t offset = blockid * BLOCK_SIZE + i;
-            state_in[i] = in[offset];
-        }
-        decrypt(state_in, local_w, state_out, num_rounds);
-        #pragma unroll
-        for(size_t i = 0; i < BLOCK_SIZE; i++) {
-            size_t offset = blockid * BLOCK_SIZE + i;
+        for(size_t i = 0; i < MULTIBLOCK_BYTES; i++) {
+            size_t offset = blockid * MULTIBLOCK_BYTES + i;
             out[offset] = state_out[i];
         }
     }
+}
+
+/*
+    declaration of the actual workers
+*/
+
+#define DECLARE_WORKER_ENC(ID)                                                  \
+__attribute__((reqd_work_group_size(1, 1, 1)))                                  \
+__kernel void aesEncCipher_ID(__global uint* restrict w,                        \
+                              unsigned int num_rounds,                          \
+                              unsigned int input_size) {                        \
+    __private uchar state_in[BLOCK_SIZE];                                       \
+    __private uchar state_out[BLOCK_SIZE];                                      \
+    uint __attribute__((register)) local_w[MAX_EXKEY_SIZE_WORDS];               \
+    copy_extkey_to_local(local_w, w);                                           \
+                                                                                \
+    for (size_t blockid=ID; blockid < input_size / BLOCK_SIZE; blockid+=NUM_WORKERS) {  \
+       _Pragma("unroll")                                                        \
+       for (size_t i = 0; i < BLOCK_SIZE; ++i) {                                \
+           state_in[i] = read_channel_altera(work_feed_chan_ID);                \
+       }                                                                        \
+       encrypt(state_in, local_w, state_out, num_rounds);                       \
+       _Pragma("unroll")                                                        \
+       for(size_t i = 0; i < BLOCK_SIZE; i++) {                                 \
+           write_channel_altera(result_feed_chan_ID, state_out[i]);             \
+       }                                                                        \
+    }                                                                           \
+}
+
+#define DECLARE_WORKER_DEC(ID)                                                  \
+__attribute__((reqd_work_group_size(1, 1, 1)))                                  \
+__kernel void aesEncCipher_ID(__global uint* restrict w,                        \
+                              unsigned int num_rounds,                          \
+                              unsigned int input_size) {                        \
+    __private uchar state_in[BLOCK_SIZE];                                       \
+    __private uchar state_out[BLOCK_SIZE];                                      \
+    uint __attribute__((register)) local_w[MAX_EXKEY_SIZE_WORDS];               \
+    copy_extkey_to_local(local_w, w);                                           \
+                                                                                \
+    for (size_t blockid=ID; blockid < input_size / BLOCK_SIZE; blockid+=NUM_WORKERS) {  \
+       _Pragma("unroll")                                                        \
+       for (size_t i = 0; i < BLOCK_SIZE; ++i) {                                \
+           state_in[i] = read_channel_altera(work_feed_chan_ID);                \
+       }                                                                        \
+       decrypt(state_in, local_w, state_out, num_rounds);                       \
+       _Pragma("unroll")                                                        \
+       for(size_t i = 0; i < BLOCK_SIZE; i++) {                                 \
+           write_channel_altera(result_feed_chan_ID, state_out[i]);             \
+       }                                                                        \
+    }                                                                           \
 }
 
 
@@ -464,32 +550,43 @@ void increment_counter(__private uchar* counter, size_t amount) {
     } while (n);
 }
 
-
-__attribute__((num_compute_units(2)))
-__kernel void aesCipherCtr(__global uchar* restrict in,
-                           __global uint* restrict w,
-                           __global uchar* restrict out,
-                           __global uchar* restrict IV,
-                           unsigned int num_rounds,
-                           unsigned int input_size,
-                           unsigned int start_blockid) {
-    __private uchar counter[BLOCK_SIZE];
-    __private uchar outCipher[BLOCK_SIZE];
-    uint __attribute__((register)) local_w[MAX_EXKEY_SIZE_WORDS];
-    copy_extkey_to_local(local_w, w);
-    /* initialize counter */
-    #pragma unroll
-    for (size_t i = 0; i < BLOCK_SIZE; i++) {
-        counter[i] = IV[i];
-    }
-
-    for (size_t blockid=start_blockid; blockid < input_size / BLOCK_SIZE; blockid++) {
-        encrypt(counter, local_w, outCipher, num_rounds);
-        #pragma unroll
-        for (size_t i = 0; i < BLOCK_SIZE; i++) {
-            size_t offset = blockid * BLOCK_SIZE + i;
-            out[offset] = outCipher[i] ^ in[offset];
-        }
-        increment_counter(counter, 1);
-    }
+/*
+    NOTE: unlike the non-channelled version, here state_in is cached locally.
+    This is because channel operation are blocking
+*/
+#define DECLARE_WORKER_CTR(ID)                                                  \
+__attribute__((reqd_work_group_size(1, 1, 1)))                                  \
+__kernel void aesCipherCtr_ID(__global uint* restrict w,                        \
+                              __global uchar* restrict IV,                      \
+                              unsigned int num_rounds,                          \
+                              unsigned int input_size) {                        \
+    __private uchar counter[BLOCK_SIZE];                                        \
+    __private uchar outCipher[BLOCK_SIZE];                                      \
+    __private uchar state_in[BLOCK_SIZE];                                       \
+    uint __attribute__((register)) local_w[MAX_EXKEY_SIZE_WORDS];               \
+    copy_extkey_to_local(local_w, w);                                           \
+    /* initialize counter */                                                    \
+    _Pragma("unroll")                                                           \
+    for (size_t i = 0; i < BLOCK_SIZE; i++) {                                   \
+        counter[i] = IV[i];                                                     \
+    }                                                                           \
+                                                                                \
+    for (size_t blockid=ID; blockid < input_size / BLOCK_SIZE; blockid+=NUM_WORKERS) {  \
+        _Pragma("unroll")                                                       \
+        for (size_t i = 0; i < BLOCK_SIZE; ++i) {                               \
+            state_in[i] = read_channel_altera(work_feed_chan_ID);               \
+        }                                                                       \
+        encrypt(counter, local_w, outCipher, num_rounds);                       \
+        _Pragma("unroll")                                                       \
+        for (size_t i = 0; i < BLOCK_SIZE; i++) {                               \
+            write_channel_altera(result_feed_chan_ID, outCipher[i] ^ in[offset]);       \
+        }                                                                       \
+        increment_counter(counter, 1);                                          \
+    }                                                                           \
 }
+
+
+
+FOREACH_WORKER(DECLARE_WORKER_ENC)
+FOREACH_WORKER(DECLARE_WORKER_DEC)
+FOREACH_WORKER(DECLARE_WORKER_CTR)

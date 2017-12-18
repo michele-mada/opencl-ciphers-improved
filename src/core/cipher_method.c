@@ -2,15 +2,32 @@
 #include "constants.h"
 #include "utils.h"
 
+#define KERNEL_ERRORCHECK() if (ret != CL_SUCCESS) error_fatal("Failed to create kernel, error = %s (%d)\n", get_cl_error_string(ret), ret)
 
+//TODO: as of now, a copy of the workFeeder, resultCollector kernels is created
+// for each method
 void load_kernel(CipherMethod* meth, char* kernel_name) {
     cl_int ret;
-    for (size_t k=0; k<NUM_CONCURRENT_KERNELS; k++) {
-        meth->kernel[k] = clCreateKernel(
+    meth->kernel[WORK_FEEDER_KERNEL_ID] = clCreateKernel(
+        meth->family->program,
+        "workFeeder",
+        &ret);
+        KERNEL_ERRORCHECK();
+    meth->kernel[RESULT_COLLECTOR_KERNEL_ID] = clCreateKernel(
+        meth->family->program,
+        "resultCollector",
+        &ret);
+        KERNEL_ERRORCHECK();
+
+    for (size_t k=0; k<NUM_WORKERS; k++) {
+        char *specific_worker_name;
+        asprintf(specific_worker_name, "%s_%d", kernel_name, k);
+        meth->kernel[NUM_OVH_KERNELS + k] = clCreateKernel(
             meth->family->program,
-            kernel_name,
+            specific_worker_name,
             &ret);
-        if (ret != CL_SUCCESS) error_fatal("Failed to create kernel, error = %s (%d)\n", get_cl_error_string(ret), ret);
+        free(specific_worker_name);
+        KERNEL_ERRORCHECK();
     }
 }
 
