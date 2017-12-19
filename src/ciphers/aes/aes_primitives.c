@@ -128,7 +128,7 @@ void aes_encrypt_decrypt_function(OpenCLEnv* env,           // global opencl env
                                   int aes_mode,             // aes mode (128, 192 or 256), to compute the number of rounds
                                   int is_decrypt) {         // select which key to use, encrypt or decrypt
     if (((input_size/BLOCK_SIZE) % NUM_WORKERS) != 0) {
-        fprintf(stderr, "input_size=%d is not a multiple of NUM_WORKERS! Skipping.\n", input_size);
+        fprintf(stderr, "input blocks=%d is not a multiple of NUM_WORKERS! Skipping.\n", input_size/BLOCK_SIZE);
         return;
     }
     CipherMethod* meth = env->ciphers[AES_CIPHERS]->methods[method_id];
