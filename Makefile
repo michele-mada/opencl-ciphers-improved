@@ -12,6 +12,7 @@ LIB_NAME := libopencl_ciphers
 
 # Compiler used
 CC ?= gcc
+BUILD_COMPILER := $(shell $(CC) -v 2>&1)
 # Extension of source files used in the project
 SRC_EXT = c
 # Path to the source directory, relative to the makefile
@@ -21,7 +22,7 @@ LIBS =
 # General compiler flags
 COMPILE_FLAGS = -fPIC -std=gnu99 -Wall -Wno-unused-variable -Wno-unknown-pragmas -g \
  	-D BUILD_MACHINE="\"$(BUILD_MACHINE)\"" -D BUILD_VERSION="\"$(BUILD_VERSION)\"" \
-	-D BUILD_DATE="\"$(BUILD_DATE)\"" \
+	-D BUILD_DATE="\"$(BUILD_DATE)\"" -D BUILD_COMPILER="\"$(BUILD_COMPILER)\"" \
 	-D PLATFORM_CPU
 # Additional release-specific flags
 RCOMPILE_FLAGS = -D NDEBUG
