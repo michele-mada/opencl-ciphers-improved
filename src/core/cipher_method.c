@@ -8,7 +8,7 @@
 void load_support_kernels(CipherMethod* meth) {
     cl_int ret;
     char *specific_name;
-    asprintf(specific_name, "workFeeder_%s", operation_mode_names[meth->support_selector]);
+    asprintf(&specific_name, "workFeeder_%s", operation_mode_names[meth->support_selector]);
     meth->kernel[WORK_FEEDER_KERNEL_ID] = clCreateKernel(
         meth->family->program,
         specific_name,
@@ -16,7 +16,7 @@ void load_support_kernels(CipherMethod* meth) {
     KERNEL_ERRORCHECK(specific_name);
     free(specific_name);
 
-    asprintf(specific_name, "resultCollector_%s", operation_mode_names[meth->support_selector]);
+    asprintf(&specific_name, "resultCollector_%s", operation_mode_names[meth->support_selector]);
     meth->kernel[RESULT_COLLECTOR_KERNEL_ID] = clCreateKernel(
         meth->family->program,
         specific_name,
@@ -29,7 +29,7 @@ void load_worker_kernels(CipherMethod* meth, char* kernel_name) {
     cl_int ret;
     for (size_t k=0; k<NUM_WORKERS; k++) {
         char *specific_worker_name;
-        asprintf(specific_worker_name, "%s_%d", kernel_name, k);
+        asprintf(&specific_worker_name, "%s_%d", kernel_name, k);
         meth->kernel[NUM_OVH_KERNELS + k] = clCreateKernel(
             meth->family->program,
             specific_worker_name,
