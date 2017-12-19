@@ -129,6 +129,7 @@ void aes_encrypt_decrypt_function(OpenCLEnv* env,           // global opencl env
                                   int is_decrypt) {         // select which key to use, encrypt or decrypt
     if (input_size % NUM_WORKERS != 0) {
         fprintf(stderr, "input_size=%d is not a multiple of NUM_WORKERS! Skipping.\n", input_size);
+        return;
     }
     CipherMethod* meth = env->ciphers[AES_CIPHERS]->methods[method_id];
     prepare_buffers_aes(meth->family, input_size, context->ex_key_dim);
