@@ -7,7 +7,7 @@ import argparse
 source_folder = "./src_cl"
 bin_folder = "./bin_cl"
 
-kerneltype = "swix2"
+kerneltype = "aliasx2"
 
 
 def parsecli():

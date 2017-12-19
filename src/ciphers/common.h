@@ -11,19 +11,15 @@
 #include "../core/cipher_method.h"
 #include "../core/utils.h"
 
-/*
-    NOTE: the num_concurrent_units is passed as a parameter (instead of just
-    using NUM_CONCURRENT_KERNELS) for compatibility with cipher families not
-    using the kernel-parallel feature
-*/
-static inline void execute_meth_kernel(CipherMethod* meth, size_t num_concurrent_units) {
+
+static inline void execute_meth_kernel(CipherMethod* meth) {
     cl_event event[NUM_CONCURRENT_KERNELS];
     cl_int ret;
     size_t global_work_size = GLOBAL_WORK_SIZE;
     size_t local_work_size = LOCAL_WORK_SIZE;
     size_t work_dim = WORK_DIM;
 
-    for (size_t n=0; n<num_concurrent_units; n++) {
+    for (size_t n=0; n<NUM_CONCURRENT_KERNELS; n++) {
         ret = clEnqueueNDRangeKernel(meth->family->environment->command_queue[n],
                                      meth->kernel[n],
                                      work_dim,  // work dim
@@ -33,7 +29,7 @@ static inline void execute_meth_kernel(CipherMethod* meth, size_t num_concurrent
                                      0, NULL, event + n);
         if (ret != CL_SUCCESS) error_fatal("Failed to enqueue NDRangeKernel. Error = %s (%d)\n", get_cl_error_string(ret), ret);
     }
-    for (size_t e=0; e<num_concurrent_units; e++) {
+    for (size_t e=0; e<NUM_CONCURRENT_KERNELS; e++) {
         clWaitForEvents(1, event + e);
     }
 }

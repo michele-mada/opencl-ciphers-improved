@@ -93,8 +93,6 @@ void prepare_kernel_aes(CipherMethod* meth,
         ret = clSetKernelArg(meth->kernel[kern_id], param_id++, sizeof(cl_int), &input_size);
         KERNEL_PARAM_ERRORCHECK()
 
-        ret = clSetKernelArg(meth->kernel[kern_id], param_id++, sizeof(cl_int), &kern_id);
-        KERNEL_PARAM_ERRORCHECK()
     }
 }
 
@@ -118,7 +116,7 @@ void aes_encrypt_decrypt_function(OpenCLEnv* env,           // global opencl env
     prepare_buffers_aes(meth->family, input_size, context->ex_key_dim);
     prepare_kernel_aes(meth, (cl_int)input_size, KEYSIZE_TO_Nr(aes_mode), iv != NULL);
     load_aes_input_key_iv(meth->family, input, input_size, context, iv, is_decrypt);
-    execute_meth_kernel(meth, NUM_CONCURRENT_KERNELS);
+    execute_meth_kernel(meth);
     gather_aes_output(meth->family, output, input_size);
 }
 

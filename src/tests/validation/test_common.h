@@ -78,7 +78,7 @@ static inline void print_hex_string(uint8_t *hexstring, size_t length) {
 }
 
 
-extern int test_des(OpenCLEnv* global_env);
+//extern int test_des(OpenCLEnv* global_env);
 extern int test_aes(OpenCLEnv* global_env);
 
 

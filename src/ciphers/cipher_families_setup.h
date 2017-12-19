@@ -3,7 +3,7 @@
 
 
 enum CipherFamilyId {
-    DES_CIPHERS = 0,
+    //DES_CIPHERS = 0,
     AES_CIPHERS,
 
 
