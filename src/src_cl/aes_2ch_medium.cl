@@ -422,14 +422,14 @@ Memory            |     X        |                          |   WORKERS)   |    
 {                                                                               \
     _Pragma("unroll")                                                           \
     for (size_t f = 0; f < NUM_WORDS; ++f) {                                    \
-        write_channel_altera(work_feed_chan_##METH##_##ID, work_preload[f + ID*BLOCK_SIZE]);    \
+        write_channel_altera(work_feed_chan_##METH##_##ID, work_preload[f + ID*NUM_WORDS]);    \
     }                                                                           \
 }
 #define MAKE_COLLECTOR_LOOP(ID, METH)                                           \
 {                                                                               \
     _Pragma("unroll")                                                           \
     for (size_t c = 0; c < NUM_WORDS; ++c) {                                    \
-        result_preload[c + ID*BLOCK_SIZE] = read_channel_altera(result_feed_chan_##METH##_##ID);\
+        result_preload[c + ID*NUM_WORDS] = read_channel_altera(result_feed_chan_##METH##_##ID);\
     }                                                                           \
 }
 
