@@ -521,7 +521,7 @@ __kernel void aesDecCipher_##ID (__global uint* restrict w,                     
     for (size_t blockid=ID; blockid < input_size / BLOCK_SIZE; blockid+=NUM_WORKERS) {  \
        _Pragma("unroll")                                                        \
        for (size_t i = 0; i < NUM_WORDS; ++i) {                                 \
-           state_in[i] = read_channel_altera(work_feed_chan_enc_##ID);          \
+           state_in[i] = read_channel_altera(work_feed_chan_dec_##ID);          \
        }                                                                        \
        decrypt(state_in, local_w, state_out, num_rounds);                       \
        _Pragma("unroll")                                                        \
