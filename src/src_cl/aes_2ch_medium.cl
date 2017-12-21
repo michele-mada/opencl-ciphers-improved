@@ -447,7 +447,7 @@ __kernel void workFeeder_##METH (__global uchar* restrict in,                   
                                  unsigned int input_size) {                     \
     uint __attribute__((register)) work_preload[MULTIBLOCK_LONGS];              \
                                                                                 \
-    for (size_t blockid=0; blockid < input_size / MULTIBLOCK_LONGS; blockid++) {\
+    for (size_t blockid=0; blockid < input_size / MULTIBLOCK_BYTES; blockid++) {\
         /* cache the work to be sent to workers */                              \
         _Pragma("unroll")                                                       \
         for (size_t i = 0; i < MULTIBLOCK_LONGS; ++i) {                         \
@@ -465,7 +465,7 @@ __kernel void resultCollector_##METH (__global uchar* restrict out,             
                                       unsigned int input_size) {                \
     uint __attribute__((register)) result_preload[MULTIBLOCK_LONGS];            \
                                                                                 \
-    for (size_t blockid=0; blockid < input_size / MULTIBLOCK_LONGS; blockid++) {\
+    for (size_t blockid=0; blockid < input_size / MULTIBLOCK_BYTES; blockid++) {\
         /* collect the results from the workers */                              \
         FOREACH_WORKER(MAKE_COLLECTOR_LOOP, METH);                              \
         _Pragma("unroll")                                                       \
