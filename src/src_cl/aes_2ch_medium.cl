@@ -406,17 +406,28 @@ Memory            |     X        |                          |   WORKERS)   |    
 #define MULTIBLOCK_BYTES (NUM_WORKERS * BLOCK_SIZE)
 #define MULTIBLOCK_LONGS (NUM_WORKERS * NUM_WORDS)
 
+// FOREACH_WORKER and PRODUCT_METHOD are composable:
+// FOREACH_WORKER(PRODUCT_METHOD, SOME_MACRO)
+// SOME_MACRO must accept 2 parameters: ID, METH
+// this make possible to apply SOME_MACRO to (WORKERS x METHODS) pairs
+
+// FOREACH_WORKER can be used standalone, by using an APPLIEDMACRO_LVL1 which
+// accepts a "don't care" as its second parameter,
+// and setting PARAM2 to "don't care"
 #define FOREACH_WORKER(APPLIEDMACRO_LVL1, PARAM2) \
     APPLIEDMACRO_LVL1(0, PARAM2) \
     APPLIEDMACRO_LVL1(1, PARAM2) \
 
+// PRODUCT_METHOD can be used standalone, by using an APPLIEDMACRO which
+// accepts a "don't care" as its first parameter,
+// and setting ID to "don't care"
 #define PRODUCT_METHOD(ID, APPLIEDMACRO) \
     APPLIEDMACRO(ID, enc) \
     APPLIEDMACRO(ID, dec) \
     APPLIEDMACRO(ID, ctr) \
 
-#define MAKECHANNEL_FEED(ID, METH) channel uint work_feed_chan_##METH##_##ID;
-#define MAKECHANNEL_RESULT(ID, METH) channel uint result_feed_chan_##METH##_##ID;
+#define MAKECHANNEL_FEED(ID, METH) channel uint __attribute__((depth(NUM_WORDS))) work_feed_chan_##METH##_##ID;
+#define MAKECHANNEL_RESULT(ID, METH) channel uint __attribute__((depth(NUM_WORDS))) result_feed_chan_##METH##_##ID;
 
 #define MAKE_FEEDER_LOOP(ID, METH)                                              \
 {                                                                               \
@@ -437,7 +448,7 @@ Memory            |     X        |                          |   WORKERS)   |    
     intrastructural part of the channelling system
 */
 
-// declare the channels used
+// declare the channels used (each channel is identified by a pair WORKER x METHOD)
 FOREACH_WORKER(PRODUCT_METHOD, MAKECHANNEL_FEED)
 FOREACH_WORKER(PRODUCT_METHOD, MAKECHANNEL_RESULT)
 
@@ -476,6 +487,8 @@ __kernel void resultCollector_##METH (__global uchar* restrict out,             
     }                                                                           \
 }
 
+// declare the feeder / collector used (aka "support kernels")
+// each support kernel is identified by a METHOD suffix
 PRODUCT_METHOD(_, DECLARE_WORK_FEEDER)
 PRODUCT_METHOD(_, DECLARE_RESULT_COLLECTOR)
 
@@ -580,7 +593,8 @@ __kernel void aesCipherCtr_##ID (__global uint* restrict w,                     
 }
 
 
-
+// declare the workers
+// each worker is identified by a numeric suffix
 FOREACH_WORKER(DECLARE_WORKER_ENC, _)
 FOREACH_WORKER(DECLARE_WORKER_DEC, _)
 FOREACH_WORKER(DECLARE_WORKER_CTR, _)
