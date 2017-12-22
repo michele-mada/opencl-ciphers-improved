@@ -800,7 +800,9 @@ __kernel void aesEncCipher_##ID (__global uchar* restrict in,                   
     uint __attribute__((register)) local_w[MAX_EXKEY_SIZE_WORDS];               \
     copy_extkey_to_local(local_w, w);                                           \
                                                                                 \
-    for (size_t blockid=ID; blockid < input_size / BLOCK_SIZE; blockid+=NUM_WORKERS) {  \
+    size_t coverage = input_size / NUM_WORKERS;                                 \
+    size_t start = coverage * ID;                                               \
+    for (size_t blockid=start / BLOCK_SIZE; blockid < (start + coverage) / BLOCK_SIZE; blockid++) {  \
        _Pragma("unroll")                                                        \
        for (size_t i = 0; i < BLOCK_SIZE; ++i) {                                \
            size_t offset = blockid * BLOCK_SIZE + i;                            \
@@ -829,7 +831,9 @@ __kernel void aesDecCipher_##ID (__global uchar* restrict in,                   
     copy_extkey_to_local(local_w, w);                                           \
     finalize_inverted_key(local_w, num_rounds);                                 \
                                                                                 \
-    for (size_t blockid=ID; blockid < input_size / BLOCK_SIZE; blockid+=NUM_WORKERS) {  \
+    size_t coverage = input_size / NUM_WORKERS;                                 \
+    size_t start = coverage * ID;                                               \
+    for (size_t blockid=start / BLOCK_SIZE; blockid < (start + coverage) / BLOCK_SIZE; blockid++) {  \
        _Pragma("unroll")                                                        \
        for (size_t i = 0; i < BLOCK_SIZE; ++i) {                                \
            size_t offset = blockid * BLOCK_SIZE + i;                            \
@@ -874,15 +878,17 @@ __kernel void aesCipherCtr_##ID (__global uchar* restrict in,                   
     for (size_t i = 0; i < BLOCK_SIZE; i++) {                                   \
         counter[i] = IV[i];                                                     \
     }                                                                           \
-    increment_counter(counter, ID);                                             \
-    for (size_t blockid=ID; blockid < input_size / BLOCK_SIZE; blockid+=NUM_WORKERS) {  \
+    size_t coverage = input_size / NUM_WORKERS;                                 \
+    size_t start = coverage * ID;                                               \
+    increment_counter(counter, start / BLOCK_SIZE);                             \
+    for (size_t blockid=start / BLOCK_SIZE; blockid < (start + coverage) / BLOCK_SIZE; blockid++) {  \
         encrypt(counter, local_w, outCipher, num_rounds);                       \
         _Pragma("unroll")                                                       \
         for (size_t i = 0; i < BLOCK_SIZE; i++) {                               \
             size_t offset = blockid * BLOCK_SIZE + i;                           \
             out[offset] = outCipher[i] ^ in[offset];                            \
         }                                                                       \
-        increment_counter(counter, NUM_WORKERS);                                \
+        increment_counter(counter, 1);                                          \
     }                                                                           \
 }
 
