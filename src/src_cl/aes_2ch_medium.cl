@@ -426,8 +426,10 @@ Memory            |     X        |                          |   WORKERS)   |    
     APPLIEDMACRO(ID, dec) \
     APPLIEDMACRO(ID, ctr) \
 
-#define MAKECHANNEL_FEED(ID, METH) channel uint __attribute__((depth(NUM_WORDS))) work_feed_chan_##METH##_##ID;
-#define MAKECHANNEL_RESULT(ID, METH) channel uint __attribute__((depth(NUM_WORDS))) result_feed_chan_##METH##_##ID;
+#define DEPTH_MULT 3
+
+#define MAKECHANNEL_FEED(ID, METH) channel uint __attribute__((depth(NUM_WORDS * DEPTH_MULT))) work_feed_chan_##METH##_##ID;
+#define MAKECHANNEL_RESULT(ID, METH) channel uint __attribute__((depth(NUM_WORDS * DEPTH_MULT))) result_feed_chan_##METH##_##ID;
 
 #define MAKE_FEEDER_LOOP(ID, METH)                                              \
 {                                                                               \
