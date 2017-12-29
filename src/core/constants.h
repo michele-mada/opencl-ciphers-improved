@@ -16,7 +16,7 @@ static char *operation_mode_names[3] = {"enc",  // ecb encryption
 #define LOCAL_WORK_SIZE 1
 #define WORK_DIM 1
 
-#define NUM_WORKERS 2           // inner parallel worker kernels
+#define NUM_WORKERS 4           // inner parallel worker kernels
 #define NUM_OVH_KERNELS 2       // structural support kernels
 #define NUM_CONCURRENT_KERNELS (NUM_WORKERS + NUM_OVH_KERNELS)
 

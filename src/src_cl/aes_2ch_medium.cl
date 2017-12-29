@@ -401,7 +401,7 @@ Memory            |     X        |                          |   WORKERS)   |    
 */
 
 // number of worker kernels used
-#define NUM_WORKERS 2
+#define NUM_WORKERS 4
 // number of bytes consumed by the feeder / collector in each iteration
 #define MULTIBLOCK_BYTES (NUM_WORKERS * BLOCK_SIZE)
 #define MULTIBLOCK_LONGS (NUM_WORKERS * NUM_WORDS)
@@ -417,6 +417,8 @@ Memory            |     X        |                          |   WORKERS)   |    
 #define FOREACH_WORKER(APPLIEDMACRO_LVL1, PARAM2) \
     APPLIEDMACRO_LVL1(0, PARAM2) \
     APPLIEDMACRO_LVL1(1, PARAM2) \
+    APPLIEDMACRO_LVL1(2, PARAM2) \
+    APPLIEDMACRO_LVL1(3, PARAM2) \
 
 // PRODUCT_METHOD can be used standalone, by using an APPLIEDMACRO which
 // accepts a "don't care" as its first parameter,
