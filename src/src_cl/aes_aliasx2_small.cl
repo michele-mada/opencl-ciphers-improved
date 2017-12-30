@@ -295,12 +295,15 @@ void copy_extkey_to_local(__private uint* local_w, __global uint* restrict w) {
 
 
 // number of worker kernels used
-#define NUM_WORKERS 2
+#define NUM_WORKERS 4
 
 
 #define FOREACH_WORKER(APPLIEDMACRO) \
     APPLIEDMACRO(0) \
     APPLIEDMACRO(1) \
+    APPLIEDMACRO(2) \
+    APPLIEDMACRO(3) \
+    
 
 
 
