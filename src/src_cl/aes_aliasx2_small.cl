@@ -303,7 +303,7 @@ void copy_extkey_to_local(__private uint* local_w, __global uint* restrict w) {
     APPLIEDMACRO(1) \
     APPLIEDMACRO(2) \
     APPLIEDMACRO(3) \
-    
+
 
 
 
@@ -412,5 +412,5 @@ __kernel void aesCipherCtr_##ID (__global uchar* restrict in,                   
 
 
 FOREACH_WORKER(DECLARE_WORKER_ENC)
-FOREACH_WORKER(DECLARE_WORKER_DEC)
-FOREACH_WORKER(DECLARE_WORKER_CTR)
+//FOREACH_WORKER(DECLARE_WORKER_DEC)
+//FOREACH_WORKER(DECLARE_WORKER_CTR)
