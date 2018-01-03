@@ -19,29 +19,33 @@ void init_aes_methods_and_state(CipherFamily* fam) {
     fam->methods[AES_128_ECB_ENC] = CipherMethod_init(fam, "aesEncCipher");
     fam->methods[AES_192_ECB_ENC] = CipherMethod_init(fam, "aesEncCipher");
     fam->methods[AES_256_ECB_ENC] = CipherMethod_init(fam, "aesEncCipher");
-    /*fam->methods[AES_128_ECB_DEC] = CipherMethod_init(fam, "aesDecCipher");
+    fam->methods[AES_128_ECB_DEC] = CipherMethod_init(fam, "aesDecCipher");
     fam->methods[AES_192_ECB_DEC] = CipherMethod_init(fam, "aesDecCipher");
     fam->methods[AES_256_ECB_DEC] = CipherMethod_init(fam, "aesDecCipher");
     fam->methods[AES_128_CTR] = CipherMethod_init(fam, "aesCipherCtr");
     fam->methods[AES_192_CTR] = CipherMethod_init(fam, "aesCipherCtr");
-    fam->methods[AES_256_CTR] = CipherMethod_init(fam, "aesCipherCtr");*/
+    fam->methods[AES_256_CTR] = CipherMethod_init(fam, "aesCipherCtr");
 
     fam->num_methods = NUM_AES_METHODS;
 
     AesState *state = (AesState*) malloc(sizeof(AesState));
-    state->in = NULL;
-    state->out = NULL;
-    state->exKey = NULL;
-    state->iv = NULL;
+    for (int kern_id=0; kern_id<NUM_CONCURRENT_KERNELS; kern_id++) {
+        state->in[kern_id] = NULL;
+        state->out[kern_id] = NULL;
+        state->exKey[kern_id] = NULL;
+        state->iv[kern_id] = NULL;
+    }
     fam->state = state;
 }
 
 void destroy_aes_methods_and_state(CipherFamily* fam) {
     AesState *state = (AesState*) fam->state;
-    if (state->iv != NULL) clReleaseMemObject(state->iv);
-    if (state->exKey != NULL) clReleaseMemObject(state->exKey);
-    if (state->out != NULL) clReleaseMemObject(state->out);
-    if (state->in != NULL) clReleaseMemObject(state->in);
+    for (int kern_id=0; kern_id<NUM_CONCURRENT_KERNELS; kern_id++) {
+        if (state->iv[kern_id] != NULL) clReleaseMemObject(state->iv[kern_id]);
+        if (state->exKey[kern_id] != NULL) clReleaseMemObject(state->exKey[kern_id]);
+        if (state->out[kern_id] != NULL) clReleaseMemObject(state->out[kern_id]);
+        if (state->in[kern_id] != NULL) clReleaseMemObject(state->in[kern_id]);
+    }
     free(fam->state);
     size_t num_methods = fam->num_methods;
     for (size_t m = 0; m < num_methods; m++) {

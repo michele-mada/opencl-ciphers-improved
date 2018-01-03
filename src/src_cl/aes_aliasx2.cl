@@ -1,1 +1,1 @@
-./aes_aliasx2_medium.cl
+./aes_aliasx2_small.cl

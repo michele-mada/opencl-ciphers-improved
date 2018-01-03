@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <inttypes.h>
+#include "../../core/constants.h"
 
 #ifdef __APPLE__
 #include <OpenCL/opencl.h>
@@ -18,10 +19,10 @@
 
 
 typedef struct AesState {
-    cl_mem in;
-    cl_mem out;
-    cl_mem exKey;
-    cl_mem iv;
+    cl_mem in[NUM_CONCURRENT_KERNELS];
+    cl_mem out[NUM_CONCURRENT_KERNELS];
+    cl_mem exKey[NUM_CONCURRENT_KERNELS];
+    cl_mem iv[NUM_CONCURRENT_KERNELS];
 } AesState;
 
 typedef struct {

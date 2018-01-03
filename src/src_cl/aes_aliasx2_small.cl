@@ -306,7 +306,6 @@ void copy_extkey_to_local(__private uint* local_w, __global uint* restrict w) {
 
 
 
-
 #define DECLARE_WORKER_ENC(ID)                                                  \
 __attribute__((reqd_work_group_size(1, 1, 1)))                                  \
 __kernel void aesEncCipher_##ID (__global uchar* restrict in,                   \
@@ -320,8 +319,7 @@ __kernel void aesEncCipher_##ID (__global uchar* restrict in,                   
     copy_extkey_to_local(local_w, w);                                           \
                                                                                 \
     size_t coverage = input_size / NUM_WORKERS;                                 \
-    size_t start = coverage * ID;                                               \
-    for (size_t blockid=start / BLOCK_SIZE; blockid < (start + coverage) / BLOCK_SIZE; blockid++) {  \
+    for (size_t blockid=0; blockid < coverage / BLOCK_SIZE; blockid++) {        \
        _Pragma("unroll")                                                        \
        for (size_t i = 0; i < BLOCK_SIZE; ++i) {                                \
            size_t offset = blockid * BLOCK_SIZE + i;                            \
@@ -350,8 +348,7 @@ __kernel void aesDecCipher_##ID (__global uchar* restrict in,                   
     copy_extkey_to_local(local_w, w);                                           \
                                                                                 \
     size_t coverage = input_size / NUM_WORKERS;                                 \
-    size_t start = coverage * ID;                                               \
-    for (size_t blockid=start / BLOCK_SIZE; blockid < (start + coverage) / BLOCK_SIZE; blockid++) {  \
+    for (size_t blockid=0; blockid < coverage / BLOCK_SIZE; blockid++) {        \
        _Pragma("unroll")                                                        \
        for (size_t i = 0; i < BLOCK_SIZE; ++i) {                                \
            size_t offset = blockid * BLOCK_SIZE + i;                            \
@@ -399,7 +396,7 @@ __kernel void aesCipherCtr_##ID (__global uchar* restrict in,                   
     size_t coverage = input_size / NUM_WORKERS;                                 \
     size_t start = coverage * ID;                                               \
     increment_counter(counter, start / BLOCK_SIZE);                             \
-    for (size_t blockid=start / BLOCK_SIZE; blockid < (start + coverage) / BLOCK_SIZE; blockid++) {  \
+    for (size_t blockid=0; blockid < coverage / BLOCK_SIZE; blockid++) {        \
         encrypt(counter, local_w, outCipher, num_rounds);                       \
         _Pragma("unroll")                                                       \
         for (size_t i = 0; i < BLOCK_SIZE; i++) {                               \
