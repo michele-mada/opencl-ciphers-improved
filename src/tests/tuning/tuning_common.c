@@ -27,17 +27,21 @@ void utility_function(OpenCLEnv* global_env,
                       uint8_t* payload,
                       size_t nbytes,
                       size_t nrepeat,
+                      size_t npartitions,
                       uint8_t* trash_bin,
                       aes_context *K,
                       struct timespec *duration) {
     struct timespec started, stopped;
+    size_t part_size = nrepeat / npartitions;
     clock_gettime(CLOCK_USED, &started);
-    OpenCLEnv_toggle_burst_mode(global_env, 1);
-    for (size_t i=0; i<nrepeat-1; i++) {
+    for (size_t p=0; p<npartitions; p++) {
+        OpenCLEnv_toggle_burst_mode(global_env, 1);
+        for (size_t i=0; i<part_size-1; i++) {
+            opencl_aes_128_ecb_encrypt(global_env, payload, nbytes, K, trash_bin);
+        }
+        OpenCLEnv_toggle_burst_mode(global_env, 0);
         opencl_aes_128_ecb_encrypt(global_env, payload, nbytes, K, trash_bin);
     }
-    OpenCLEnv_toggle_burst_mode(global_env, 0);
-    opencl_aes_128_ecb_encrypt(global_env, payload, nbytes, K, trash_bin);
     clock_gettime(CLOCK_USED, &stopped);
     timespec_diff(&started, &stopped, duration);
 }
@@ -53,7 +57,7 @@ void tuning_step(OpenCLEnv* global_env, size_t nbytes, FILE *logfile) {
     uint8_t *trashcan = (uint8_t*) aligned_alloc(AOCL_ALIGNMENT, sizeof(uint8_t) * nbytes);
 
     printf("Testing %luB block x %d repetitions...\r", nbytes, REPETITIONS); fflush(stdout);
-    utility_function(global_env, payload, nbytes, REPETITIONS, trashcan, &K, &duration);
+    utility_function(global_env, payload, nbytes, REPETITIONS, PARTITIONS, trashcan, &K, &duration);
 
     printf("Processed %d %lu B chunks in %ld.%09ld           \n",
             REPETITIONS, nbytes, duration.tv_sec, duration.tv_nsec); fflush(stdout);

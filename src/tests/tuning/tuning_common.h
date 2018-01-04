@@ -13,6 +13,7 @@
 #define AOCL_ALIGNMENT 64
 #define PAYLOAD_MAX_SIZE 1073741824*2   // 1*2 GB
 #define REPETITIONS 100
+#define PARTITIONS 5
 #define CLOCK_USED CLOCK_REALTIME
 #define RANDOM_SOURCE "/dev/urandom"
 #define LOGFILE "autotune.txt"
