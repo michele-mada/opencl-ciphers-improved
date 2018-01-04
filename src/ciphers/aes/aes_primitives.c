@@ -142,7 +142,7 @@ void gather_output_daisychain(CipherMethod* meth,
     uint8_t *part_output = output + (part_output_size*kern_id);
 
     clEnqueueReadBuffer(meth->family->environment->command_queue[IO_COMMAND_QUEUE_ID],
-                        state->out[kern_id], CL_TRUE, 0,
+                        state->out[kern_id], CL_FALSE, 0,
                         part_output_size,
                         part_output,
                         1, prev,
