@@ -12,6 +12,7 @@
 #endif
 
 
+#define DUMMY_BUFF() clCreateBuffer(fam->environment->context, CL_MEM_READ_WRITE, 8, NULL, NULL)
 
 void init_aes_methods_and_state(CipherFamily* fam) {
     fam->methods = (CipherMethod**) malloc(sizeof(CipherMethod*) * NUM_AES_METHODS);
@@ -30,10 +31,10 @@ void init_aes_methods_and_state(CipherFamily* fam) {
 
     AesState *state = (AesState*) malloc(sizeof(AesState));
     for (int kern_id=0; kern_id<NUM_CONCURRENT_KERNELS; kern_id++) {
-        state->in[kern_id] = NULL;
-        state->out[kern_id] = NULL;
-        state->exKey[kern_id] = NULL;
-        state->iv[kern_id] = NULL;
+        state->in[kern_id] = DUMMY_BUFF();
+        state->out[kern_id] = DUMMY_BUFF();
+        state->exKey[kern_id] = DUMMY_BUFF();
+        state->iv[kern_id] = DUMMY_BUFF();
     }
     fam->state = state;
 }
@@ -41,10 +42,10 @@ void init_aes_methods_and_state(CipherFamily* fam) {
 void destroy_aes_methods_and_state(CipherFamily* fam) {
     AesState *state = (AesState*) fam->state;
     for (int kern_id=0; kern_id<NUM_CONCURRENT_KERNELS; kern_id++) {
-        if (state->iv[kern_id] != NULL) clReleaseMemObject(state->iv[kern_id]);
-        if (state->exKey[kern_id] != NULL) clReleaseMemObject(state->exKey[kern_id]);
-        if (state->out[kern_id] != NULL) clReleaseMemObject(state->out[kern_id]);
-        if (state->in[kern_id] != NULL) clReleaseMemObject(state->in[kern_id]);
+        clReleaseMemObject(state->iv[kern_id]);
+        clReleaseMemObject(state->exKey[kern_id]);
+        clReleaseMemObject(state->out[kern_id]);
+        clReleaseMemObject(state->in[kern_id]);
     }
     free(fam->state);
     size_t num_methods = fam->num_methods;

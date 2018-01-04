@@ -40,50 +40,6 @@ void prepare_buffers_aes(CipherFamily* aes_fam, size_t input_size, size_t ex_key
     }
 }
 
-void load_aes_input_key_iv(CipherFamily* aes_fam,
-                           uint8_t* input,
-                           size_t input_size,
-                           aes_context* context,
-                           uint8_t* iv,
-                           int is_decrypt) {
-    AesState *state = (AesState*) aes_fam->state;
-    cl_int ret;
-    uint32_t* key;
-
-    if (is_decrypt) {
-        key = context->expanded_key_decrypt;
-    } else {
-        key = context->expanded_key_encrypt;
-    }
-
-    size_t part_input_size = input_size / NUM_CONCURRENT_KERNELS;
-
-    for (int kern_id=0; kern_id<NUM_CONCURRENT_KERNELS; kern_id++) {
-        uint8_t* part_input = input + kern_id*part_input_size;
-        // write all the expanded key
-        ret = clEnqueueWriteBuffer(aes_fam->environment->command_queue[kern_id],
-                                   state->exKey[kern_id],
-                                   CL_TRUE, 0, context->ex_key_dim * sizeof(uint32_t),
-                                   key, 0, NULL, NULL);
-        if (ret != CL_SUCCESS) error_fatal("Failed to enqueue clEnqueueWriteBuffer (state->exKey) . Error = %s (%d)\n", get_cl_error_string(ret), ret);
-        // write **part** of the input
-        ret = clEnqueueWriteBuffer(aes_fam->environment->command_queue[kern_id],
-                                   state->in[kern_id],
-                                   CL_TRUE, 0, part_input_size * sizeof(uint8_t),
-                                   part_input, 0, NULL, NULL);
-        if (ret != CL_SUCCESS) error_fatal("Failed to enqueue clEnqueueWriteBuffer (state->in) . Error = %s (%d)\n", get_cl_error_string(ret), ret);
-        // (if there's and IV) write the IV
-        if (iv != NULL) {
-            ret = clEnqueueWriteBuffer(aes_fam->environment->command_queue[kern_id],
-                                       state->iv[kern_id],
-                                       CL_TRUE, 0, AES_IV_SIZE * sizeof(uint8_t),
-                                       iv, 0, NULL, NULL);
-            if (ret != CL_SUCCESS) error_fatal("Failed to enqueue clEnqueueWriteBuffer (state->iv) . Error = %s (%d)\n", get_cl_error_string(ret), ret);
-        }
-
-    }
-}
-
 /*
     Set the kernel parameters
 */
@@ -120,24 +76,47 @@ void prepare_kernel_aes(CipherMethod* meth,
 
     }
 }
-/*
-    Sequentially read all the partial results
-*/
-void gather_aes_output(CipherFamily* aes_fam, uint8_t* output, size_t output_size) {
-    cl_event event;
+
+
+void load_aes_input_key_iv(CipherFamily* aes_fam,
+                           uint8_t* input,
+                           size_t input_size,
+                           uint32_t* key,
+                           size_t key_size,
+                           uint8_t* iv,
+                           int kern_id,
+                           cl_event *event_last_write) {
     AesState *state = (AesState*) aes_fam->state;
+    cl_int ret;
 
-    size_t part_output_size = output_size / NUM_CONCURRENT_KERNELS;
+    size_t part_input_size = input_size / NUM_CONCURRENT_KERNELS;
+    uint8_t* part_input = input + (kern_id*part_input_size);
+    // write all the expanded key
+    ret = clEnqueueWriteBuffer(aes_fam->environment->command_queue[kern_id],
+                               state->exKey[kern_id],
+                               CL_FALSE, 0, key_size * sizeof(uint32_t),
+                               key, 0, NULL, NULL);
+    if (ret != CL_SUCCESS) error_fatal("Failed to enqueue clEnqueueWriteBuffer (state->exKey) . Error = %s (%d)\n", get_cl_error_string(ret), ret);
 
-    for (int kern_id=0; kern_id<NUM_CONCURRENT_KERNELS; kern_id++) {
-        uint8_t* part_output = output + kern_id*part_output_size;
-        clEnqueueReadBuffer(aes_fam->environment->command_queue[kern_id],
-            state->out[kern_id], CL_TRUE, 0,
-            part_output_size,
-            part_output, 0, NULL, &event);
-        clWaitForEvents(1, &event);
+    // (if there's and IV) write the IV
+    if (iv != NULL) {
+        ret = clEnqueueWriteBuffer(aes_fam->environment->command_queue[kern_id],
+                                   state->iv[kern_id],
+                                   CL_FALSE, 0, AES_IV_SIZE * sizeof(uint8_t),
+                                   iv, 0, NULL, NULL);
+        if (ret != CL_SUCCESS) error_fatal("Failed to enqueue clEnqueueWriteBuffer (state->iv) . Error = %s (%d)\n", get_cl_error_string(ret), ret);
     }
+
+    // write **part** of the input
+    ret = clEnqueueWriteBuffer(aes_fam->environment->command_queue[kern_id],
+                               state->in[kern_id],
+                               CL_FALSE, 0, part_input_size * sizeof(uint8_t),
+                               part_input, 0, NULL, event_last_write);
+    if (ret != CL_SUCCESS) error_fatal("Failed to enqueue clEnqueueWriteBuffer (state->in) . Error = %s (%d)\n", get_cl_error_string(ret), ret);
 }
+
+
+
 
 void aes_encrypt_decrypt_function(OpenCLEnv* env,           // global opencl environment
                                   AesMethodsId method_id,   // method (kernel) selector
@@ -153,11 +132,55 @@ void aes_encrypt_decrypt_function(OpenCLEnv* env,           // global opencl env
         return;
     }
     CipherMethod* meth = env->ciphers[AES_CIPHERS]->methods[method_id];
+    AesState *state = (AesState*) meth->family->state;
+
+    size_t global_work_size = GLOBAL_WORK_SIZE;
+    size_t local_work_size = LOCAL_WORK_SIZE;
+    size_t work_dim = WORK_DIM;
+    // setup kernels and buffers
     prepare_buffers_aes(meth->family, input_size, context->ex_key_dim);
     prepare_kernel_aes(meth, (cl_int)input_size, KEYSIZE_TO_Nr(aes_mode), iv != NULL);
-    load_aes_input_key_iv(meth->family, input, input_size, context, iv, is_decrypt);
-    execute_meth_kernel(meth);
-    gather_aes_output(meth->family, output, input_size);
+    // setup important parameters
+    uint32_t* key;
+    if (is_decrypt) {
+        key = context->expanded_key_decrypt;
+    } else {
+        key = context->expanded_key_encrypt;
+    }
+    size_t part_output_size = input_size / NUM_CONCURRENT_KERNELS;
+    // synchronization support data
+    cl_event data_transfer_complete[NUM_CONCURRENT_KERNELS];
+    cl_event kernel_execution_complete[NUM_CONCURRENT_KERNELS];
+    cl_event result_collection_complete[NUM_CONCURRENT_KERNELS];
+
+    // Execution sequence
+    for (int kern_id=0; kern_id<NUM_CONCURRENT_KERNELS; kern_id++) {
+        // Step 1: transfer the necessary buffers;
+        // the last buffer write triggers an event
+        load_aes_input_key_iv(         meth->family,
+                                       input, input_size,
+                                       key, context->ex_key_dim,
+                                       iv,
+                                       kern_id,
+                                       data_transfer_complete + kern_id);
+        // Step 2: after the previous event triggers, enqueue a kernel
+        execute_meth_kernel_daisychain(meth,
+                                       kern_id,
+                                       data_transfer_complete + kern_id,
+                                       kernel_execution_complete + kern_id);
+    }
+
+    // Wait for all results to be collected
+    for (int kern_id=0; kern_id<NUM_CONCURRENT_KERNELS; kern_id++) {
+        uint8_t *part_output = output + (part_output_size*kern_id);
+        clEnqueueReadBuffer(meth->family->environment->command_queue[kern_id],
+                            state->out[kern_id], CL_TRUE, 0,
+                            part_output_size,
+                            part_output,
+                            1, kernel_execution_complete + kern_id,
+                            result_collection_complete + kern_id);
+        clWaitForEvents(1, result_collection_complete + kern_id);
+    }
 }
 
 
