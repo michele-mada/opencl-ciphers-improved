@@ -21,7 +21,7 @@
 
 // due to limitiations in the opencl implementation, we cannot
 // enqueue stuff as fast as we wants
-#define MAX_AES_BURST_LENGTH 100
+#define MAX_AES_BURST_LENGTH 1000
 
 
 #define IS_BURST (meth->burst_enabled && \
