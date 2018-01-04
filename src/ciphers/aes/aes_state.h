@@ -23,6 +23,8 @@ typedef struct AesState {
     cl_mem out[NUM_CONCURRENT_KERNELS];
     cl_mem exKey[NUM_CONCURRENT_KERNELS];
     cl_mem iv[NUM_CONCURRENT_KERNELS];
+    // persistent across bursts
+    cl_event result_collection_complete[NUM_CONCURRENT_KERNELS];
 } AesState;
 
 typedef struct {

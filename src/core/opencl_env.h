@@ -49,5 +49,7 @@ void print_opencl_ciphers_build_info();
 size_t OpenCLEnv_get_enc_block_size(OpenCLEnv* env);
 void OpenCLEnv_set_enc_block_size(OpenCLEnv* env, size_t enc_block_size);
 
+void OpenCLEnv_toggle_burst_mode(OpenCLEnv* env, int enabled);
+
 
 #endif

@@ -19,6 +19,9 @@
 
 #define BLOCK_SIZE 16
 
+
+#define IS_BURST (meth->burst_enabled && meth->burst_ready)
+
 /*
     Prepare the buffers to be used by each alias-kernel
     Each alias-kernel gets:
@@ -85,9 +88,13 @@ void load_aes_input_key_iv(CipherFamily* aes_fam,
                            size_t key_size,
                            uint8_t* iv,
                            int kern_id,
+                           cl_event *waitfor,
                            cl_event *event_last_write) {
     AesState *state = (AesState*) aes_fam->state;
     cl_int ret;
+    cl_event step1;
+    cl_event step2;
+    cl_event *step_last;
 
     size_t part_input_size = input_size / NUM_CONCURRENT_KERNELS;
     uint8_t* part_input = input + (kern_id*part_input_size);
@@ -95,26 +102,52 @@ void load_aes_input_key_iv(CipherFamily* aes_fam,
     ret = clEnqueueWriteBuffer(aes_fam->environment->command_queue[kern_id],
                                state->exKey[kern_id],
                                CL_FALSE, 0, key_size * sizeof(uint32_t),
-                               key, 0, NULL, NULL);
+                               key,
+                               (waitfor != NULL ? 1 : 0), waitfor,
+                               &step1);
     if (ret != CL_SUCCESS) error_fatal("Failed to enqueue clEnqueueWriteBuffer (state->exKey) . Error = %s (%d)\n", get_cl_error_string(ret), ret);
-
+    step_last = &step1;
     // (if there's and IV) write the IV
     if (iv != NULL) {
         ret = clEnqueueWriteBuffer(aes_fam->environment->command_queue[kern_id],
                                    state->iv[kern_id],
                                    CL_FALSE, 0, AES_IV_SIZE * sizeof(uint8_t),
-                                   iv, 0, NULL, NULL);
+                                   iv,
+                                   1, &step1,
+                                   &step2);
         if (ret != CL_SUCCESS) error_fatal("Failed to enqueue clEnqueueWriteBuffer (state->iv) . Error = %s (%d)\n", get_cl_error_string(ret), ret);
+        step_last = &step2;
     }
 
     // write **part** of the input
     ret = clEnqueueWriteBuffer(aes_fam->environment->command_queue[kern_id],
                                state->in[kern_id],
                                CL_FALSE, 0, part_input_size * sizeof(uint8_t),
-                               part_input, 0, NULL, event_last_write);
+                               part_input,
+                               1, step_last,
+                               event_last_write);
     if (ret != CL_SUCCESS) error_fatal("Failed to enqueue clEnqueueWriteBuffer (state->in) . Error = %s (%d)\n", get_cl_error_string(ret), ret);
 }
 
+
+void gather_output_daisychain(CipherMethod* meth,
+                              uint8_t* output,
+                              size_t output_size,
+                              int kern_id,
+                              cl_event *prev) {
+    AesState *state = (AesState*) meth->family->state;
+    cl_event *completed = state->result_collection_complete + kern_id;
+
+    size_t part_output_size = output_size / NUM_CONCURRENT_KERNELS;
+    uint8_t *part_output = output + (part_output_size*kern_id);
+
+    clEnqueueReadBuffer(meth->family->environment->command_queue[kern_id],
+                        state->out[kern_id], CL_TRUE, 0,
+                        part_output_size,
+                        part_output,
+                        1, prev,
+                        completed);
+}
 
 
 
@@ -147,14 +180,15 @@ void aes_encrypt_decrypt_function(OpenCLEnv* env,           // global opencl env
     } else {
         key = context->expanded_key_encrypt;
     }
-    size_t part_output_size = input_size / NUM_CONCURRENT_KERNELS;
     // synchronization support data
     cl_event data_transfer_complete[NUM_CONCURRENT_KERNELS];
     cl_event kernel_execution_complete[NUM_CONCURRENT_KERNELS];
-    cl_event result_collection_complete[NUM_CONCURRENT_KERNELS];
 
     // Execution sequence
     for (int kern_id=0; kern_id<NUM_CONCURRENT_KERNELS; kern_id++) {
+        // In burst mode, the first write needs to synch with the previous last read
+        cl_event *leader = NULL;
+        if (IS_BURST) leader = state->result_collection_complete + kern_id;
         // Step 1: transfer the necessary buffers;
         // the last buffer write triggers an event
         load_aes_input_key_iv(         meth->family,
@@ -162,24 +196,38 @@ void aes_encrypt_decrypt_function(OpenCLEnv* env,           // global opencl env
                                        key, context->ex_key_dim,
                                        iv,
                                        kern_id,
+                                       // synchronization
+                                       leader,
                                        data_transfer_complete + kern_id);
         // Step 2: after the previous event triggers, enqueue a kernel
         execute_meth_kernel_daisychain(meth,
                                        kern_id,
+                                       // synchronization
                                        data_transfer_complete + kern_id,
                                        kernel_execution_complete + kern_id);
+        // In burst mode, also enqueue the read operation
+        if (IS_BURST) {
+            gather_output_daisychain(  meth,
+                                       output,
+                                       input_size,
+                                       kern_id,
+                                       // synchronization (*next is implicit)
+                                       kernel_execution_complete + kern_id);
+        }
     }
-
-    // Wait for all results to be collected
-    for (int kern_id=0; kern_id<NUM_CONCURRENT_KERNELS; kern_id++) {
-        uint8_t *part_output = output + (part_output_size*kern_id);
-        clEnqueueReadBuffer(meth->family->environment->command_queue[kern_id],
-                            state->out[kern_id], CL_TRUE, 0,
-                            part_output_size,
-                            part_output,
-                            1, kernel_execution_complete + kern_id,
-                            result_collection_complete + kern_id);
-        clWaitForEvents(1, result_collection_complete + kern_id);
+    // In non-burst mode, wait for all results to be collected
+    if (!IS_BURST) {
+        for (int kern_id=0; kern_id<NUM_CONCURRENT_KERNELS; kern_id++) {
+            gather_output_daisychain(  meth,
+                                       output,
+                                       input_size,
+                                       kern_id,
+                                       kernel_execution_complete + kern_id);
+            clWaitForEvents(1, state->result_collection_complete + kern_id);
+            if (meth->burst_enabled) {
+                meth->burst_ready = 1;
+            }
+        }
     }
 }
 

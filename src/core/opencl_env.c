@@ -83,6 +83,12 @@ void OpenCLEnv_set_enc_block_size(OpenCLEnv* env, size_t enc_block_size) {
     env->parameters->enc_block_size = enc_block_size;
 }
 
+void OpenCLEnv_toggle_burst_mode(OpenCLEnv* env, int enabled) {
+    for (size_t f = 0; f < env->num_ciphers; f++) {
+        CipherFamily_toggle_burst_mode(env->ciphers[f], enabled);
+    }
+}
+
 
 void print_opencl_ciphers_build_info() {
     printf("Build version: %s\n", BUILD_VERSION);

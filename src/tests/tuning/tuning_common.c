@@ -32,9 +32,12 @@ void utility_function(OpenCLEnv* global_env,
                       struct timespec *duration) {
     struct timespec started, stopped;
     clock_gettime(CLOCK_USED, &started);
-    for (size_t i=0; i<nrepeat; i++) {
+    OpenCLEnv_toggle_burst_mode(global_env, 1);
+    for (size_t i=0; i<nrepeat-1; i++) {
         opencl_aes_128_ecb_encrypt(global_env, payload, nbytes, K, trash_bin);
     }
+    OpenCLEnv_toggle_burst_mode(global_env, 0);
+    opencl_aes_128_ecb_encrypt(global_env, payload, nbytes, K, trash_bin);
     clock_gettime(CLOCK_USED, &stopped);
     timespec_diff(&started, &stopped, duration);
 }
