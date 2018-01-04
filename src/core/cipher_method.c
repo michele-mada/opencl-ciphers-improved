@@ -43,5 +43,6 @@ int CipherMethod_toggle_burst_mode(CipherMethod* meth, int enabled) {
     if (!meth->_burst_implemented) return 0;
     meth->burst_enabled = enabled;
     meth->burst_ready = 0;
+    meth->burst_length_so_far = 0;
     return meth->burst_enabled;
 }

@@ -19,8 +19,14 @@
 
 #define BLOCK_SIZE 16
 
+// due to limitiations in the opencl implementation, we cannot
+// enqueue stuff as fast as we wants
+#define MAX_AES_BURST_LENGTH 100
 
-#define IS_BURST (meth->burst_enabled && meth->burst_ready)
+
+#define IS_BURST (meth->burst_enabled && \
+                  meth->burst_ready && \
+                  (meth->burst_length_so_far < MAX_AES_BURST_LENGTH))
 
 /*
     Prepare the buffers to be used by each alias-kernel
@@ -213,6 +219,7 @@ void aes_encrypt_decrypt_function(OpenCLEnv* env,           // global opencl env
                                        kern_id,
                                        // synchronization (*next is implicit)
                                        kernel_execution_complete + kern_id);
+            meth->burst_length_so_far++;
         }
     }
     // In non-burst mode, wait for all results to be collected
@@ -226,6 +233,7 @@ void aes_encrypt_decrypt_function(OpenCLEnv* env,           // global opencl env
             clWaitForEvents(1, state->result_collection_complete + kern_id);
             if (meth->burst_enabled) {
                 meth->burst_ready = 1;
+                meth->burst_length_so_far = 0;
             }
         }
     }

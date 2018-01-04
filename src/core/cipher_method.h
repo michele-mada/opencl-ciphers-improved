@@ -26,6 +26,7 @@ typedef struct CipherMethod {
     int _burst_implemented;  // (internal use) wether this method has an usable burst mode
     int burst_enabled;  // set when the user enabled burst mode
     int burst_ready;    // set when at lease one execution cycle has completed
+    size_t burst_length_so_far;
 } CipherMethod;
 
 
