@@ -99,7 +99,7 @@ void load_aes_input_key_iv(CipherFamily* aes_fam,
     size_t part_input_size = input_size / NUM_CONCURRENT_KERNELS;
     uint8_t* part_input = input + (kern_id*part_input_size);
     // write all the expanded key
-    ret = clEnqueueWriteBuffer(aes_fam->environment->command_queue[kern_id],
+    ret = clEnqueueWriteBuffer(aes_fam->environment->command_queue[IO_COMMAND_QUEUE_ID],
                                state->exKey[kern_id],
                                CL_FALSE, 0, key_size * sizeof(uint32_t),
                                key,
@@ -109,7 +109,7 @@ void load_aes_input_key_iv(CipherFamily* aes_fam,
     step_last = &step1;
     // (if there's and IV) write the IV
     if (iv != NULL) {
-        ret = clEnqueueWriteBuffer(aes_fam->environment->command_queue[kern_id],
+        ret = clEnqueueWriteBuffer(aes_fam->environment->command_queue[IO_COMMAND_QUEUE_ID],
                                    state->iv[kern_id],
                                    CL_FALSE, 0, AES_IV_SIZE * sizeof(uint8_t),
                                    iv,
@@ -120,7 +120,7 @@ void load_aes_input_key_iv(CipherFamily* aes_fam,
     }
 
     // write **part** of the input
-    ret = clEnqueueWriteBuffer(aes_fam->environment->command_queue[kern_id],
+    ret = clEnqueueWriteBuffer(aes_fam->environment->command_queue[IO_COMMAND_QUEUE_ID],
                                state->in[kern_id],
                                CL_FALSE, 0, part_input_size * sizeof(uint8_t),
                                part_input,
@@ -141,7 +141,7 @@ void gather_output_daisychain(CipherMethod* meth,
     size_t part_output_size = output_size / NUM_CONCURRENT_KERNELS;
     uint8_t *part_output = output + (part_output_size*kern_id);
 
-    clEnqueueReadBuffer(meth->family->environment->command_queue[kern_id],
+    clEnqueueReadBuffer(meth->family->environment->command_queue[IO_COMMAND_QUEUE_ID],
                         state->out[kern_id], CL_TRUE, 0,
                         part_output_size,
                         part_output,
