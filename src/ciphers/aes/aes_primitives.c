@@ -1,6 +1,7 @@
 #include "../../core/opencl_env.h"
 #include "../../core/cipher_family.h"
 #include "../../core/utils.h"
+#include "../../profiler/profiler_params.h"
 #include "../cipher_families_setup.h"
 #include "../common.h"
 #include "aes_methods.h"
@@ -156,7 +157,6 @@ void gather_output_daisychain(CipherMethod* meth,
 }
 
 
-
 void aes_encrypt_decrypt_function(OpenCLEnv* env,           // global opencl environment
                                   AesMethodsId method_id,   // method (kernel) selector
                                   uint8_t* input,           // input buffer
@@ -205,12 +205,14 @@ void aes_encrypt_decrypt_function(OpenCLEnv* env,           // global opencl env
                                        // synchronization
                                        leader,
                                        data_transfer_complete + kern_id);
+        PROFILE_EVENT(data_transfer_complete + kern_id, input, kern_id);
         // Step 2: after the previous event triggers, enqueue a kernel
         execute_meth_kernel_daisychain(meth,
                                        kern_id,
                                        // synchronization
                                        data_transfer_complete + kern_id,
                                        kernel_execution_complete + kern_id);
+        PROFILE_EVENT(kernel_execution_complete + kern_id, kernel, kern_id);
         // In burst mode, also enqueue the read operation
         if (IS_BURST) {
             gather_output_daisychain(  meth,
@@ -219,6 +221,7 @@ void aes_encrypt_decrypt_function(OpenCLEnv* env,           // global opencl env
                                        kern_id,
                                        // synchronization (*next is implicit)
                                        kernel_execution_complete + kern_id);
+            PROFILE_EVENT(state->result_collection_complete + kern_id, output, kern_id);
             meth->burst_length_so_far++;
         }
     }
@@ -230,6 +233,7 @@ void aes_encrypt_decrypt_function(OpenCLEnv* env,           // global opencl env
                                        input_size,
                                        kern_id,
                                        kernel_execution_complete + kern_id);
+            PROFILE_EVENT(state->result_collection_complete + kern_id, output, kern_id);
             clWaitForEvents(1, state->result_collection_complete + kern_id);
             if (meth->burst_enabled) {
                 meth->burst_ready = 1;

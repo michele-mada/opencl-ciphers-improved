@@ -12,10 +12,11 @@
 
 #define AOCL_ALIGNMENT 64
 #define PAYLOAD_MAX_SIZE 1073741824*2   // 1*2 GB
+//#define PAYLOAD_MAX_SIZE 1048576*4*2
 #define REPETITIONS 100
 #define CLOCK_USED CLOCK_REALTIME
 #define RANDOM_SOURCE "/dev/urandom"
-#define LOGFILE "autotune.txt"
+#define LOGFILENAME "autotune.txt"
 
 
 static uint8_t key_128[16] = {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};

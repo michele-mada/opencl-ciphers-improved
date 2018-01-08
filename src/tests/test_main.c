@@ -1,6 +1,7 @@
 
 #include "../core/opencl_env.h"
 #include "../core/utils.h"
+#include "../profiler/profiler_params.h"
 #include "validation/test_common.h"
 #include "tuning/tuning_common.h"
 
@@ -34,7 +35,16 @@ int run_tuning() {
         stride = atol(custom_stride);
     }
 
-    auto_tune(global_env, stride, "tuning_data.txt");
+    #ifdef USE_CUSTOM_PROFILER
+    GlobalProfiler_init("aes");
+    setup_global_profiler_params();
+    #endif
+
+    auto_tune(global_env, stride, LOGFILENAME);
+
+    #ifdef USE_CUSTOM_PROFILER
+    GlobalProfiler_destroy();
+    #endif
 
     OpenCLEnv_destroy(global_env);
 

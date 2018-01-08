@@ -70,7 +70,7 @@ int auto_tune(OpenCLEnv* global_env, size_t stride, const char* logfile_name) {
 
     printf("Beginning tuning procedure, repetitions=%d, max_payload=%luB, stride=%luB\n", REPETITIONS, PAYLOAD_MAX_SIZE, stride);
 
-    logfile = fopen(LOGFILE, "w");
+    logfile = fopen(logfile_name, "w");
     fprintf(logfile, "# block_size (B)\trun_time (S)\t(with REPETITIONS=%d)\n", REPETITIONS);
     printf("Logging to file: %s\n", LOGFILE); fflush(stdout);
 
