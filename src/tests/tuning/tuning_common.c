@@ -72,7 +72,7 @@ int auto_tune(OpenCLEnv* global_env, size_t stride, const char* logfile_name) {
 
     logfile = fopen(logfile_name, "w");
     fprintf(logfile, "# block_size (B)\trun_time (S)\t(with REPETITIONS=%d)\n", REPETITIONS);
-    printf("Logging to file: %s\n", LOGFILE); fflush(stdout);
+    printf("Logging to file: %s\n", logfile_name); fflush(stdout);
 
     for (size_t nbytes=stride; nbytes<=PAYLOAD_MAX_SIZE; nbytes+=stride) {
         tuning_step(global_env, nbytes, logfile);
