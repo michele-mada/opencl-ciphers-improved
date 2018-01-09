@@ -11,8 +11,6 @@
 
 
 #define AOCL_ALIGNMENT 64
-#define PAYLOAD_MAX_SIZE 1073741824*2   // 1*2 GB
-//#define PAYLOAD_MAX_SIZE 1048576*4*2
 #define REPETITIONS 100
 #define CLOCK_USED CLOCK_REALTIME
 #define RANDOM_SOURCE "/dev/urandom"
@@ -32,6 +30,6 @@ static inline void timespec_diff(struct timespec *start, struct timespec *stop, 
     }
 }
 
-int auto_tune(OpenCLEnv* global_env, size_t stride, const char* logfile_name);
+int auto_tune(OpenCLEnv* global_env, size_t stride, size_t max_payload, const char* logfile_name);
 
 #endif

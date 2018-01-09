@@ -29,10 +29,16 @@ int run_tuning() {
     OpenCLEnv *global_env = OpenCLEnv_init();
 
     size_t stride = 1048576*4;  // stride = 1 * 4 MB
+    size_t max_payload = 1073741824*2;   // 1*2 GB
 
     char *custom_stride = getenv("TUNING_STRIDE");
     if (custom_stride != NULL) {
         stride = atol(custom_stride);
+    }
+
+    char *custom_max_payload = getenv("TUNING_MAX_PAYLOAD");
+    if (custom_max_payload != NULL) {
+        max_payload = atol(custom_max_payload);
     }
 
     #ifdef USE_CUSTOM_PROFILER
@@ -40,7 +46,7 @@ int run_tuning() {
     setup_global_profiler_params();
     #endif
 
-    auto_tune(global_env, stride, LOGFILENAME);
+    auto_tune(global_env, stride, max_payload, LOGFILENAME);
 
     #ifdef USE_CUSTOM_PROFILER
     GlobalProfiler_destroy();

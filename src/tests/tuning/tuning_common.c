@@ -65,16 +65,16 @@ void tuning_step(OpenCLEnv* global_env, size_t nbytes, FILE *logfile) {
 }
 
 
-int auto_tune(OpenCLEnv* global_env, size_t stride, const char* logfile_name) {
+int auto_tune(OpenCLEnv* global_env, size_t stride, size_t max_payload, const char* logfile_name) {
     FILE *logfile;
 
-    printf("Beginning tuning procedure, repetitions=%d, max_payload=%luB, stride=%luB\n", REPETITIONS, PAYLOAD_MAX_SIZE, stride);
+    printf("Beginning tuning procedure, repetitions=%d, max_payload=%luB, stride=%luB\n", REPETITIONS, max_payload, stride);
 
     logfile = fopen(logfile_name, "w");
     fprintf(logfile, "# block_size (B)\trun_time (S)\t(with REPETITIONS=%d)\n", REPETITIONS);
     printf("Logging to file: %s\n", logfile_name); fflush(stdout);
 
-    for (size_t nbytes=stride; nbytes<=PAYLOAD_MAX_SIZE; nbytes+=stride) {
+    for (size_t nbytes=stride; nbytes<=max_payload; nbytes+=stride) {
         tuning_step(global_env, nbytes, logfile);
     }
 
