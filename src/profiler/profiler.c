@@ -2,13 +2,16 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <pthread.h>
 
 #include "profiler.h"
 
 
-int prof_kernel_id[NUM_CONCURRENT_KERNELS];
-int prof_input_id[NUM_CONCURRENT_KERNELS];
-int prof_output_id[NUM_CONCURRENT_KERNELS];
+int prof_kernel_id[NUM_QUEUES];
+int prof_input_id[NUM_QUEUES];
+int prof_output_id[NUM_QUEUES];
+
+pthread_mutex_t update_mutex;
 
 
 void GlobalProfiler_init(char *title) {
@@ -37,10 +40,12 @@ int GlobalProfiler_add_data_class(char *name) {
                                                sizeof(char*) * global_profiler->num_data_classes);
     int newclass_id = global_profiler->num_data_classes - 1;
     asprintf(global_profiler->legend + newclass_id, "%s", name);
+    //printf("Added dataclass %s = %d\n", name, newclass_id);
     return newclass_id;
 }
 
 void GlobalProfiler_event(int ident, uint64_t start, uint64_t end) {
+    pthread_mutex_lock(&update_mutex);
     global_profiler->datapoints_collected++;
     if (global_profiler->datapoints_collected >= global_profiler->max_dataset) {
         global_profiler->max_dataset += PROFILER_DATABLOCK;
@@ -52,6 +57,7 @@ void GlobalProfiler_event(int ident, uint64_t start, uint64_t end) {
     new_data->data_class = ident;
     new_data->start = start;
     new_data->end = end;
+    pthread_mutex_unlock(&update_mutex);
 }
 
 /*ProfilerDataPoint *find_compatible_datapoint_backwards(ProfilerDataPoint *startfrom, int ident) {

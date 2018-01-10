@@ -46,7 +46,7 @@ void utility_function(OpenCLEnv* global_env,
 void tuning_step(OpenCLEnv* global_env, size_t nbytes, FILE *logfile) {
     struct timespec duration;
     aes_context K;
-    printf("Host-side key schedule...\r", nbytes); fflush(stdout);
+    printf("Host-side key schedule...\r"); fflush(stdout);
     opencl_aes_128_set_encrypt_key((unsigned char*) key_128, 128, &K);
     printf("Allocating %luB x 2...\r", nbytes); fflush(stdout);
     uint8_t *payload = alloc_random_payload(nbytes);

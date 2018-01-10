@@ -29,7 +29,7 @@ int run_tuning() {
     OpenCLEnv *global_env = OpenCLEnv_init();
 
     size_t stride = 1048576*4;  // stride = 1 * 4 MB
-    size_t max_payload = 1073741824*2;   // 1*2 GB
+    size_t max_payload = 1048576*256;   // 256MB
 
     char *custom_stride = getenv("TUNING_STRIDE");
     if (custom_stride != NULL) {

@@ -21,7 +21,7 @@
 
 typedef struct CipherMethod {
     struct CipherFamily* family;
-    cl_kernel kernel[NUM_CONCURRENT_KERNELS];
+    cl_kernel kernel[NUM_QUEUES];
     void *state;
     int _burst_implemented;  // (internal use) wether this method has an usable burst mode
     int burst_enabled;  // set when the user enabled burst mode

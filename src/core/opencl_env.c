@@ -34,13 +34,13 @@ void initialize_OpenCL_context(OpenCLEnv* env) {
    	env->context = clCreateContext(NULL, 1, env->selected_device, NULL, NULL, &ret);
    	if(ret != CL_SUCCESS) error_fatal("Failed to create context, error = %s (%d)\n", get_cl_error_string(ret), ret);
 	// Create Command Queue(s)
-    for (size_t c=0; c<NUM_CONCURRENT_KERNELS; c++) {
+    for (size_t c=0; c<NUM_QUEUES; c++) {
         env->command_queue[c] = clCreateCommandQueue(
             env->context,
             *(env->selected_device),
             CL_QUEUE_PROFILING_ENABLE,
             &ret);
-        if(ret != CL_SUCCESS) error_fatal("Failed to create commandqueue, error = %s (%d)\n",  get_cl_error_string(ret), ret);
+        if(ret != CL_SUCCESS) error_fatal("Failed to create commandqueue #%d, error = %s (%d)\n", c, get_cl_error_string(ret), ret);
     }
 }
 
@@ -65,7 +65,7 @@ void recursive_destroy_environment(OpenCLEnv* env) {
 
 void OpenCLEnv_destroy(OpenCLEnv* env) {
     recursive_destroy_environment(env);
-    for (size_t c=0; c<NUM_CONCURRENT_KERNELS; c++) {
+    for (size_t c=0; c<NUM_QUEUES; c++) {
         clReleaseCommandQueue(env->command_queue[c]);
     }
     clReleaseContext(env->context);

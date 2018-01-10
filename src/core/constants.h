@@ -17,11 +17,17 @@
 
 #define NUM_CONCURRENT_KERNELS 4
 
-#define FOREACH_KERNEL_ID(APPLIEDMACRO) \
-    APPLIEDMACRO(0) \
-    APPLIEDMACRO(1) \
-    APPLIEDMACRO(2) \
-    APPLIEDMACRO(3) \
+// multiple input buffer. 1 = same behaviour as alias(NUM_WORKERS)x
+//                        2 = double buffering
+#define NUM_BUFFERS 2
+
+#define NUM_QUEUES (NUM_BUFFERS*NUM_CONCURRENT_KERNELS)
+
+#define BUFFER_ID(kern_id, buffer_id) ((NUM_BUFFERS*(kern_id)) + (buffer_id))
+#define KERNEL_ID(kern_id, buffer_id) BUFFER_ID(kern_id, buffer_id)
+
+#define IO_QUEUE_ID(kern_id, buffer_id) BUFFER_ID(kern_id, buffer_id)
+#define KERN_QUEUE_ID(kern_id, buffer_id) BUFFER_ID(kern_id, buffer_id)
 
 
 #define BASE_ENC_BLOCK_SIZE 4096

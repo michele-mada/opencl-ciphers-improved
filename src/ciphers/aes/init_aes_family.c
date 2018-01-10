@@ -31,22 +31,26 @@ void init_aes_methods_and_state(CipherFamily* fam) {
     fam->num_methods = 3;
 
     AesState *state = (AesState*) malloc(sizeof(AesState));
-    for (int kern_id=0; kern_id<NUM_CONCURRENT_KERNELS; kern_id++) {
-        state->in[kern_id] = DUMMY_BUFF();
-        state->out[kern_id] = DUMMY_BUFF();
-        state->exKey[kern_id] = DUMMY_BUFF();
-        state->iv[kern_id] = DUMMY_BUFF();
+    // one per kernel X num_buffers
+    for (int buff_id=0; buff_id<NUM_QUEUES; buff_id++) {
+        state->in[buff_id] = DUMMY_BUFF();
+        state->out[buff_id] = DUMMY_BUFF();
+        state->exKey[buff_id] = DUMMY_BUFF();
+        state->iv[buff_id] = DUMMY_BUFF();
     }
     fam->state = state;
+
+
 }
 
 void destroy_aes_methods_and_state(CipherFamily* fam) {
     AesState *state = (AesState*) fam->state;
-    for (int kern_id=0; kern_id<NUM_CONCURRENT_KERNELS; kern_id++) {
-        clReleaseMemObject(state->iv[kern_id]);
-        clReleaseMemObject(state->exKey[kern_id]);
-        clReleaseMemObject(state->out[kern_id]);
-        clReleaseMemObject(state->in[kern_id]);
+    // one per kernel X num_buffers
+    for (int buff_id=0; buff_id<NUM_QUEUES; buff_id++) {
+        clReleaseMemObject(state->out[buff_id]);
+        clReleaseMemObject(state->in[buff_id]);
+        clReleaseMemObject(state->iv[buff_id]);
+        clReleaseMemObject(state->exKey[buff_id]);
     }
     free(fam->state);
     size_t num_methods = fam->num_methods;
@@ -59,7 +63,7 @@ void destroy_aes_methods_and_state(CipherFamily* fam) {
 
 
 CipherFamily* get_aes_family(struct OpenCLEnv* environment) {
-    char *kernel_path = ParamAtlas_aget_full_kernel_path(environment->parameters, "aes_aliasx2");
+    char *kernel_path = ParamAtlas_aget_full_kernel_path(environment->parameters, "aes_2q");
     CipherFamily* aes = CipherFamily_init(environment, kernel_path, &init_aes_methods_and_state, &destroy_aes_methods_and_state);
     free(kernel_path);
     return aes;

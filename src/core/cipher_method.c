@@ -9,10 +9,12 @@ void load_kernel(CipherMethod* meth, char* kernel_name) {
     for (size_t k=0; k<NUM_CONCURRENT_KERNELS; k++) {
         char *specific_name;
         asprintf(&specific_name, "%s_%d", kernel_name, k);
-        meth->kernel[k] = clCreateKernel(
-            meth->family->program,
-            specific_name,
-            &ret);
+        for (size_t b=0; b<NUM_BUFFERS; b++) {
+            meth->kernel[KERNEL_ID(k, b)] = clCreateKernel(
+                meth->family->program,
+                specific_name,
+                &ret);
+        }
         KERNEL_ERRORCHECK(specific_name);
         free(specific_name);
     }
@@ -33,7 +35,7 @@ CipherMethod* CipherMethod_init(struct CipherFamily* family,
 
 
 void CipherMethod_destroy(CipherMethod* meth) {
-    for (size_t k=0; k<NUM_CONCURRENT_KERNELS; k++) {
+    for (size_t k=0; k<NUM_QUEUES; k++) {
         clReleaseKernel(meth->kernel[k]);
     }
     free(meth);

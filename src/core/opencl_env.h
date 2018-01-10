@@ -32,7 +32,7 @@
 
 typedef struct OpenCLEnv {
     cl_context context;
-    cl_command_queue command_queue[NUM_CONCURRENT_KERNELS];
+    cl_command_queue command_queue[NUM_QUEUES];
     cl_platform_id selected_platform;
     cl_device_id* selected_device;
     size_t num_ciphers;
