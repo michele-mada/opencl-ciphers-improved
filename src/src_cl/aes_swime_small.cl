@@ -340,42 +340,42 @@ void copy_extkey_to_local(__private uint* local_w, __global uint* restrict w) {
 }
 
 
-__attribute__((reqd_work_group_size(1, 1, 1)))
+__attribute__((task))
 __kernel void aes128EncCipher(__global uchar* restrict in,
                               __global uint* restrict w,
                               __global uchar* restrict out,
                               unsigned int input_size) \
     AES_ECB_BOILERPLATE(encrypt_128)
 
-__attribute__((reqd_work_group_size(1, 1, 1)))
+__attribute__((task))
 __kernel void aes192EncCipher(__global uchar* restrict in,
                               __global uint* restrict w,
                               __global uchar* restrict out,
                               unsigned int input_size) \
     AES_ECB_BOILERPLATE(encrypt_192)
 
-__attribute__((reqd_work_group_size(1, 1, 1)))
+__attribute__((task))
 __kernel void aes256EncCipher(__global uchar* restrict in,
                               __global uint* restrict w,
                               __global uchar* restrict out,
                               unsigned int input_size) \
     AES_ECB_BOILERPLATE(encrypt_256)
 
-__attribute__((reqd_work_group_size(1, 1, 1)))
+__attribute__((task))
 __kernel void aes128DecCipher(__global uchar* restrict in,
                               __global uint* restrict w,
                               __global uchar* restrict out,
                               unsigned int input_size) \
     AES_ECB_BOILERPLATE(decrypt_128)
 
-__attribute__((reqd_work_group_size(1, 1, 1)))
+__attribute__((task))
 __kernel void aes192DecCipher(__global uchar* restrict in,
                               __global uint* restrict w,
                               __global uchar* restrict out,
                               unsigned int input_size) \
     AES_ECB_BOILERPLATE(decrypt_192)
 
-__attribute__((reqd_work_group_size(1, 1, 1)))
+__attribute__((task))
 __kernel void aes256DecCipher(__global uchar* restrict in,
                               __global uint* restrict w,
                               __global uchar* restrict out,
@@ -429,7 +429,7 @@ void increment_counter(__private uchar* counter, size_t amount) {
     }                                                                           \
 }
 
-__attribute__((reqd_work_group_size(1, 1, 1)))
+__attribute__((task))
 __kernel void aes128CipherCtr(__global uchar* restrict in,
                               __global uint* restrict w,
                               __global uchar* restrict out,
@@ -437,7 +437,7 @@ __kernel void aes128CipherCtr(__global uchar* restrict in,
                               unsigned int input_size) \
     AES_CTR_BOILERPLATE(encrypt_128)
 
-__attribute__((reqd_work_group_size(1, 1, 1)))
+__attribute__((task))
 __kernel void aes192CipherCtr(__global uchar* restrict in,
                               __global uint* restrict w,
                               __global uchar* restrict out,
@@ -445,7 +445,7 @@ __kernel void aes192CipherCtr(__global uchar* restrict in,
                               unsigned int input_size) \
     AES_CTR_BOILERPLATE(encrypt_192)
 
-__attribute__((reqd_work_group_size(1, 1, 1)))
+__attribute__((task))
 __kernel void aes256CipherCtr(__global uchar* restrict in,
                               __global uint* restrict w,
                               __global uchar* restrict out,
