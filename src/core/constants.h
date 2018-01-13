@@ -26,8 +26,8 @@
 #define BUFFER_ID(kern_id, buffer_id) ((NUM_BUFFERS*(kern_id)) + (buffer_id))
 #define KERNEL_ID(kern_id, buffer_id) BUFFER_ID(kern_id, buffer_id)
 
-#define IO_QUEUE_ID(kern_id, buffer_id) BUFFER_ID(kern_id, buffer_id)
-#define KERN_QUEUE_ID(kern_id, buffer_id) BUFFER_ID(kern_id, buffer_id)
+#define IO_QUEUE_ID(kern_id, buffer_id) ((NUM_BUFFERS*(kern_id)) + (0))
+#define KERN_QUEUE_ID(kern_id, buffer_id) ((NUM_BUFFERS*(kern_id)) + (1))
 
 
 #define BASE_ENC_BLOCK_SIZE 4096
