@@ -80,6 +80,7 @@ void print_opencl_ciphers_build_info() {
     printf("Build version: %s\n", BUILD_VERSION);
     printf("Build date: %s\n", BUILD_DATE);
     printf("Build machine: %s\n", BUILD_MACHINE);
+    printf("Build compiler: %s\n", BUILD_COMPILER);
     printf("Target opencl device: %s (%d)\n", (TARGET_DEVICE_TYPE == CL_DEVICE_TYPE_ACCELERATOR ? "fpga" : "cpu"), TARGET_DEVICE_TYPE);
     printf("(work_dim/global_work_size/local_work_size): (%d/%d/%d)\n", WORK_DIM, GLOBAL_WORK_SIZE, LOCAL_WORK_SIZE);
 }
