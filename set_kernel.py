@@ -7,6 +7,8 @@ import argparse
 source_folder = "./src_cl"
 bin_folder = "./bin_cl"
 
+kerneltype = "swime"
+
 
 def parsecli():
     parser = argparse.ArgumentParser(description="Setup symlink to easily switch opencl kernel variant")
@@ -16,12 +18,12 @@ def parsecli():
 
 
 def make_path_target(folder, algo, variant, ext):
-    return os.path.join(folder, 
-                        "%s_swi_%s.%s" % (algo, variant, ext))
+    return os.path.join(folder,
+                        "%s_%s_%s.%s" % (algo, kerneltype, variant, ext))
 
 def make_path_link(folder, algo, ext):
-    return os.path.join(folder, 
-                        "%s_swi.%s" % (algo, ext))
+    return os.path.join(folder,
+                        "%s_%s.%s" % (algo, kerneltype, ext))
 
 
 if __name__ == "__main__":

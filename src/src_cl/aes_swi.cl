@@ -1,1 +1,0 @@
-./aes_swi_small.cl
