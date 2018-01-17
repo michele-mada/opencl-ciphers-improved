@@ -6,6 +6,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include <errno.h>
+#include <time.h>
 
 #ifdef __APPLE__
 #include <OpenCL/opencl.h>
@@ -21,5 +22,18 @@ void load_CL_program_binary(char* fileName, unsigned char** binary_str, size_t* 
 void build_error_fatal(cl_int* ret, cl_program* program, cl_device_id* deviceId);
 void print_opencl_platforms_devices();
 void prepare_buffer(cl_context context, cl_mem* buffer, cl_mem_flags required_flags, size_t required_size);
+
+
+
+static inline void timespec_diff(struct timespec *start, struct timespec *stop, struct timespec *result) {
+    if ((stop->tv_nsec - start->tv_nsec) < 0) {
+        result->tv_sec = stop->tv_sec - start->tv_sec - 1;
+        result->tv_nsec = stop->tv_nsec - start->tv_nsec + 1000000000;
+    } else {
+        result->tv_sec = stop->tv_sec - start->tv_sec;
+        result->tv_nsec = stop->tv_nsec - start->tv_nsec;
+    }
+}
+
 
 #endif

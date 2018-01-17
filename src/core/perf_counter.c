@@ -4,6 +4,7 @@
 #include <pthread.h>
 
 #include "constants.h"
+#include "utils.h"
 #include "perf_counter.h"
 
 
@@ -12,20 +13,24 @@ void savefile_worker(void *owner) {
     while (perf_counter->running) {
         usleep(perf_counter->refresh_time * 1000);
         pthread_mutex_lock(&(perf_counter->save_mutex));
-        clock_t time_now = clock();
-        size_t perf_measurement;
 
-        clock_t delta_time = time_now - perf_counter->time_start;
-        if ((delta_time / CLOCKS_PER_SEC) == 0) {
+        struct timespec time_now, difference;
+        clock_gettime(CLOCK_MONOTONIC, &time_now);
+        timespec_diff(&(perf_counter->time_start), &time_now, &difference);
+
+        double perf_measurement;
+        double delta_time = difference.tv_sec + (difference.tv_nsec / 1000000000.0);
+
+        if (delta_time == 0) {
             perf_measurement = 0;
         } else {
-            perf_measurement = (perf_counter->accumulator_latch / PERF_AMOUNT_DIVIDER) /
-                               (delta_time / CLOCKS_PER_SEC);
+            perf_measurement = (((double)perf_counter->accumulator_latch) / PERF_AMOUNT_DIVIDER) /
+                               delta_time;
         }
 
         FILE *fp = fopen(perf_counter->filename, "w");
         if (fp != NULL) {
-            fprintf(fp, "%lu", perf_measurement);
+            fprintf(fp, "%.0lf", perf_measurement);
             fclose(fp);
         }
         pthread_mutex_unlock(&(perf_counter->save_mutex));
@@ -73,8 +78,10 @@ void PerfCounter_destroy(PerfCounter* perf_counter) {
 }
 
 void PerfCounter_start(PerfCounter* perf_counter) {
+    pthread_mutex_lock(&(perf_counter->save_mutex));
     perf_counter->accumulator = 0;
-    perf_counter->time_start = clock();
+    clock_gettime(CLOCK_MONOTONIC, &(perf_counter->time_start));
+    pthread_mutex_unlock(&(perf_counter->save_mutex));
 }
 
 void PerfCounter_mark(PerfCounter* perf_counter, size_t quantity_amount) {

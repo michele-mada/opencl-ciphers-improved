@@ -107,6 +107,7 @@ void aes_encrypt_decrypt_function(OpenCLEnv* env,           // global opencl env
                                   int aes_mode,             // aes mode (128, 192 or 256), to compute the number of rounds
                                   int is_decrypt) {         // select which key to use, encrypt or decrypt
     CipherMethod* meth = env->ciphers[AES_CIPHERS]->methods[method_id];
+
     prepare_buffers_aes(meth->family, input_size, context->ex_key_dim);
     prepare_kernel_aes(meth, (cl_int)input_size, KEYSIZE_TO_Nr(aes_mode), iv != NULL);
     load_aes_input_key_iv(meth->family, input, input_size, context, iv, is_decrypt);

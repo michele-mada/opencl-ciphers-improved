@@ -11,7 +11,7 @@
 
 
 typedef struct PerfCounter {
-    clock_t time_start;
+    struct timespec time_start;
     size_t accumulator;
     size_t accumulator_latch;  // avoid hitting 0 when restarting between consecutive separate runs
     pthread_t save_thread;
