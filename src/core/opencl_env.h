@@ -12,7 +12,7 @@
 
 #include "cipher_family.h"
 #include "param_atlas.h"
-#include "perf_counter.h"
+#include "perf_counter_portable.h"
 
 /*
     Data structure used to manage the OpenCL environment, as well as the

@@ -1,7 +1,6 @@
 #include "opencl_env.h"
 #include "cipher_family.h"
 #include "param_atlas.h"
-#include "perf_counter.h"
 #include "constants.h"
 #include "utils.h"
 

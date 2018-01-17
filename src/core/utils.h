@@ -24,7 +24,8 @@ void print_opencl_platforms_devices();
 void prepare_buffer(cl_context context, cl_mem* buffer, cl_mem_flags required_flags, size_t required_size);
 
 
-
+#ifndef HAS_TIMESPEC_DIFF
+#define HAS_TIMESPEC_DIFF
 static inline void timespec_diff(struct timespec *start, struct timespec *stop, struct timespec *result) {
     if ((stop->tv_nsec - start->tv_nsec) < 0) {
         result->tv_sec = stop->tv_sec - start->tv_sec - 1;
@@ -34,6 +35,7 @@ static inline void timespec_diff(struct timespec *start, struct timespec *stop, 
         result->tv_nsec = stop->tv_nsec - start->tv_nsec;
     }
 }
+#endif
 
 
 #endif

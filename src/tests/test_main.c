@@ -56,7 +56,7 @@ int complain_and_quit() {
     printf("             OCLC_ENC_BLOCK_SIZE=num_bytes (default %uB)\n", BASE_ENC_BLOCK_SIZE);
     printf("             OCLC_KERNEL_PATH_PREFIX=path\n");
     printf("             OCLC_PERF_FILE=path (setting this enables the performance counter)\n");
-    printf("             OCLC_PERF_TICK=time_milliseconds (default: %u ms)\n", DEFAULT_OCLC_PERF_TICK);
+    printf("             OCLC_PERF_TICK=time_milliseconds (default: %u ms)\n", DEFAULT_PERF_TICK);
     exit(1);
 }
 

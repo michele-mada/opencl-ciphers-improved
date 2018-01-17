@@ -3,7 +3,7 @@
 
 #include "constants.h"
 #include "param_atlas.h"
-#include "perf_counter.h"
+#include "perf_counter_portable.h"
 
 
 ParamAtlas* ParamAtlas_init() {
@@ -32,7 +32,7 @@ ParamAtlas* ParamAtlas_init() {
         new_atl->perf_file = custom_perf_file;
     }
 
-    new_atl->perf_refresh_time = DEFAULT_OCLC_PERF_TICK;
+    new_atl->perf_refresh_time = DEFAULT_PERF_TICK;
     char *custom_perf_refresh_time = getenv("OCLC_PERF_TICK");
     if (custom_perf_refresh_time != NULL) {
         new_atl->perf_refresh_time = atol(custom_perf_refresh_time);
