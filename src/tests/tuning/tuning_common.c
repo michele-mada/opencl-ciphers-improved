@@ -50,6 +50,7 @@ void tuning_step(OpenCLEnv* global_env, size_t nbytes, FILE *logfile) {
     uint8_t *trashcan = (uint8_t*) aligned_alloc(AOCL_ALIGNMENT, sizeof(uint8_t) * nbytes);
 
     printf("Testing %luB block x %d repetitions...\r", nbytes, REPETITIONS); fflush(stdout);
+    OpenCLEnv_perf_begin_event(global_env);
     utility_function(global_env, payload, nbytes, REPETITIONS, trashcan, &K, &duration);
 
     printf("Processed %d %lu B chunks in %ld.%09ld           \n",

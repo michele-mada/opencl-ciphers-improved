@@ -1,6 +1,7 @@
 #include "opencl_env.h"
 #include "cipher_family.h"
 #include "param_atlas.h"
+#include "perf_counter.h"
 #include "constants.h"
 #include "utils.h"
 
@@ -45,6 +46,11 @@ OpenCLEnv* OpenCLEnv_init() {
     select_OpenCL_platform_and_device(new_env);
     initialize_OpenCL_context(new_env);
     OpenCLEnv_cascade_init_environment(new_env);
+    new_env->perf_counter = NULL;
+    if (new_env->parameters->perf_file != NULL) {
+        new_env->perf_counter = PerfCounter_init(new_env->parameters->perf_file,
+                                                 new_env->parameters->perf_refresh_time);
+    }
     return new_env;
 }
 
@@ -73,6 +79,18 @@ size_t OpenCLEnv_get_enc_block_size(OpenCLEnv* env) {
 
 void OpenCLEnv_set_enc_block_size(OpenCLEnv* env, size_t enc_block_size) {
     env->parameters->enc_block_size = enc_block_size;
+}
+
+void OpenCLEnv_perf_count_event(OpenCLEnv* env, size_t quantity_amount) {
+    if (env->perf_counter != NULL) {
+        PerfCounter_mark(env->perf_counter, quantity_amount);
+    }
+}
+
+void OpenCLEnv_perf_begin_event(OpenCLEnv* env) {
+    if (env->perf_counter != NULL) {
+        PerfCounter_start(env->perf_counter);
+    }
 }
 
 

@@ -120,6 +120,8 @@ void des_encrypt_decrypt_function(OpenCLEnv* env,
     load_des_input_key_iv(meth->family, input, input_size, context, mode, is_decrypt, iv);
     execute_meth_kernel(meth);
     gather_des_output(meth->family, output, input_size);
+
+    OpenCLEnv_perf_count_event(env, input_size);
 }
 
 

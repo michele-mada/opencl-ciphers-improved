@@ -15,6 +15,7 @@
 #define BASE_ENC_BLOCK_SIZE 4096
 
 
+
 #ifdef PLATFORM_CPU
     #define TARGET_DEVICE_TYPE CL_DEVICE_TYPE_CPU
 #else

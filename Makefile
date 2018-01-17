@@ -39,7 +39,7 @@ endif
 ifeq ($(UNAME_S),Darwin)
 	LINK_FLAGS = -framework opencl
 else
-	LINK_FLAGS = -lOpenCL
+	LINK_FLAGS = -lOpenCL -pthread
 endif
 
 # Additional release-specific linker settings

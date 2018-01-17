@@ -60,7 +60,7 @@ void load_aes_input_key_iv(CipherFamily* aes_fam,
                                    state->iv,
                                    CL_TRUE, 0, AES_IV_SIZE * sizeof(uint8_t),
                                    iv, 0, NULL, NULL);
-        if (ret != CL_SUCCESS) error_fatal("Failed to enqueue clEnqueueWriteBuffer (state->iv) . Error = %s (%d)\n", get_cl_error_string(ret), ret);    
+        if (ret != CL_SUCCESS) error_fatal("Failed to enqueue clEnqueueWriteBuffer (state->iv) . Error = %s (%d)\n", get_cl_error_string(ret), ret);
     }
 }
 
@@ -112,6 +112,8 @@ void aes_encrypt_decrypt_function(OpenCLEnv* env,           // global opencl env
     load_aes_input_key_iv(meth->family, input, input_size, context, iv, is_decrypt);
     execute_meth_kernel(meth);
     gather_aes_output(meth->family, output, input_size);
+
+    OpenCLEnv_perf_count_event(env, input_size);
 }
 
 

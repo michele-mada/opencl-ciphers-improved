@@ -1,6 +1,7 @@
 
 #include "../core/opencl_env.h"
 #include "../core/utils.h"
+#include "../core/constants.h"
 #include "validation/test_common.h"
 #include "tuning/tuning_common.h"
 
@@ -52,6 +53,10 @@ int run_clinfo() {
 int complain_and_quit() {
     printf("Please provide a valid argument. (\"validation\", \"tuning\", \"clinfo\", \"all\")\n");
     printf("Environment: TUNING_STRIDE=num_bytes (default 4MB)\n");
+    printf("             OCLC_ENC_BLOCK_SIZE=num_bytes (default %uB)\n", BASE_ENC_BLOCK_SIZE);
+    printf("             OCLC_KERNEL_PATH_PREFIX=path\n");
+    printf("             OCLC_PERF_FILE=path (setting this enables the performance counter)\n");
+    printf("             OCLC_PERF_TICK=time_milliseconds (default: %u ms)\n", DEFAULT_OCLC_PERF_TICK);
     exit(1);
 }
 

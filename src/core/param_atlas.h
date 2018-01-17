@@ -5,6 +5,8 @@
 typedef struct ParamAtlas {
     size_t enc_block_size;
     char *kernel_path_prefix;
+    char *perf_file;
+    unsigned long perf_refresh_time;
 } ParamAtlas;
 
 
