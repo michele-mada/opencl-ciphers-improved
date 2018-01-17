@@ -20,6 +20,16 @@
 #define BLOCK_SIZE 16
 
 
+// due to limitiations in the opencl implementation, we cannot
+// enqueue stuff as fast as we wants
+#define MAX_AES_BURST_LENGTH 250
+
+
+#define IS_BURST (meth->burst_enabled && \
+                  meth->burst_ready && \
+                  (meth->burst_length_so_far < MAX_AES_BURST_LENGTH))
+
+
 void prepare_buffers_aes(CipherFamily* aes_fam, size_t input_size, size_t ex_key_size) {
     cl_context context = aes_fam->environment->context;
     AesState *state = (AesState*) aes_fam->state;
@@ -47,18 +57,18 @@ void load_aes_input_key_iv(CipherFamily* aes_fam,
 
     ret = clEnqueueWriteBuffer(aes_fam->environment->command_queue,
                                state->exKey,
-                               CL_TRUE, 0, context->ex_key_dim * sizeof(uint32_t),
+                               CL_FALSE, 0, context->ex_key_dim * sizeof(uint32_t),
                                key, 0, NULL, NULL);
     if (ret != CL_SUCCESS) error_fatal("Failed to enqueue clEnqueueWriteBuffer (state->exKey) . Error = %s (%d)\n", get_cl_error_string(ret), ret);
 	ret = clEnqueueWriteBuffer(aes_fam->environment->command_queue,
                                state->in,
-                               CL_TRUE, 0, input_size * sizeof(uint8_t),
+                               CL_FALSE, 0, input_size * sizeof(uint8_t),
                                input, 0, NULL, NULL);
     if (ret != CL_SUCCESS) error_fatal("Failed to enqueue clEnqueueWriteBuffer (state->in) . Error = %s (%d)\n", get_cl_error_string(ret), ret);
     if (iv != NULL) {
         ret = clEnqueueWriteBuffer(aes_fam->environment->command_queue,
                                    state->iv,
-                                   CL_TRUE, 0, AES_IV_SIZE * sizeof(uint8_t),
+                                   CL_FALSE, 0, AES_IV_SIZE * sizeof(uint8_t),
                                    iv, 0, NULL, NULL);
         if (ret != CL_SUCCESS) error_fatal("Failed to enqueue clEnqueueWriteBuffer (state->iv) . Error = %s (%d)\n", get_cl_error_string(ret), ret);
     }
@@ -93,7 +103,7 @@ void prepare_kernel_aes(CipherMethod* meth, cl_int input_size, cl_int num_rounds
 void gather_aes_output(CipherFamily* aes_fam, uint8_t* output, size_t output_size) {
     cl_event event;
     AesState *state = (AesState*) aes_fam->state;
-    clEnqueueReadBuffer(aes_fam->environment->command_queue, state->out, CL_TRUE, 0, output_size, output, 0, NULL, &event);
+    clEnqueueReadBuffer(aes_fam->environment->command_queue, state->out, CL_FALSE, 0, output_size, output, 0, NULL, &event);
     clWaitForEvents(1, &event);
 }
 

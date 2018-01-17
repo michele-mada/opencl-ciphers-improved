@@ -26,7 +26,6 @@ static inline void execute_meth_kernel(CipherMethod* meth) {
                                  &local_work_size,  // local work size
                                  0, NULL, &event);
     if (ret != CL_SUCCESS) error_fatal("Failed to enqueue NDRangeKernel. Error = %s (%d)\n", get_cl_error_string(ret), ret);
-    clWaitForEvents(1, &event);
 }
 
 #define KERNEL_PARAM_ERRORCHECK() if (ret != CL_SUCCESS) error_fatal("Failed to set kernel parameter %d, err = %s (%d)\n", param_id-1, get_cl_error_string(ret), ret);
