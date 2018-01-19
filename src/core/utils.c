@@ -218,12 +218,12 @@ void prepare_buffer(cl_context context, cl_mem* buffer, cl_mem_flags required_fl
     cl_int ret;
     if (*buffer == NULL) {
         *buffer = clCreateBuffer(context, required_flags, required_size, NULL, &ret);
-        if (ret != CL_SUCCESS) error_fatal("Failed to allocate buffer, error = %s (%d)\n", get_cl_error_string(ret), ret);
+        if (ret != CL_SUCCESS) error_fatal("Failed to allocate buffer (size %d), error = %s (%d)\n", required_size, get_cl_error_string(ret), ret);
     } else {
         if (!is_buffer_compliant(*buffer, required_flags, required_size)) {
             clReleaseMemObject(*buffer);
             *buffer = clCreateBuffer(context, required_flags, required_size, NULL, &ret);
-            if (ret != CL_SUCCESS) error_fatal("Failed to allocate new buffer, error = %s (%d)\n", get_cl_error_string(ret), ret);
+            if (ret != CL_SUCCESS) error_fatal("Failed to allocate new buffer (size %d), error = %s (%d)\n", required_size, get_cl_error_string(ret), ret);
         }
     }
 }
