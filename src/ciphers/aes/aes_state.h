@@ -22,6 +22,7 @@ typedef struct AesState {
     cl_mem out;
     cl_mem exKey;
     cl_mem iv;
+    cl_event last_read;
 } AesState;
 
 typedef struct {

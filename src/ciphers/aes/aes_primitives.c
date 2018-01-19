@@ -100,12 +100,29 @@ void prepare_kernel_aes(CipherMethod* meth, cl_int input_size, cl_int num_rounds
     KERNEL_PARAM_ERRORCHECK()
 }
 
-void gather_aes_output(CipherFamily* aes_fam, uint8_t* output, size_t output_size) {
-    cl_event event;
-    AesState *state = (AesState*) aes_fam->state;
-    clEnqueueReadBuffer(aes_fam->environment->command_queue, state->out, CL_FALSE, 0, output_size, output, 0, NULL, &event);
-    clWaitForEvents(1, &event);
+
+struct async_perfdata {
+    size_t xferred;
+    OpenCLEnv *envptr;
+};
+
+void perf_counter_cl_callback(cl_event event, cl_int event_command_exec_status, void *user_data) {
+    struct async_perfdata *datum = (struct async_perfdata*) user_data;
+    OpenCLEnv_perf_count_event(datum->envptr, datum->xferred);
+    free(datum);
 }
+
+void gather_aes_output(CipherFamily* aes_fam, uint8_t* output, size_t output_size) {
+    AesState *state = (AesState*) aes_fam->state;
+    clEnqueueReadBuffer(aes_fam->environment->command_queue, state->out, CL_FALSE, 0, output_size, output, 0, NULL, &state->last_read);
+
+    struct async_perfdata *udata = malloc(sizeof(struct async_perfdata));
+    udata->envptr = aes_fam->environment;
+    udata->xferred = output_size;
+    clSetEventCallback(state->last_read, CL_COMPLETE, &perf_counter_cl_callback, (void*)udata);
+}
+
+
 
 void aes_encrypt_decrypt_function(OpenCLEnv* env,           // global opencl environment
                                   AesMethodsId method_id,   // method (kernel) selector
@@ -124,7 +141,17 @@ void aes_encrypt_decrypt_function(OpenCLEnv* env,           // global opencl env
     execute_meth_kernel(meth);
     gather_aes_output(meth->family, output, input_size);
 
-    OpenCLEnv_perf_count_event(env, input_size);
+    if (!IS_BURST) {
+        AesState *state = (AesState*) meth->family->state;
+        clWaitForEvents(1, &state->last_read);
+        if (meth->burst_enabled) {
+            meth->burst_ready = 1;
+            meth->burst_length_so_far = 0;
+        }
+    } else {
+        meth->burst_length_so_far++;
+    }
+
 }
 
 

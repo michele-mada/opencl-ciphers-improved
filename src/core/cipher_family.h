@@ -41,7 +41,7 @@ CipherFamily* CipherFamily_init(struct OpenCLEnv* environment,
                                 void (*cascade_destroy_fun)(struct CipherFamily*));
 void CipherFamily_destroy(CipherFamily* fam);
 
-
+void CipherFamily_toggle_burst_mode(CipherFamily* fam, int enabled);
 
 
 

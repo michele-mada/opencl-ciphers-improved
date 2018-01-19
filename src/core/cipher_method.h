@@ -22,11 +22,17 @@ typedef struct CipherMethod {
     struct CipherFamily* family;
     cl_kernel kernel;
     void *state;
+    int _burst_implemented;  // (internal use) wether this method has an usable burst mode
+    int burst_enabled;  // set when the user enabled burst mode
+    int burst_ready;    // set when at lease one execution cycle has completed
+    size_t burst_length_so_far;
 } CipherMethod;
 
 
-CipherMethod* CipherMethod_init(struct CipherFamily* family, char* kernel_name);
+CipherMethod* CipherMethod_init(struct CipherFamily* family, char* kernel_name, int can_burst);
 void CipherMethod_destroy(CipherMethod* meth);
+
+int CipherMethod_toggle_burst_mode(CipherMethod* meth, int enabled);
 
 
 

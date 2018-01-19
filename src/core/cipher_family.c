@@ -69,3 +69,9 @@ void CipherFamily_destroy(CipherFamily* fam) {
     free(fam->source_str);
     free(fam);
 }
+
+void CipherFamily_toggle_burst_mode(CipherFamily* fam, int enabled) {
+    for (size_t m = 0; m < fam->num_methods; m++) {
+        (void)CipherMethod_toggle_burst_mode(fam->methods[m], enabled);
+    }
+}
