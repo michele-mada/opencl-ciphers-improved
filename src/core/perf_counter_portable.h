@@ -51,7 +51,9 @@ static void savefile_worker(void *owner) {
         struct timespec difference;
         double perf_measurement;
 
-        if (perf_counter->time_start == perf_counter->time_last_sample) {
+        if ((perf_counter->time_start.tv_sec == perf_counter->time_last_sample.tv_sec) &&
+            (perf_counter->time_start.tv_nsec == perf_counter->time_last_sample.tv_nsec)) {
+
             perf_measurement = 0.0;
         } else {
             timespec_diff(&(perf_counter->time_start), &(perf_counter->time_last_sample), &difference);
