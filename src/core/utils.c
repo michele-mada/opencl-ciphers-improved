@@ -204,12 +204,12 @@ int is_buffer_compliant(cl_mem buffer, cl_mem_flags required_flags, size_t requi
     size_t old_size;
     clGetMemObjectInfo(buffer, CL_MEM_SIZE, sizeof(size_t), &old_size, NULL);
     if (old_size != required_size) {
-        printf("old_size != required_size   %u != %u\n", old_size, required_size);
+        //printf("old_size != required_size   %u != %u\n", old_size, required_size);
         return 0;
     }
     clGetMemObjectInfo(buffer, CL_MEM_FLAGS, sizeof(cl_mem_flags), &old_flags, NULL);
     if (old_flags != required_flags) {
-        printf("old_flags != required_flags   %u != %u\n", old_flags, required_flags);
+        //printf("old_flags != required_flags   %u != %u\n", old_flags, required_flags);
         return 0;
     }
     return 1;
