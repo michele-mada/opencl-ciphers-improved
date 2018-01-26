@@ -115,12 +115,14 @@ void des_encrypt_decrypt_function(OpenCLEnv* env,
                                   int mode,
                                   int is_decrypt) {
     CipherMethod* meth = env->ciphers[DES_CIPHERS]->methods[method_id];
-    prepare_buffers_des(meth->family, input_size, mode);
-    prepare_kernel_des(meth, (cl_int)input_size, iv != NULL);
-    load_des_input_key_iv(meth->family, input, input_size, context, mode, is_decrypt, iv);
-    execute_meth_kernel(meth);
-    gather_des_output(meth->family, output, input_size);
-
+    pthread_mutex_lock(&(env->engine_lock));
+        prepare_buffers_des(meth->family, input_size, mode);
+        prepare_kernel_des(meth, (cl_int)input_size, iv != NULL);
+        load_des_input_key_iv(meth->family, input, input_size, context, mode, is_decrypt, iv);
+        execute_meth_kernel(meth);
+        gather_des_output(meth->family, output, input_size);
+    pthread_mutex_unlock(&(env->engine_lock));
+    // TODO: event sync here instead of inside gather_des_output
     OpenCLEnv_perf_count_event(env, input_size);
 }
 

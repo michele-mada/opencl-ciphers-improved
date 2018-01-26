@@ -12,8 +12,8 @@ TestResult validate_aes_128_ecb(OpenCLEnv *global_env, TestDatum *datum) \
         aes_context K;
         opencl_aes_128_set_encrypt_key((unsigned char*) datum->key, 128, &K);
         opencl_aes_128_set_decrypt_key((unsigned char*) datum->key, 128, &K);
-        opencl_aes_128_ecb_encrypt(global_env, datum->ptx, datum->ptx_length, &K, generated_ctx);
-        opencl_aes_128_ecb_decrypt(global_env, datum->ctx, datum->ctx_length, &K, generated_ptx);
+        opencl_aes_128_ecb_encrypt(global_env, datum->ptx, datum->ptx_length, &K, generated_ctx, NULL, NULL);
+        opencl_aes_128_ecb_decrypt(global_env, datum->ctx, datum->ctx_length, &K, generated_ptx, NULL, NULL);
     })
 
 TestResult validate_aes_192_ecb(OpenCLEnv *global_env, TestDatum *datum) \
@@ -21,8 +21,8 @@ TestResult validate_aes_192_ecb(OpenCLEnv *global_env, TestDatum *datum) \
         aes_context K;
         opencl_aes_192_set_encrypt_key((unsigned char*) datum->key, 192, &K);
         opencl_aes_192_set_decrypt_key((unsigned char*) datum->key, 192, &K);
-        opencl_aes_192_ecb_encrypt(global_env, datum->ptx, datum->ptx_length, &K, generated_ctx);
-        opencl_aes_192_ecb_decrypt(global_env, datum->ctx, datum->ctx_length, &K, generated_ptx);
+        opencl_aes_192_ecb_encrypt(global_env, datum->ptx, datum->ptx_length, &K, generated_ctx, NULL, NULL);
+        opencl_aes_192_ecb_decrypt(global_env, datum->ctx, datum->ctx_length, &K, generated_ptx, NULL, NULL);
     })
 
 TestResult validate_aes_256_ecb(OpenCLEnv *global_env, TestDatum *datum) \
@@ -30,8 +30,8 @@ TestResult validate_aes_256_ecb(OpenCLEnv *global_env, TestDatum *datum) \
         aes_context K;
         opencl_aes_256_set_encrypt_key((unsigned char*) datum->key, 256, &K);
         opencl_aes_256_set_decrypt_key((unsigned char*) datum->key, 256, &K);
-        opencl_aes_256_ecb_encrypt(global_env, datum->ptx, datum->ptx_length, &K, generated_ctx);
-        opencl_aes_256_ecb_decrypt(global_env, datum->ctx, datum->ctx_length, &K, generated_ptx);
+        opencl_aes_256_ecb_encrypt(global_env, datum->ptx, datum->ptx_length, &K, generated_ctx, NULL, NULL);
+        opencl_aes_256_ecb_decrypt(global_env, datum->ctx, datum->ctx_length, &K, generated_ptx, NULL, NULL);
     })
 
 TestResult validate_aes_128_ctr(OpenCLEnv *global_env, TestDatum *datum) \
@@ -39,8 +39,8 @@ TestResult validate_aes_128_ctr(OpenCLEnv *global_env, TestDatum *datum) \
         aes_context K;
         opencl_aes_128_set_encrypt_key((unsigned char*) datum->key, 128, &K);
         memcpy(K.iv, datum->iv, AES_IV_SIZE);
-        opencl_aes_128_ctr_encrypt(global_env, datum->ptx, datum->ptx_length, &K, generated_ctx);
-        opencl_aes_128_ctr_decrypt(global_env, datum->ctx, datum->ctx_length, &K, generated_ptx);
+        opencl_aes_128_ctr_encrypt(global_env, datum->ptx, datum->ptx_length, &K, generated_ctx, NULL, NULL);
+        opencl_aes_128_ctr_decrypt(global_env, datum->ctx, datum->ctx_length, &K, generated_ptx, NULL, NULL);
     })
 
 static int run_all_cases_ecb(OpenCLEnv *global_env) {

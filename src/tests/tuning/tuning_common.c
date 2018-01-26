@@ -34,10 +34,10 @@ void utility_function(OpenCLEnv* global_env,
     clock_gettime(CLOCK_USED, &started);
     OpenCLEnv_toggle_burst_mode(global_env, 1);
     for (size_t i=0; i<nrepeat-1; i++) {
-        opencl_aes_128_ecb_encrypt(global_env, payload, nbytes, K, trash_bin);
+        opencl_aes_128_ecb_encrypt(global_env, payload, nbytes, K, trash_bin, NULL, NULL);
     }
     OpenCLEnv_toggle_burst_mode(global_env, 0);
-    opencl_aes_128_ecb_encrypt(global_env, payload, nbytes, K, trash_bin);
+    opencl_aes_128_ecb_encrypt(global_env, payload, nbytes, K, trash_bin, NULL, NULL);
     clock_gettime(CLOCK_USED, &stopped);
     timespec_diff(&started, &stopped, duration);
 }

@@ -112,14 +112,14 @@ void perf_counter_cl_callback(cl_event event, cl_int event_command_exec_status, 
     free(datum);
 }
 
-void gather_aes_output(CipherFamily* aes_fam, uint8_t* output, size_t output_size) {
+void gather_aes_output(CipherFamily* aes_fam, uint8_t* output, size_t output_size, cl_event *last_sync) {
     AesState *state = (AesState*) aes_fam->state;
-    clEnqueueReadBuffer(aes_fam->environment->command_queue, state->out, CL_FALSE, 0, output_size, output, 0, NULL, &state->last_read);
+    clEnqueueReadBuffer(aes_fam->environment->command_queue, state->out, CL_FALSE, 0, output_size, output, 0, NULL, last_sync);
 
     struct async_perfdata *udata = malloc(sizeof(struct async_perfdata));
     udata->envptr = aes_fam->environment;
     udata->xferred = output_size;
-    clSetEventCallback(state->last_read, CL_COMPLETE, &perf_counter_cl_callback, (void*)udata);
+    clSetEventCallback(*last_sync, CL_COMPLETE, &perf_counter_cl_callback, (void*)udata);
 }
 
 
@@ -132,18 +132,32 @@ void aes_encrypt_decrypt_function(OpenCLEnv* env,           // global opencl env
                                   uint8_t* output,          // pointer to output buffer
                                   uint8_t* iv,              // IV buffer
                                   int aes_mode,             // aes mode (128, 192 or 256), to compute the number of rounds
-                                  int is_decrypt) {         // select which key to use, encrypt or decrypt
+                                  int is_decrypt,           // select which key to use, encrypt or decrypt
+                                  aes_callback_t callback,  // optional callback invoked after the critical section
+                                  void *user_data) {        // argument of the optional callback
     CipherMethod* meth = env->ciphers[AES_CIPHERS]->methods[method_id];
 
-    prepare_buffers_aes(meth->family, input_size, context->ex_key_dim);
-    prepare_kernel_aes(meth, (cl_int)input_size, KEYSIZE_TO_Nr(aes_mode), iv != NULL);
-    load_aes_input_key_iv(meth->family, input, input_size, context, iv, is_decrypt);
-    execute_meth_kernel(meth);
-    gather_aes_output(meth->family, output, input_size);
+    cl_event last_sync;
+
+    pthread_mutex_lock(&(env->engine_lock));
+        prepare_buffers_aes(meth->family, input_size, context->ex_key_dim);
+        prepare_kernel_aes(meth, (cl_int)input_size, KEYSIZE_TO_Nr(aes_mode), iv != NULL);
+        load_aes_input_key_iv(meth->family, input, input_size, context, iv, is_decrypt);
+        execute_meth_kernel(meth);
+        gather_aes_output(meth->family, output, input_size, &last_sync);
+    pthread_mutex_unlock(&(env->engine_lock));
+
+    if (callback != NULL) {
+        pthread_t fire_and_forget;
+        printf("firing callback\n");
+        pthread_create(&fire_and_forget,
+                       NULL,
+                       callback, user_data);
+    }
 
     if (!IS_BURST) {
         AesState *state = (AesState*) meth->family->state;
-        clWaitForEvents(1, &state->last_read);
+        clWaitForEvents(1, &last_sync);
         if (meth->burst_enabled) {
             meth->burst_ready = 1;
             meth->burst_length_so_far = 0;
@@ -205,59 +219,59 @@ void opencl_aes_update_iv_after_chunk_processed(aes_context *K, size_t chunk_siz
 
 /* ----------------- begin ecb mode ----------------- */
 
-void opencl_aes_128_ecb_encrypt(OpenCLEnv* env, uint8_t* plaintext, size_t input_size, aes_context* K, uint8_t* ciphertext) {
-    aes_encrypt_decrypt_function(env, AES_128_ECB_ENC, plaintext, input_size, K, ciphertext, NULL, MODE_128, ENCRYPT);
+void opencl_aes_128_ecb_encrypt(OpenCLEnv* env, uint8_t* plaintext, size_t input_size, aes_context* K, uint8_t* ciphertext, aes_callback_t callback, void *user_data) {
+    aes_encrypt_decrypt_function(env, AES_128_ECB_ENC, plaintext, input_size, K, ciphertext, NULL, MODE_128, ENCRYPT, callback, user_data);
 }
 
-void opencl_aes_128_ecb_decrypt(OpenCLEnv* env, uint8_t* ciphertext, size_t input_size, aes_context* K, uint8_t* plaintext) {
-    aes_encrypt_decrypt_function(env, AES_128_ECB_DEC, ciphertext, input_size, K, plaintext, NULL, MODE_128, DECRYPT);
-}
-
-
-void opencl_aes_192_ecb_encrypt(OpenCLEnv* env, uint8_t* plaintext, size_t input_size, aes_context* K, uint8_t* ciphertext) {
-    aes_encrypt_decrypt_function(env, AES_192_ECB_ENC, plaintext, input_size, K, ciphertext, NULL, MODE_192, ENCRYPT);
-}
-
-void opencl_aes_192_ecb_decrypt(OpenCLEnv* env, uint8_t* ciphertext, size_t input_size, aes_context* K, uint8_t* plaintext) {
-    aes_encrypt_decrypt_function(env, AES_192_ECB_DEC, ciphertext, input_size, K, plaintext, NULL, MODE_192, DECRYPT);
+void opencl_aes_128_ecb_decrypt(OpenCLEnv* env, uint8_t* ciphertext, size_t input_size, aes_context* K, uint8_t* plaintext, aes_callback_t callback, void *user_data) {
+    aes_encrypt_decrypt_function(env, AES_128_ECB_DEC, ciphertext, input_size, K, plaintext, NULL, MODE_128, DECRYPT, callback, user_data);
 }
 
 
-void opencl_aes_256_ecb_encrypt(OpenCLEnv* env, uint8_t* plaintext, size_t input_size, aes_context* K, uint8_t* ciphertext) {
-    aes_encrypt_decrypt_function(env, AES_256_ECB_ENC, plaintext, input_size, K, ciphertext, NULL, MODE_256, ENCRYPT);
+void opencl_aes_192_ecb_encrypt(OpenCLEnv* env, uint8_t* plaintext, size_t input_size, aes_context* K, uint8_t* ciphertext, aes_callback_t callback, void *user_data) {
+    aes_encrypt_decrypt_function(env, AES_192_ECB_ENC, plaintext, input_size, K, ciphertext, NULL, MODE_192, ENCRYPT, callback, user_data);
 }
 
-void opencl_aes_256_ecb_decrypt(OpenCLEnv* env, uint8_t* ciphertext, size_t input_size, aes_context* K, uint8_t* plaintext) {
-    aes_encrypt_decrypt_function(env, AES_256_ECB_DEC, ciphertext, input_size, K, plaintext, NULL, MODE_256, DECRYPT);
+void opencl_aes_192_ecb_decrypt(OpenCLEnv* env, uint8_t* ciphertext, size_t input_size, aes_context* K, uint8_t* plaintext, aes_callback_t callback, void *user_data) {
+    aes_encrypt_decrypt_function(env, AES_192_ECB_DEC, ciphertext, input_size, K, plaintext, NULL, MODE_192, DECRYPT, callback, user_data);
+}
+
+
+void opencl_aes_256_ecb_encrypt(OpenCLEnv* env, uint8_t* plaintext, size_t input_size, aes_context* K, uint8_t* ciphertext, aes_callback_t callback, void *user_data) {
+    aes_encrypt_decrypt_function(env, AES_256_ECB_ENC, plaintext, input_size, K, ciphertext, NULL, MODE_256, ENCRYPT, callback, user_data);
+}
+
+void opencl_aes_256_ecb_decrypt(OpenCLEnv* env, uint8_t* ciphertext, size_t input_size, aes_context* K, uint8_t* plaintext, aes_callback_t callback, void *user_data) {
+    aes_encrypt_decrypt_function(env, AES_256_ECB_DEC, ciphertext, input_size, K, plaintext, NULL, MODE_256, DECRYPT, callback, user_data);
 }
 
 /* ----------------- end ecb mode ----------------- */
 
 /* ----------------- begin ctr mode ----------------- */
 
-void opencl_aes_128_ctr_encrypt(OpenCLEnv* env, uint8_t* plaintext, size_t input_size, aes_context* K, uint8_t* ciphertext) {
-    aes_encrypt_decrypt_function(env, AES_128_CTR, plaintext, input_size, K, ciphertext, K->iv, MODE_128, ENCRYPT);
+void opencl_aes_128_ctr_encrypt(OpenCLEnv* env, uint8_t* plaintext, size_t input_size, aes_context* K, uint8_t* ciphertext, aes_callback_t callback, void *user_data) {
+    aes_encrypt_decrypt_function(env, AES_128_CTR, plaintext, input_size, K, ciphertext, K->iv, MODE_128, ENCRYPT, callback, user_data);
 }
 
-void opencl_aes_128_ctr_decrypt(OpenCLEnv* env, uint8_t* ciphertext, size_t input_size, aes_context* K, uint8_t* plaintext) {
-    opencl_aes_128_ctr_encrypt(env, ciphertext, input_size, K, plaintext);
-}
-
-
-void opencl_aes_192_ctr_encrypt(OpenCLEnv* env, uint8_t* plaintext, size_t input_size, aes_context* K, uint8_t* ciphertext) {
-    aes_encrypt_decrypt_function(env, AES_192_CTR, plaintext, input_size, K, ciphertext, K->iv, MODE_192, ENCRYPT);
-}
-
-void opencl_aes_192_ctr_decrypt(OpenCLEnv* env, uint8_t* ciphertext, size_t input_size, aes_context* K, uint8_t* plaintext) {
-    opencl_aes_192_ctr_encrypt(env, ciphertext, input_size, K, plaintext);
+void opencl_aes_128_ctr_decrypt(OpenCLEnv* env, uint8_t* ciphertext, size_t input_size, aes_context* K, uint8_t* plaintext, aes_callback_t callback, void *user_data) {
+    opencl_aes_128_ctr_encrypt(env, ciphertext, input_size, K, plaintext, callback, user_data);
 }
 
 
-void opencl_aes_256_ctr_encrypt(OpenCLEnv* env, uint8_t* plaintext, size_t input_size, aes_context* K, uint8_t* ciphertext) {
-    aes_encrypt_decrypt_function(env, AES_256_CTR, plaintext, input_size, K, ciphertext, K->iv, MODE_256, ENCRYPT);
+void opencl_aes_192_ctr_encrypt(OpenCLEnv* env, uint8_t* plaintext, size_t input_size, aes_context* K, uint8_t* ciphertext, aes_callback_t callback, void *user_data) {
+    aes_encrypt_decrypt_function(env, AES_192_CTR, plaintext, input_size, K, ciphertext, K->iv, MODE_192, ENCRYPT, callback, user_data);
 }
 
-void opencl_aes_256_ctr_decrypt(OpenCLEnv* env, uint8_t* ciphertext, size_t input_size, aes_context* K, uint8_t* plaintext) {
-    opencl_aes_256_ctr_encrypt(env, ciphertext, input_size, K, plaintext);
+void opencl_aes_192_ctr_decrypt(OpenCLEnv* env, uint8_t* ciphertext, size_t input_size, aes_context* K, uint8_t* plaintext, aes_callback_t callback, void *user_data) {
+    opencl_aes_192_ctr_encrypt(env, ciphertext, input_size, K, plaintext, callback, user_data);
+}
+
+
+void opencl_aes_256_ctr_encrypt(OpenCLEnv* env, uint8_t* plaintext, size_t input_size, aes_context* K, uint8_t* ciphertext, aes_callback_t callback, void *user_data) {
+    aes_encrypt_decrypt_function(env, AES_256_CTR, plaintext, input_size, K, ciphertext, K->iv, MODE_256, ENCRYPT, callback, user_data);
+}
+
+void opencl_aes_256_ctr_decrypt(OpenCLEnv* env, uint8_t* ciphertext, size_t input_size, aes_context* K, uint8_t* plaintext, aes_callback_t callback, void *user_data) {
+    opencl_aes_256_ctr_encrypt(env, ciphertext, input_size, K, plaintext, callback, user_data);
 }
 /* ----------------- end ctr mode ----------------- */

@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <pthread.h>
 
 #ifdef __APPLE__
 #include <OpenCL/opencl.h>
@@ -36,6 +37,7 @@ typedef struct OpenCLEnv {
     cl_platform_id selected_platform;
     cl_device_id* selected_device;
     size_t num_ciphers;
+    pthread_mutex_t engine_lock;
     struct CipherFamily** ciphers;
     struct ParamAtlas* parameters;
     struct PerfCounter* perf_counter;

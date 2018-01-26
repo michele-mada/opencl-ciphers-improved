@@ -42,6 +42,7 @@ OpenCLEnv* OpenCLEnv_init() {
     OpenCLEnv* new_env = (OpenCLEnv*) malloc(sizeof(OpenCLEnv));
     new_env->num_ciphers = 0;
     new_env->parameters = ParamAtlas_init();
+    pthread_mutex_init(&(new_env->engine_lock), NULL);
     select_OpenCL_platform_and_device(new_env);
     initialize_OpenCL_context(new_env);
     OpenCLEnv_cascade_init_environment(new_env);
