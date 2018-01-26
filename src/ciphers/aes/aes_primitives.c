@@ -140,16 +140,17 @@ void aes_encrypt_decrypt_function(OpenCLEnv* env,           // global opencl env
     cl_event last_sync;
 
     pthread_mutex_lock(&(env->engine_lock));
+        fprintf(stderr, "engine entering critical zone\n");
         prepare_buffers_aes(meth->family, input_size, context->ex_key_dim);
         prepare_kernel_aes(meth, (cl_int)input_size, KEYSIZE_TO_Nr(aes_mode), iv != NULL);
         load_aes_input_key_iv(meth->family, input, input_size, context, iv, is_decrypt);
         execute_meth_kernel(meth);
         gather_aes_output(meth->family, output, input_size, &last_sync);
+        fprintf(stderr, "engine exiting critical zone\n");
     pthread_mutex_unlock(&(env->engine_lock));
 
     if (callback != NULL) {
         pthread_t fire_and_forget;
-        printf("firing callback\n");
         pthread_create(&fire_and_forget,
                        NULL,
                        callback, user_data);
