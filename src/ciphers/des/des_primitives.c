@@ -119,7 +119,7 @@ void des_encrypt_decrypt_function(OpenCLEnv* env,
         prepare_buffers_des(meth->family, input_size, mode);
         prepare_kernel_des(meth, (cl_int)input_size, iv != NULL);
         load_des_input_key_iv(meth->family, input, input_size, context, mode, is_decrypt, iv);
-        execute_meth_kernel(meth);
+        execute_meth_kernel(meth, NULL);
         gather_des_output(meth->family, output, input_size);
     pthread_mutex_unlock(&(env->engine_lock));
     // TODO: event sync here instead of inside gather_des_output

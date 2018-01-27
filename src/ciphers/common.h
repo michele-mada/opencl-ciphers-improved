@@ -12,8 +12,7 @@
 #include "../core/utils.h"
 
 
-static inline void execute_meth_kernel(CipherMethod* meth) {
-    cl_event event;
+static inline void execute_meth_kernel(CipherMethod* meth, cl_event *event) {
     cl_int ret;
     size_t global_work_size = GLOBAL_WORK_SIZE;
     size_t local_work_size = LOCAL_WORK_SIZE;
@@ -24,7 +23,7 @@ static inline void execute_meth_kernel(CipherMethod* meth) {
                                  NULL,  // global offset
                                  &global_work_size,  // global work size
                                  &local_work_size,  // local work size
-                                 0, NULL, &event);
+                                 0, NULL, event);
     if (ret != CL_SUCCESS) error_fatal("Failed to enqueue NDRangeKernel. Error = %s (%d)\n", get_cl_error_string(ret), ret);
 }
 

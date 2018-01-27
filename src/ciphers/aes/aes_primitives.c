@@ -122,7 +122,16 @@ void gather_aes_output(CipherFamily* aes_fam, uint8_t* output, size_t output_siz
     clSetEventCallback(*last_sync, CL_COMPLETE, &perf_counter_cl_callback, (void*)udata);
 }
 
+struct aes_kernel_done_callback_data {
+    aes_callback_t handler;
+    void *user_data;
+};
 
+static void aes_kernel_done_callback(cl_event event, cl_int event_command_exec_status, void *user_data) {
+    struct aes_kernel_done_callback_data *p = (struct aes_kernel_done_callback_data*) user_data;
+    p->handler(p->user_data);
+    free(p);
+}
 
 void aes_encrypt_decrypt_function(OpenCLEnv* env,           // global opencl environment
                                   AesMethodsId method_id,   // method (kernel) selector
@@ -138,22 +147,23 @@ void aes_encrypt_decrypt_function(OpenCLEnv* env,           // global opencl env
     CipherMethod* meth = env->ciphers[AES_CIPHERS]->methods[method_id];
 
     cl_event last_sync;
+    cl_event kernel_done;
 
     pthread_mutex_lock(&(env->engine_lock));
         //fprintf(stderr, "engine entering critical zone\n");
         prepare_buffers_aes(meth->family, input_size, context->ex_key_dim);
         prepare_kernel_aes(meth, (cl_int)input_size, KEYSIZE_TO_Nr(aes_mode), iv != NULL);
         load_aes_input_key_iv(meth->family, input, input_size, context, iv, is_decrypt);
-        execute_meth_kernel(meth);
+        execute_meth_kernel(meth, &kernel_done);
         gather_aes_output(meth->family, output, input_size, &last_sync);
         //fprintf(stderr, "engine exiting critical zone\n");
     pthread_mutex_unlock(&(env->engine_lock));
 
     if (callback != NULL) {
-        pthread_t fire_and_forget;
-        pthread_create(&fire_and_forget,
-                       NULL,
-                       callback, user_data);
+        struct aes_kernel_done_callback_data *wrapper_data = (struct aes_kernel_done_callback_data*) malloc(sizeof(struct aes_kernel_done_callback_data));
+        wrapper_data->handler = callback;
+        wrapper_data->user_data = user_data;
+        clSetEventCallback(kernel_done, CL_COMPLETE, &aes_kernel_done_callback, (void*)wrapper_data);
     }
 
     if (!IS_BURST) {
