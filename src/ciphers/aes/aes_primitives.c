@@ -85,9 +85,8 @@ void general_prepare_kernel_aes(CipherMethod* meth,
             ret = clSetKernelArg(meth->kernel[KERNEL_ID(kern_id, buffer_id)], param_id++, sizeof(cl_int), &buffer_id);
             KERNEL_PARAM_ERRORCHECK()
 
-            // give the **full** input size to each kernel; the will compute the partition
-            // size by themselves
-            ret = clSetKernelArg(meth->kernel[KERNEL_ID(kern_id, buffer_id)], param_id++, sizeof(cl_int), &input_size);
+            size_t part_input_size = input_size / NUM_QUEUES;
+            ret = clSetKernelArg(meth->kernel[KERNEL_ID(kern_id, buffer_id)], param_id++, sizeof(cl_int), &part_input_size);
             KERNEL_PARAM_ERRORCHECK()
         }
     }

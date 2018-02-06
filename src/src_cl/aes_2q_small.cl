@@ -318,13 +318,13 @@ __kernel void aesEncCipher_##ID (__global uchar* restrict in,                   
                                  __global uchar* restrict out,                  \
                                  unsigned int num_rounds,                       \
                                  unsigned int buffer_idx,                       \
-                                 unsigned int input_size) {                     \
+                                 unsigned int input_chunk_size) {               \
     __private uchar state_in[BLOCK_SIZE];                                       \
     __private uchar state_out[BLOCK_SIZE];                                      \
     uint __attribute__((register)) local_w[MAX_EXKEY_SIZE_WORDS];               \
     copy_extkey_to_local(local_w, w);                                           \
                                                                                 \
-    size_t coverage = input_size / NUN_QUEUES;                                  \
+    size_t coverage = input_chunk_size;                                         \
     for (size_t blockid=0; blockid < coverage / BLOCK_SIZE; blockid++) {        \
        _Pragma("unroll")                                                        \
        for (size_t i = 0; i < BLOCK_SIZE; ++i) {                                \
@@ -348,13 +348,13 @@ __kernel void aesDecCipher_##ID (__global uchar* restrict in,                   
                                  __global uchar* restrict out,                  \
                                  unsigned int num_rounds,                       \
                                  unsigned int buffer_idx,                       \
-                                 unsigned int input_size) {                     \
+                                 unsigned int input_chunk_size) {               \
     __private uchar state_in[BLOCK_SIZE];                                       \
     __private uchar state_out[BLOCK_SIZE];                                      \
     uint __attribute__((register)) local_w[MAX_EXKEY_SIZE_WORDS];               \
     copy_extkey_to_local(local_w, w);                                           \
                                                                                 \
-    size_t coverage = input_size / NUN_QUEUES;                                  \
+    size_t coverage = input_chunk_size;                                         \
     for (size_t blockid=0; blockid < coverage / BLOCK_SIZE; blockid++) {        \
        _Pragma("unroll")                                                        \
        for (size_t i = 0; i < BLOCK_SIZE; ++i) {                                \
@@ -391,7 +391,7 @@ __kernel void aesCipherCtr_##ID (__global uchar* restrict in,                   
                                  __global uchar* restrict IV,                   \
                                  unsigned int num_rounds,                       \
                                  unsigned int buffer_idx,                       \
-                                 unsigned int input_size) {                     \
+                                 unsigned int input_chunk_size) {               \
     __private uchar counter[BLOCK_SIZE];                                        \
     __private uchar outCipher[BLOCK_SIZE];                                      \
     uint __attribute__((register)) local_w[MAX_EXKEY_SIZE_WORDS];               \
@@ -401,7 +401,7 @@ __kernel void aesCipherCtr_##ID (__global uchar* restrict in,                   
     for (size_t i = 0; i < BLOCK_SIZE; i++) {                                   \
         counter[i] = IV[i];                                                     \
     }                                                                           \
-    size_t coverage = input_size / NUN_QUEUES;                                  \
+    size_t coverage = input_chunk_size;                                         \
     size_t start = coverage * (ID * NUM_BUFFERS + buffer_idx);                  \
     increment_counter(counter, start / BLOCK_SIZE);                             \
     for (size_t blockid=0; blockid < coverage / BLOCK_SIZE; blockid++) {        \
