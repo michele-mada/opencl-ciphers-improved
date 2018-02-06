@@ -97,5 +97,5 @@ void print_opencl_ciphers_build_info() {
     printf("Build compiler: %s\n", BUILD_COMPILER);
     printf("Target opencl device: %s (%d)\n", (TARGET_DEVICE_TYPE == CL_DEVICE_TYPE_ACCELERATOR ? "fpga" : "cpu"), TARGET_DEVICE_TYPE);
     printf("(work_dim/global_work_size/local_work_size): (%d/%d/%d)\n", WORK_DIM, GLOBAL_WORK_SIZE, LOCAL_WORK_SIZE);
-    printf("num_concurrent_kernels: %d\n", NUM_CONCURRENT_KERNELS);
+    printf("num_queues: %d\n", NUM_QUEUES);
 }
