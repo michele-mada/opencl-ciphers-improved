@@ -119,7 +119,7 @@ void load_aes_input_key_iv_daisychain(CipherFamily* aes_fam,
                                state->exKey[BUFFER_ID(kern_id, buffer_id)],
                                CL_FALSE, 0, key_size * sizeof(uint32_t),
                                key,
-                               in->num_events, waitlist,
+                               0, NULL,
                                &step1);
     if (ret != CL_SUCCESS) error_fatal("Failed to enqueue clEnqueueWriteBuffer (state->exKey[%d = BUFFER_ID(%d, %d)]) . Error = %s (%d)\n", BUFFER_ID(kern_id, buffer_id), kern_id, buffer_id, get_cl_error_string(ret), ret);
     step_last = &step1;
@@ -166,7 +166,7 @@ void execute_aes_kernel_daisychain(CipherMethod* meth,
                                  NULL,  // global offset
                                  &global_work_size,  // global work size
                                  &local_work_size,  // local work size
-                                 in->num_events, in->events,
+                                 0, NULL,
                                  out);
     if (ret != CL_SUCCESS) error_fatal("Failed to enqueue NDRangeKernel. Error = %s (%d)\n", get_cl_error_string(ret), ret);
     //printf("kernel     k=%d,b=%d  in num_events = %d  in events = %p  out event = %p\n", kern_id, buffer_id, in->num_events, in->events, out);
@@ -191,7 +191,7 @@ void gather_output_daisychain(CipherMethod* meth,
                               CL_FALSE, 0,
                               part_output_size,
                               part_output,
-                              in->num_events, in->events,
+                              0, NULL,
                               out);
     if (ret != CL_SUCCESS) error_fatal("Failed to enqueue clEnqueueReadBuffer (state->out) . Error = %s (%d)\n", get_cl_error_string(ret), ret);
     //printf("output id=%d,k=%d,b=%d  in num_events = %d  in events = %p  out event = %p\n", BUFFER_ID(kern_id, buffer_id), kern_id, buffer_id, in->num_events, in->events, out);

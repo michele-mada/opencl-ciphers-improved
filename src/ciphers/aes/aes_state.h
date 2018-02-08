@@ -46,7 +46,7 @@ typedef struct AesState {
     SyncGate kernel_gate[NUM_CONCURRENT_KERNELS][NUM_BUFFERS];
     SyncGate output_gate[NUM_CONCURRENT_KERNELS][NUM_BUFFERS];
     SyncGate dummy_gate[NUM_CONCURRENT_KERNELS][NUM_BUFFERS];  // for events not used by anyone
-    
+
     cl_event finish_trigger[NUM_CONCURRENT_KERNELS][NUM_BUFFERS][NUM_AES_EXEC_PHASES];
 } AesState;
 
