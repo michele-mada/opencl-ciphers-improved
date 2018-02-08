@@ -21,11 +21,13 @@ typedef struct AesState {
     cl_mem in;
     cl_mem out;
     cl_mem exKey;
+    cl_mem exKeyTweak;
     cl_mem iv;
 } AesState;
 
 typedef struct {
     uint32_t expanded_key_encrypt[MAX_EXKEY_SIZE_WORDS];
+    uint32_t expanded_key_tweak[MAX_EXKEY_SIZE_WORDS];
     uint32_t expanded_key_decrypt[MAX_EXKEY_SIZE_WORDS];
     size_t ex_key_dim;
     uint8_t iv[AES_IV_SIZE];

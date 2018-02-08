@@ -19,6 +19,7 @@
 #define BLOCK_SIZE 16u
 
 #define AES_REDUCE_BYTE 0x1Bu
+#define GF_128_FDBK 0x87
 
 
 __constant uchar sbox[256] =
@@ -390,5 +391,117 @@ __kernel void aesCipherCtr(__global uchar* restrict in,
             out[offset] = state_out[i] ^ in[offset];
         }
         increment_counter(counter, 1);
+    }
+}
+
+
+void gf128_multiply_by_alpha(__private uchar *in, __private uchar *out) {
+    uchar carry_in, carry_out;
+
+    carry_in = 0;
+    #pragma unroll
+    for (size_t j=0; j<BLOCK_SIZE; j++) {
+        carry_out = (in[j] >> 7) & 1;
+        out[j] = ((in[j] << 1) + carry_in) & 0xFF;
+        carry_in = carry_out;
+    }
+    if (carry_out != 0) {
+        out[0] ^= GF_128_FDBK;
+    }
+}
+
+
+#define XTS_ROUND(encdec_fun)                                                   \
+{                                                                               \
+    _Pragma("unroll")                                                           \
+    for (size_t i = 0; i < BLOCK_SIZE; ++i) {                                   \
+        size_t offset = blockid * BLOCK_SIZE + i;                               \
+        temp_state_in[i] = in[offset] ^ (tweak_in)[i];                          \
+    }                                                                           \
+                                                                                \
+    encdec_fun(temp_state_in, local_w1, temp_state_out, num_rounds);            \
+                                                                                \
+    _Pragma("unroll")                                                           \
+    for(size_t i = 0; i < BLOCK_SIZE; i++) {                                    \
+        size_t offset = blockid * BLOCK_SIZE + i;                               \
+        out[offset] = temp_state_out[i] ^ (tweak_in)[i];                        \
+    }                                                                           \
+}
+
+
+__attribute__((reqd_work_group_size(1, 1, 1)))
+__kernel void aesCipherXtsEnc(__global uchar* restrict in,
+                              __global uint* restrict w1,
+                              __global uint* restrict w2,
+                              __global uchar* restrict out,
+                              __global uchar* restrict tweak_init,
+                              unsigned int num_rounds,
+                              unsigned int input_size) {
+    __private uchar tweak1[BLOCK_SIZE];
+    __private uchar tweak2[BLOCK_SIZE];
+    __private uchar *last_tweak;
+
+    __private uchar temp_state_in[BLOCK_SIZE];
+    __private uchar temp_state_out[BLOCK_SIZE];
+
+    uint __attribute__((register)) local_w1[MAX_EXKEY_SIZE_WORDS];
+    uint __attribute__((register)) local_w2[MAX_EXKEY_SIZE_WORDS];
+    copy_extkey_to_local(local_w1, w1);
+    copy_extkey_to_local(local_w2, w2);
+
+    /* initialize tweak */
+    #pragma unroll
+    for (size_t i = 0; i < BLOCK_SIZE; i++) {
+        tweak1[i] = tweak_init[i];
+    }
+    encrypt(tweak1, local_w2, tweak2, num_rounds);
+
+    for (size_t blockid=0; blockid < (input_size / 2) / BLOCK_SIZE; blockid++) {
+        XTS_ROUND(encrypt);
+        gf128_multiply_by_alpha(tweak1, tweak2);
+        XTS_ROUND(encrypt);
+        gf128_multiply_by_alpha(tweak2, tweak1);
+    }
+    last_tweak = tweak1;
+
+    size_t bytes_done = ((input_size / 2) / BLOCK_SIZE) * BLOCK_SIZE * 2;
+    if (bytes_done + BLOCK_SIZE <= input_size) {
+        XTS_ROUND(encrypt);
+        gf128_multiply_by_alpha(tweak1, tweak2);
+        bytes_done += BLOCK_SIZE;
+        last_tweak = tweak2;
+    }
+
+    size_t bytes_left = input_size - bytes_done;
+    if (bytes_left % BLOCK_SIZE != 0) {
+        size_t last_partial_block_offset = bytes_done;
+        size_t last_full_block_offset = bytes_done - BLOCK_SIZE;
+
+        // Ctx stealing
+
+        // first part of the input state: partial ptx
+        #pragma unroll
+        for (size_t i = 0; i < bytes_left; ++i) {
+            size_t offset = last_partial_block_offset + i;
+            temp_state_in[i] = in[offset] ^ last_tweak[i];
+            // also copy the final partial block bytes
+            out[offset] = temp_state_out[offset - BLOCK_SIZE];
+        }
+        // last part of the input state: ctx stolen from previous operation
+        #pragma unroll
+        for (size_t i = bytes_left; i < BLOCK_SIZE; ++i) {
+            size_t offset = last_full_block_offset + i;
+            temp_state_in[i] = temp_state_out[offset] ^ last_tweak[i];
+        }
+
+        encrypt(temp_state_in, local_w1, temp_state_out, num_rounds);
+
+        // copy the output into the second-to-last out block
+        #pragma unroll
+        for (size_t i = 0; i < BLOCK_SIZE; ++i) {
+            size_t offset = last_full_block_offset + i;
+            out[offset] = temp_state_out[i] ^ last_tweak[i];
+        }
+
     }
 }

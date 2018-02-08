@@ -12,6 +12,8 @@
 #endif
 
 
+#define DUMMY_BUFF() clCreateBuffer(fam->environment->context, CL_MEM_READ_WRITE, 8, NULL, NULL)
+
 
 void init_aes_methods_and_state(CipherFamily* fam) {
     fam->methods = (CipherMethod**) malloc(sizeof(CipherMethod*) * NUM_AES_METHODS);
@@ -25,14 +27,21 @@ void init_aes_methods_and_state(CipherFamily* fam) {
     fam->methods[AES_128_CTR] = CipherMethod_init(fam, "aesCipherCtr", 1);
     fam->methods[AES_192_CTR] = CipherMethod_init(fam, "aesCipherCtr", 1);
     fam->methods[AES_256_CTR] = CipherMethod_init(fam, "aesCipherCtr", 1);
+    fam->methods[AES_128_XTS_ENC] = CipherMethod_init(fam, "aesCipherXtsEnc", 1);
+    fam->methods[AES_192_XTS_ENC] = CipherMethod_init(fam, "aesCipherXtsEnc", 1);
+    fam->methods[AES_256_XTS_ENC] = CipherMethod_init(fam, "aesCipherXtsEnc", 1);
+    /*fam->methods[AES_128_XTS_DEC] = CipherMethod_init(fam, "aesDecCipher", 1);
+    fam->methods[AES_192_XTS_DEC] = CipherMethod_init(fam, "aesDecCipher", 1);
+    fam->methods[AES_256_XTS_DEC] = CipherMethod_init(fam, "aesDecCipher", 1);*/
 
     fam->num_methods = NUM_AES_METHODS;
 
     AesState *state = (AesState*) malloc(sizeof(AesState));
-    state->in = NULL;
-    state->out = NULL;
-    state->exKey = NULL;
-    state->iv = NULL;
+    state->in = DUMMY_BUFF();
+    state->out = DUMMY_BUFF();
+    state->exKey = DUMMY_BUFF();
+    state->exKeyTweak = DUMMY_BUFF();
+    state->iv = DUMMY_BUFF();
     fam->state = state;
 }
 
@@ -40,6 +49,7 @@ void destroy_aes_methods_and_state(CipherFamily* fam) {
     AesState *state = (AesState*) fam->state;
     if (state->iv != NULL) clReleaseMemObject(state->iv);
     if (state->exKey != NULL) clReleaseMemObject(state->exKey);
+    if (state->exKeyTweak != NULL) clReleaseMemObject(state->exKeyTweak);
     if (state->out != NULL) clReleaseMemObject(state->out);
     if (state->in != NULL) clReleaseMemObject(state->in);
     free(fam->state);
