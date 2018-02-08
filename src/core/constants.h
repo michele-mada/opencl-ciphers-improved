@@ -26,7 +26,9 @@
 #define BUFFER_ID(kern_id, buffer_id) ((NUM_BUFFERS*(kern_id)) + (buffer_id))
 #define KERNEL_ID(kern_id, buffer_id) BUFFER_ID(kern_id, buffer_id)
 
-#define IO_QUEUE_ID(kern_id, buffer_id) ((NUM_BUFFERS*(kern_id)) + (0))
+//#define IO_QUEUE_ID(kern_id, buffer_id) ((NUM_BUFFERS*(kern_id)) + (0))
+#define IO_IN_QUEUE_ID(kern_id, buffer_id) ((NUM_BUFFERS*(kern_id)) + (0))
+#define IO_OUT_QUEUE_ID(kern_id, buffer_id) ((NUM_BUFFERS*(kern_id)) + (1))
 #define KERN_QUEUE_ID(kern_id, buffer_id) ((NUM_BUFFERS*(kern_id)) + (1))
 
 

@@ -62,7 +62,7 @@ typedef struct AesState {
     state->input_gate[kern_id][(buffer_id+1) % NUM_BUFFERS].num_events = 1; \
     /* current kernel gate can open */ \
     state->kernel_gate[kern_id][buffer_id].events[0] = *(event_out_ptr); \
-    PROFILE_EVENT(event_out_ptr, input, IO_QUEUE_ID(kern_id, buffer_id)); \
+    PROFILE_EVENT(event_out_ptr, input, IO_IN_QUEUE_ID(kern_id, buffer_id)); \
 }
 
 // update gates depending on kernel (kern_id,buffer_id) completion
@@ -76,7 +76,7 @@ typedef struct AesState {
 // update gates depending on output (kern_id,buffer_id) completion
 #define AES_DEPEND_FINISHED_OUTPUT(event_out_ptr) \
 { \
-    PROFILE_EVENT(event_out_ptr, output, IO_QUEUE_ID(kern_id, buffer_id)); \
+    PROFILE_EVENT(event_out_ptr, output, IO_OUT_QUEUE_ID(kern_id, buffer_id)); \
 }
 
 

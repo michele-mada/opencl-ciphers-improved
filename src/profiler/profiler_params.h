@@ -20,11 +20,11 @@ static void setup_global_profiler_params() {
             snprintf(tmpname, 1024, "kernel,%d", KERN_QUEUE_ID(kern_id, buffer_id));
             prof_kernel_id[KERN_QUEUE_ID(kern_id, buffer_id)] = GlobalProfiler_add_data_class(tmpname);
 
-            snprintf(tmpname, 1024, "input,%d", IO_QUEUE_ID(kern_id, buffer_id));
-            prof_input_id[IO_QUEUE_ID(kern_id, buffer_id)] = GlobalProfiler_add_data_class(tmpname);
+            snprintf(tmpname, 1024, "input,%d", IO_IN_QUEUE_ID(kern_id, buffer_id));
+            prof_input_id[IO_IN_QUEUE_ID(kern_id, buffer_id)] = GlobalProfiler_add_data_class(tmpname);
 
-            snprintf(tmpname, 1024, "output,%d", IO_QUEUE_ID(kern_id, buffer_id));
-            prof_output_id[IO_QUEUE_ID(kern_id, buffer_id)] = GlobalProfiler_add_data_class(tmpname);
+            snprintf(tmpname, 1024, "output,%d", IO_OUT_QUEUE_ID(kern_id, buffer_id));
+            prof_output_id[IO_OUT_QUEUE_ID(kern_id, buffer_id)] = GlobalProfiler_add_data_class(tmpname);
         }
     }
 }

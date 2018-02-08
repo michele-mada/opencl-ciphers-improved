@@ -1,0 +1,3 @@
+# block_size (B)	run_time (S)	(with REPETITIONS=100)
+8388608	7.321204536
+16777216	13.524968384

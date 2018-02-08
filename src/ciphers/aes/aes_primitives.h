@@ -5,16 +5,17 @@
 #include "aes_state.h"
 
 
-void opencl_aes_128_set_encrypt_key(const unsigned char *userKey, const int bits, aes_context *K);
-void opencl_aes_128_set_decrypt_key(const unsigned char *userKey, const int bits, aes_context *K);
+void opencl_aes_128_set_encrypt_key(OpenCLEnv* env, const unsigned char *userKey, const int bits, aes_context *K);
+void opencl_aes_128_set_decrypt_key(OpenCLEnv* env, const unsigned char *userKey, const int bits, aes_context *K);
 
-void opencl_aes_192_set_encrypt_key(const unsigned char *userKey, const int bits, aes_context *K);
-void opencl_aes_192_set_decrypt_key(const unsigned char *userKey, const int bits, aes_context *K);
+void opencl_aes_192_set_encrypt_key(OpenCLEnv* env, const unsigned char *userKey, const int bits, aes_context *K);
+void opencl_aes_192_set_decrypt_key(OpenCLEnv* env, const unsigned char *userKey, const int bits, aes_context *K);
 
-void opencl_aes_256_set_encrypt_key(const unsigned char *userKey, const int bits, aes_context *K);
-void opencl_aes_256_set_decrypt_key(const unsigned char *userKey, const int bits, aes_context *K);
+void opencl_aes_256_set_encrypt_key(OpenCLEnv* env, const unsigned char *userKey, const int bits, aes_context *K);
+void opencl_aes_256_set_decrypt_key(OpenCLEnv* env, const unsigned char *userKey, const int bits, aes_context *K);
 
 
+void opencl_aes_set_iv(OpenCLEnv* env, uint8_t *iv, aes_context *K);
 void opencl_aes_update_iv_after_chunk_processed(aes_context *K, size_t chunk_size);
 
 
