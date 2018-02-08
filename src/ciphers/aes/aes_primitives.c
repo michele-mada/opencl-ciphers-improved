@@ -93,31 +93,20 @@ void general_prepare_kernel_aes(CipherMethod* meth,
 }
 
 
-void load_aes_input_key_iv_daisychain(CipherFamily* aes_fam,
-                                      uint8_t* input,
-                                      size_t input_size,
-                                      uint32_t* key,
-                                      size_t key_size,
-                                      uint8_t* iv,
-                                      int kern_id,
-                                      int buffer_id) {
+void sync_load_aes_key_iv(CipherFamily* aes_fam,
+                          uint32_t* key,
+                          size_t key_size,
+                          uint8_t* iv,
+                          int kern_id,
+                          int buffer_id) {
     AesState *state = (AesState*) aes_fam->state;
     cl_int ret;
-    cl_event step1;
-    cl_event step2;
+    cl_event step1, step2;
     cl_event *step_last;
-
-    SyncGate *in = &(state->input_gate[kern_id][buffer_id]);
-    cl_event *waitlist = in->events;
-    if (in->num_events == 0) waitlist = NULL;
-    cl_event *out = &(state->finish_trigger[kern_id][buffer_id][AES_PHASE_INPUT]);
-    //printf("enqueuing input on q: %d\n", IO_QUEUE_ID(kern_id, buffer_id));
-    size_t part_input_size = input_size / NUM_QUEUES;
-    uint8_t* part_input = input + (BUFFER_ID(kern_id, buffer_id)*part_input_size);
     // write all the expanded key
     ret = clEnqueueWriteBuffer(aes_fam->environment->command_queue[IO_QUEUE_ID(kern_id, buffer_id)],
                                state->exKey[BUFFER_ID(kern_id, buffer_id)],
-                               CL_FALSE, 0, key_size * sizeof(uint32_t),
+                               CL_TRUE, 0, key_size * sizeof(uint32_t),
                                key,
                                0, NULL,
                                &step1);
@@ -127,20 +116,38 @@ void load_aes_input_key_iv_daisychain(CipherFamily* aes_fam,
     if (iv != NULL) {
         ret = clEnqueueWriteBuffer(aes_fam->environment->command_queue[IO_QUEUE_ID(kern_id, buffer_id)],
                                    state->iv[BUFFER_ID(kern_id, buffer_id)],
-                                   CL_FALSE, 0, AES_IV_SIZE * sizeof(uint8_t),
+                                   CL_TRUE, 0, AES_IV_SIZE * sizeof(uint8_t),
                                    iv,
                                    1, &step1,
                                    &step2);
         if (ret != CL_SUCCESS) error_fatal("Failed to enqueue clEnqueueWriteBuffer (state->iv) . Error = %s (%d)\n", get_cl_error_string(ret), ret);
         step_last = &step2;
     }
+    clWaitForEvents(1, step_last);
+}
+
+void load_aes_input_daisychain(CipherFamily* aes_fam,
+                               uint8_t* input,
+                               size_t input_size,
+                               int kern_id,
+                               int buffer_id) {
+    AesState *state = (AesState*) aes_fam->state;
+    cl_int ret;
+
+    SyncGate *in = &(state->input_gate[kern_id][buffer_id]);
+    cl_event *waitlist = in->events;
+    if (in->num_events == 0) waitlist = NULL;
+    cl_event *out = &(state->finish_trigger[kern_id][buffer_id][AES_PHASE_INPUT]);
+    //printf("enqueuing input on q: %d\n", IO_QUEUE_ID(kern_id, buffer_id));
+    size_t part_input_size = input_size / NUM_QUEUES;
+    uint8_t* part_input = input + (BUFFER_ID(kern_id, buffer_id)*part_input_size);
 
     // write **part** of the input
     ret = clEnqueueWriteBuffer(aes_fam->environment->command_queue[IO_QUEUE_ID(kern_id, buffer_id)],
                                state->in[BUFFER_ID(kern_id, buffer_id)],
                                CL_FALSE, 0, part_input_size * sizeof(uint8_t),
                                part_input,
-                               1, step_last,
+                               in->num_events, waitlist,
                                out);
     if (ret != CL_SUCCESS) error_fatal("Failed to enqueue clEnqueueWriteBuffer (state->in) . Error = %s (%d)\n", get_cl_error_string(ret), ret);
     //printf("input id=%d,k=%d,b=%d  in num_events = %d  in events = %p  out event = %p\n", BUFFER_ID(kern_id, buffer_id), kern_id, buffer_id, in->num_events, waitlist, out);
@@ -166,7 +173,7 @@ void execute_aes_kernel_daisychain(CipherMethod* meth,
                                  NULL,  // global offset
                                  &global_work_size,  // global work size
                                  &local_work_size,  // local work size
-                                 0, NULL,
+                                 in->num_events, in->events,
                                  out);
     if (ret != CL_SUCCESS) error_fatal("Failed to enqueue NDRangeKernel. Error = %s (%d)\n", get_cl_error_string(ret), ret);
     //printf("kernel     k=%d,b=%d  in num_events = %d  in events = %p  out event = %p\n", kern_id, buffer_id, in->num_events, in->events, out);
@@ -191,7 +198,7 @@ void gather_output_daisychain(CipherMethod* meth,
                               CL_FALSE, 0,
                               part_output_size,
                               part_output,
-                              0, NULL,
+                              in->num_events, in->events,
                               out);
     if (ret != CL_SUCCESS) error_fatal("Failed to enqueue clEnqueueReadBuffer (state->out) . Error = %s (%d)\n", get_cl_error_string(ret), ret);
     //printf("output id=%d,k=%d,b=%d  in num_events = %d  in events = %p  out event = %p\n", BUFFER_ID(kern_id, buffer_id), kern_id, buffer_id, in->num_events, in->events, out);
@@ -237,6 +244,10 @@ void aes_encrypt_decrypt_function(OpenCLEnv* env,           // global opencl env
             state->input_gate[kern_id][buffer_id].num_events = input_events;
             state->output_gate[kern_id][buffer_id].num_events = 1;
             state->kernel_gate[kern_id][buffer_id].num_events = 1;
+            sync_load_aes_key_iv(         meth->family,
+                                          key, context->ex_key_dim,
+                                          iv,
+                                          kern_id, buffer_id);
         }
     }
 
@@ -244,19 +255,16 @@ void aes_encrypt_decrypt_function(OpenCLEnv* env,           // global opencl env
     for (int kern_id=0; kern_id<NUM_CONCURRENT_KERNELS; kern_id++) {
         for (int buffer_id=0; buffer_id<NUM_BUFFERS; buffer_id++) {
             // Step 1: transfer the necessary buffers;
-            load_aes_input_key_iv_daisychain(meth->family,
-                                             input, input_size,
-                                             key, context->ex_key_dim,
-                                             iv,
-                                             kern_id, buffer_id);
+            load_aes_input_daisychain(    meth->family,
+                                          input, input_size,
+                                          kern_id, buffer_id);
             // Step 2: execute the kernel
-            execute_aes_kernel_daisychain(   meth,
-                                             kern_id, buffer_id);
+            execute_aes_kernel_daisychain(meth,
+                                          kern_id, buffer_id);
             if (IS_BURST) {  // Step 3: transfer back the output
-                gather_output_daisychain(    meth,
-                                             output,
-                                             input_size,
-                                             kern_id, buffer_id);
+                gather_output_daisychain( meth,
+                                          output, input_size,
+                                          kern_id, buffer_id);
                 meth->burst_length_so_far++;
             }
         }
@@ -266,10 +274,10 @@ void aes_encrypt_decrypt_function(OpenCLEnv* env,           // global opencl env
     if (!IS_BURST) {
         for (int kern_id=0; kern_id<NUM_CONCURRENT_KERNELS; kern_id++) {
             for (int buffer_id=0; buffer_id<NUM_BUFFERS; buffer_id++) {
-                gather_output_daisychain(    meth,
-                                             output,
-                                             input_size,
-                                             kern_id, buffer_id);
+                gather_output_daisychain( meth,
+                                          output,
+                                          input_size,
+                                          kern_id, buffer_id);
                 // "manually" wait for each output to finish, without using gates
                 //printf("waiting k=%d,b=%d,p=%d  event=%p ... \n", kern_id, buffer_id, AES_PHASE_OUTPUT, state->finish_trigger[kern_id][buffer_id][AES_PHASE_OUTPUT]);
                 clWaitForEvents(1, &(state->finish_trigger[kern_id][buffer_id][AES_PHASE_OUTPUT]));
