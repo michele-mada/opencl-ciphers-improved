@@ -250,7 +250,7 @@ void aes_encrypt_decrypt_function(OpenCLEnv* env,           // global opencl env
     }
 
     // Input sequence
-    for (int kern_id=0; kern_id<NUM_CONCURRENT_KERNELS; kern_id++) {
+    for (int kern_id=0; kern_id<NUM_CONCURRENT_KERNELS/2; kern_id++) {
         for (int buffer_id=0; buffer_id<NUM_BUFFERS; buffer_id++) {
             // Step 1: transfer the necessary buffers;
             load_aes_input_daisychain(    meth->family,
@@ -259,7 +259,31 @@ void aes_encrypt_decrypt_function(OpenCLEnv* env,           // global opencl env
         }
     } /* input sequence closed */
     // Execution sequence
-    for (int kern_id=0; kern_id<NUM_CONCURRENT_KERNELS; kern_id++) {
+    for (int kern_id=0; kern_id<NUM_CONCURRENT_KERNELS/2; kern_id++) {
+        for (int buffer_id=0; buffer_id<NUM_BUFFERS; buffer_id++) {
+            // Step 2: execute the kernel
+            execute_aes_kernel_daisychain(meth,
+                                          kern_id, buffer_id);
+            if (IS_BURST) {  // Step 3: transfer back the output
+                gather_output_daisychain( meth,
+                                          output, input_size,
+                                          kern_id, buffer_id);
+                meth->burst_length_so_far++;
+            }
+        }
+    } /* execution sequence closed */
+
+    // Input sequence
+    for (int kern_id=NUM_CONCURRENT_KERNELS/2; kern_id<NUM_CONCURRENT_KERNELS; kern_id++) {
+        for (int buffer_id=0; buffer_id<NUM_BUFFERS; buffer_id++) {
+            // Step 1: transfer the necessary buffers;
+            load_aes_input_daisychain(    meth->family,
+                                          input, input_size,
+                                          kern_id, buffer_id);
+        }
+    } /* input sequence closed */
+    // Execution sequence
+    for (int kern_id=NUM_CONCURRENT_KERNELS/2; kern_id<NUM_CONCURRENT_KERNELS; kern_id++) {
         for (int buffer_id=0; buffer_id<NUM_BUFFERS; buffer_id++) {
             // Step 2: execute the kernel
             execute_aes_kernel_daisychain(meth,
