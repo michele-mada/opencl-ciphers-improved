@@ -46,9 +46,9 @@ void load_program_aocx(CipherFamily* fam, char* source_filename) {
 }
 
 CipherFamily* CipherFamily_init(struct OpenCLEnv* environment,
-                                  char* source_filename,
-                                  void (*cascade_init_fun)(struct CipherFamily*),
-                                  void (*cascade_destroy_fun)(struct CipherFamily*)) {
+                                char* source_filename,
+                                void (*cascade_init_fun)(struct CipherFamily*),
+                                void (*cascade_destroy_fun)(struct CipherFamily*)) {
     CipherFamily* new_fam = (CipherFamily*) malloc(sizeof(CipherFamily));
     new_fam->environment = environment;
     new_fam->num_methods = 0;

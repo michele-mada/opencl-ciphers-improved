@@ -43,10 +43,43 @@ int run_tuning() {
 
     #ifdef USE_CUSTOM_PROFILER
     GlobalProfiler_init("aes");
-    setup_global_profiler_params();
+    setup_global_aes_profiler_params();
     #endif
 
-    auto_tune(global_env, stride, max_payload, LOGFILENAME);
+    auto_tune(global_env, aes_tuning_step, stride, max_payload, LOGFILENAME);
+
+    #ifdef USE_CUSTOM_PROFILER
+    GlobalProfiler_destroy();
+    #endif
+
+    OpenCLEnv_destroy(global_env);
+
+    return EXIT_SUCCESS;
+}
+
+
+int run_io_tuning() {
+    OpenCLEnv *global_env = OpenCLEnv_init();
+
+    size_t stride = 1048576*4;  // stride = 1 * 4 MB
+    size_t max_payload = 1048576*256;   // 256MB
+
+    char *custom_stride = getenv("TUNING_STRIDE");
+    if (custom_stride != NULL) {
+        stride = atol(custom_stride);
+    }
+
+    char *custom_max_payload = getenv("TUNING_MAX_PAYLOAD");
+    if (custom_max_payload != NULL) {
+        max_payload = atol(custom_max_payload);
+    }
+
+    #ifdef USE_CUSTOM_PROFILER
+    GlobalProfiler_init("noop");
+    setup_global_noop_profiler_params();
+    #endif
+
+    auto_tune(global_env, noop_tuning_step, stride, max_payload, LOGFILENAME);
 
     #ifdef USE_CUSTOM_PROFILER
     GlobalProfiler_destroy();
@@ -65,7 +98,7 @@ int run_clinfo() {
 
 
 int complain_and_quit() {
-    printf("Please provide a valid argument. (\"validation\", \"tuning\", \"clinfo\", \"all\")\n");
+    printf("Please provide a valid argument. (\"validation\", \"tuning\", \"io-tuning\", \"clinfo\", \"all\")\n");
     printf("Environment: TUNING_STRIDE=num_bytes (default 4MB)\n");
     exit(1);
 }
@@ -79,6 +112,8 @@ int main(int argc, char* argv[]) {
     } else {
         if (strcmp(argv[1], "tuning") == 0) {
             return run_tuning();
+        } else if (strcmp(argv[1], "io-tuning") == 0) {
+            return run_io_tuning();
         } else if (strcmp(argv[1], "validation") == 0) {
             return run_validation();
         } else if (strcmp(argv[1], "clinfo") == 0) {

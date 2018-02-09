@@ -6,6 +6,7 @@
 extern void OpenCLEnv_cascade_init_environment(OpenCLEnv* env) {
     env->ciphers = (CipherFamily**) malloc(sizeof(CipherFamily*) * NUM_FAMILIES);
 
+    env->ciphers[NOOP_CIPHERS] = get_noop_family(env);
     //env->ciphers[DES_CIPHERS] = get_des_family(env);
     env->ciphers[AES_CIPHERS] = get_aes_family(env);
 

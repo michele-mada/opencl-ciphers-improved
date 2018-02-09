@@ -17,6 +17,8 @@
 #define LOGFILENAME "autotune.txt"
 
 
+typedef void (*tuning_step_t)(OpenCLEnv* global_env, size_t nbytes, FILE *logfile);
+
 static uint8_t key_128[16] = {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
 
 
@@ -30,6 +32,9 @@ static inline void timespec_diff(struct timespec *start, struct timespec *stop, 
     }
 }
 
-int auto_tune(OpenCLEnv* global_env, size_t stride, size_t max_payload, const char* logfile_name);
+void aes_tuning_step(OpenCLEnv* global_env, size_t nbytes, FILE *logfile);
+void noop_tuning_step(OpenCLEnv* global_env, size_t nbytes, FILE *logfile);
+
+int auto_tune(OpenCLEnv* global_env, tuning_step_t tuning_step, size_t stride, size_t max_payload, const char* logfile_name);
 
 #endif

@@ -23,13 +23,13 @@ uint8_t* alloc_random_payload(size_t nbytes) {
 }
 
 
-void utility_function(OpenCLEnv* global_env,
-                      uint8_t* payload,
-                      size_t nbytes,
-                      size_t nrepeat,
-                      uint8_t* trash_bin,
-                      aes_context *K,
-                      struct timespec *duration) {
+void aes_utility_function(OpenCLEnv* global_env,
+                          uint8_t* payload,
+                          size_t nbytes,
+                          size_t nrepeat,
+                          uint8_t* trash_bin,
+                          aes_context *K,
+                          struct timespec *duration) {
     struct timespec started, stopped;
     clock_gettime(CLOCK_USED, &started);
     OpenCLEnv_toggle_burst_mode(global_env, 1);
@@ -42,8 +42,26 @@ void utility_function(OpenCLEnv* global_env,
     timespec_diff(&started, &stopped, duration);
 }
 
+void noop_utility_function(OpenCLEnv* global_env,
+                           uint8_t* payload,
+                           size_t nbytes,
+                           size_t nrepeat,
+                           uint8_t* trash_bin,
+                           struct timespec *duration) {
+    struct timespec started, stopped;
+    clock_gettime(CLOCK_USED, &started);
+    OpenCLEnv_toggle_burst_mode(global_env, 1);
+    for (size_t i=0; i<nrepeat-1; i++) {
+        noop_in_out_function(global_env, payload, nbytes, trash_bin);
+    }
+    OpenCLEnv_toggle_burst_mode(global_env, 0);
+        noop_in_out_function(global_env, payload, nbytes, trash_bin);
+    clock_gettime(CLOCK_USED, &stopped);
+    timespec_diff(&started, &stopped, duration);
+}
 
-void tuning_step(OpenCLEnv* global_env, size_t nbytes, FILE *logfile) {
+
+void aes_tuning_step(OpenCLEnv* global_env, size_t nbytes, FILE *logfile) {
     struct timespec duration;
     aes_context K;
     printf("Host-side key schedule...\r"); fflush(stdout);
@@ -53,7 +71,25 @@ void tuning_step(OpenCLEnv* global_env, size_t nbytes, FILE *logfile) {
     uint8_t *trashcan = (uint8_t*) aligned_alloc(AOCL_ALIGNMENT, sizeof(uint8_t) * nbytes);
 
     printf("Testing %luB block x %d repetitions...\r", nbytes, REPETITIONS); fflush(stdout);
-    utility_function(global_env, payload, nbytes, REPETITIONS, trashcan, &K, &duration);
+    aes_utility_function(global_env, payload, nbytes, REPETITIONS, trashcan, &K, &duration);
+
+    printf("Processed %d %lu B chunks in %ld.%09ld           \n",
+            REPETITIONS, nbytes, duration.tv_sec, duration.tv_nsec); fflush(stdout);
+    fprintf(logfile, "%lu\t%ld.%09ld\n", nbytes, duration.tv_sec, duration.tv_nsec);
+    fflush(logfile);
+
+    free(payload);
+    free(trashcan);
+}
+
+void noop_tuning_step(OpenCLEnv* global_env, size_t nbytes, FILE *logfile) {
+    struct timespec duration;
+    printf("Allocating %luB x 2...\r", nbytes); fflush(stdout);
+    uint8_t *payload = alloc_random_payload(nbytes);
+    uint8_t *trashcan = (uint8_t*) aligned_alloc(AOCL_ALIGNMENT, sizeof(uint8_t) * nbytes);
+
+    printf("Testing %luB block x %d repetitions...\r", nbytes, REPETITIONS); fflush(stdout);
+    noop_utility_function(global_env, payload, nbytes, REPETITIONS, trashcan, &duration);
 
     printf("Processed %d %lu B chunks in %ld.%09ld           \n",
             REPETITIONS, nbytes, duration.tv_sec, duration.tv_nsec); fflush(stdout);
@@ -65,7 +101,7 @@ void tuning_step(OpenCLEnv* global_env, size_t nbytes, FILE *logfile) {
 }
 
 
-int auto_tune(OpenCLEnv* global_env, size_t stride, size_t max_payload, const char* logfile_name) {
+int auto_tune(OpenCLEnv* global_env, tuning_step_t tuning_step, size_t stride, size_t max_payload, const char* logfile_name) {
     FILE *logfile;
 
     printf("Beginning tuning procedure, repetitions=%d, max_payload=%luB, stride=%luB\n", REPETITIONS, max_payload, stride);
