@@ -56,3 +56,11 @@ char* ParamAtlas_aget_full_kernel_path(ParamAtlas* atl, char *relative) {
     #endif
     return dest;
 }
+
+char* ParamAtlas_aget_full_addon_path(ParamAtlas* atl) {
+    char *dest = NULL;
+    #ifdef PLATFORM_CPU
+        asprintf(&dest, "%s/modes_of_operation.cl", atl->kernel_path_prefix);
+    #endif
+    return dest;
+}

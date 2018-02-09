@@ -340,7 +340,7 @@ __kernel void des3Cipher(__global uchar* restrict in,
 }
 
 
-void increment_counter(__private uchar* counter, size_t amount) {
+void des_increment_counter(__private uchar* counter, size_t amount) {
     size_t n = BLOCK_SIZE, c = amount;
     #pragma unroll
     do {
@@ -373,7 +373,7 @@ __kernel void desCtrCipher(__global uchar* restrict in,
             size_t offset = blockid * BLOCK_SIZE + i;
             out[offset] = outCipher[i] ^ in[offset];
         }
-        increment_counter(counter, 1);
+        des_increment_counter(counter, 1);
     }
 }
 
@@ -398,6 +398,6 @@ __kernel void des3CtrCipher(__global uchar* restrict in,
             size_t offset = blockid * BLOCK_SIZE + i;
             out[offset] = outCipher[i] ^ in[offset];
         }
-        increment_counter(counter, 1);
+        des_increment_counter(counter, 1);
     }
 }

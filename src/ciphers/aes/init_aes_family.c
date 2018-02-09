@@ -30,9 +30,9 @@ void init_aes_methods_and_state(CipherFamily* fam) {
     fam->methods[AES_128_XTS_ENC] = CipherMethod_init(fam, "aesCipherXtsEnc", 1);
     fam->methods[AES_192_XTS_ENC] = CipherMethod_init(fam, "aesCipherXtsEnc", 1);
     fam->methods[AES_256_XTS_ENC] = CipherMethod_init(fam, "aesCipherXtsEnc", 1);
-    /*fam->methods[AES_128_XTS_DEC] = CipherMethod_init(fam, "aesDecCipher", 1);
-    fam->methods[AES_192_XTS_DEC] = CipherMethod_init(fam, "aesDecCipher", 1);
-    fam->methods[AES_256_XTS_DEC] = CipherMethod_init(fam, "aesDecCipher", 1);*/
+    fam->methods[AES_128_XTS_DEC] = CipherMethod_init(fam, "aesCipherXtsDec", 1);
+    fam->methods[AES_192_XTS_DEC] = CipherMethod_init(fam, "aesCipherXtsDec", 1);
+    fam->methods[AES_256_XTS_DEC] = CipherMethod_init(fam, "aesCipherXtsDec", 1);
 
     fam->num_methods = NUM_AES_METHODS;
 

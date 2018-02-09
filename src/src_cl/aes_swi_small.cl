@@ -19,7 +19,6 @@
 #define BLOCK_SIZE 16u
 
 #define AES_REDUCE_BYTE 0x1Bu
-#define GF_128_FDBK 0x87
 
 
 __constant uchar sbox[256] =
@@ -287,12 +286,8 @@ void decrypt(__private uchar state_in[BLOCK_SIZE],
 }
 
 
-void copy_extkey_to_local(__private uint* local_w, __global uint* restrict w) {
-    #pragma unroll
-    for (size_t i = 0; i < MAX_EXKEY_SIZE_WORDS; ++i) {
-        local_w[i] = w[i];
-    }
-}
+#define ENCRYPT_INTERFACE(in, key, out) encrypt(in, (uint*)key, out, num_rounds)
+#define DECRYPT_INTERFACE(in, key, out) decrypt(in, (uint*)key, out, num_rounds)
 
 
 __attribute__((reqd_work_group_size(1, 1, 1)))
@@ -300,65 +295,16 @@ __kernel void aesEncCipher(__global uchar* restrict in,
                            __global uint* restrict w,
                            __global uchar* restrict out,
                            unsigned int num_rounds,
-                           unsigned int input_size) {
-    __private uchar state_in[BLOCK_SIZE];
-    __private uchar state_out[BLOCK_SIZE];
-    uint __attribute__((register)) local_w[MAX_EXKEY_SIZE_WORDS];
-    copy_extkey_to_local(local_w, w);
-
-    for (size_t blockid=0; blockid < input_size / BLOCK_SIZE; blockid++) {
-       #pragma unroll
-       for (size_t i = 0; i < BLOCK_SIZE; ++i) {
-           size_t offset = blockid * BLOCK_SIZE + i;
-           state_in[i] = in[offset];
-       }
-       encrypt(state_in, local_w, state_out, num_rounds);
-       #pragma unroll
-       for(size_t i = 0; i < BLOCK_SIZE; i++) {
-           size_t offset = blockid * BLOCK_SIZE + i;
-           out[offset] = state_out[i];
-       }
-    }
-}
+                           unsigned int input_size) \
+    ECB_MODE_BOILERPLATE(ENCRYPT_INTERFACE, in, out, (__global uchar* restrict)w, BLOCK_SIZE, MAX_EXKEY_SIZE_WORDS*4, input_size);
 
 __attribute__((reqd_work_group_size(1, 1, 1)))
 __kernel void aesDecCipher(__global uchar* restrict in,
                            __global uint* restrict w,
                            __global uchar* restrict out,
                            unsigned int num_rounds,
-                           unsigned int input_size) {
-    __private uchar state_in[BLOCK_SIZE];
-    __private uchar state_out[BLOCK_SIZE];
-    uint __attribute__((register)) local_w[MAX_EXKEY_SIZE_WORDS];
-    copy_extkey_to_local(local_w, w);
-
-    for (size_t blockid=0; blockid < input_size / BLOCK_SIZE; blockid++) {
-        #pragma unroll
-        for (size_t i = 0; i < BLOCK_SIZE; ++i) {
-            size_t offset = blockid * BLOCK_SIZE + i;
-            state_in[i] = in[offset];
-        }
-        decrypt(state_in, local_w, state_out, num_rounds);
-        #pragma unroll
-        for(size_t i = 0; i < BLOCK_SIZE; i++) {
-            size_t offset = blockid * BLOCK_SIZE + i;
-            out[offset] = state_out[i];
-        }
-    }
-}
-
-
-void increment_counter(__private uchar* counter, size_t amount) {
-    size_t n = BLOCK_SIZE, c = amount;
-    #pragma unroll
-    do {
-        --n;
-        c += counter[n];
-        counter[n] = (uchar)(c & 0xFF);
-        c >>= 8;
-    } while (n);
-}
-
+                           unsigned int input_size) \
+    ECB_MODE_BOILERPLATE(DECRYPT_INTERFACE, in, out, (__global uchar* restrict)w, BLOCK_SIZE, MAX_EXKEY_SIZE_WORDS*4, input_size);
 
 __attribute__((reqd_work_group_size(1, 1, 1)))
 __kernel void aesCipherCtr(__global uchar* restrict in,
@@ -366,67 +312,8 @@ __kernel void aesCipherCtr(__global uchar* restrict in,
                            __global uchar* restrict out,
                            __global uchar* restrict IV,
                            unsigned int num_rounds,
-                           unsigned int input_size) {
-    __private uchar counter[BLOCK_SIZE];
-    __private uchar state_in[BLOCK_SIZE];
-    __private uchar state_out[BLOCK_SIZE];
-    __private uchar outCipher[BLOCK_SIZE];
-    uint __attribute__((register)) local_w[MAX_EXKEY_SIZE_WORDS];
-    copy_extkey_to_local(local_w, w);
-    /* initialize counter */
-    #pragma unroll
-    for (size_t i = 0; i < BLOCK_SIZE; i++) {
-        counter[i] = IV[i];
-    }
-
-    for (size_t blockid=0; blockid < input_size / BLOCK_SIZE; blockid++) {
-        #pragma unroll
-        for (size_t i = 0; i < BLOCK_SIZE; ++i) {  //TODO: modify so that I can safely skip and encrypt directly the counter buffer
-            state_in[i] = counter[i];
-        }
-        encrypt(state_in, local_w, state_out, num_rounds);
-        #pragma unroll
-        for (size_t i = 0; i < BLOCK_SIZE; i++) {
-            size_t offset = blockid * BLOCK_SIZE + i;
-            out[offset] = state_out[i] ^ in[offset];
-        }
-        increment_counter(counter, 1);
-    }
-}
-
-
-void gf128_multiply_by_alpha(__private uchar *in, __private uchar *out) {
-    uchar carry_in, carry_out;
-
-    carry_in = 0;
-    #pragma unroll
-    for (size_t j=0; j<BLOCK_SIZE; j++) {
-        carry_out = (in[j] >> 7) & 1;
-        out[j] = ((in[j] << 1) + carry_in) & 0xFF;
-        carry_in = carry_out;
-    }
-    if (carry_out != 0) {
-        out[0] ^= GF_128_FDBK;
-    }
-}
-
-
-#define XTS_ROUND(encdec_fun)                                                   \
-{                                                                               \
-    _Pragma("unroll")                                                           \
-    for (size_t i = 0; i < BLOCK_SIZE; ++i) {                                   \
-        size_t offset = blockid * BLOCK_SIZE + i;                               \
-        temp_state_in[i] = in[offset] ^ (tweak_in)[i];                          \
-    }                                                                           \
-                                                                                \
-    encdec_fun(temp_state_in, local_w1, temp_state_out, num_rounds);            \
-                                                                                \
-    _Pragma("unroll")                                                           \
-    for(size_t i = 0; i < BLOCK_SIZE; i++) {                                    \
-        size_t offset = blockid * BLOCK_SIZE + i;                               \
-        out[offset] = temp_state_out[i] ^ (tweak_in)[i];                        \
-    }                                                                           \
-}
+                           unsigned int input_size) \
+    CTR_MODE_BOILERPLATE(ENCRYPT_INTERFACE, in, out, (__global uchar* restrict)w, IV, BLOCK_SIZE, MAX_EXKEY_SIZE_WORDS*4, input_size);
 
 
 __attribute__((reqd_work_group_size(1, 1, 1)))
@@ -436,72 +323,15 @@ __kernel void aesCipherXtsEnc(__global uchar* restrict in,
                               __global uchar* restrict out,
                               __global uchar* restrict tweak_init,
                               unsigned int num_rounds,
-                              unsigned int input_size) {
-    __private uchar tweak1[BLOCK_SIZE];
-    __private uchar tweak2[BLOCK_SIZE];
-    __private uchar *last_tweak;
+                              unsigned int input_size) \
+    XTS_MODE_BOILERPLATE(ENCRYPT_INTERFACE, ENCRYPT_INTERFACE, in, out, (__global uchar* restrict)w1, (__global uchar* restrict)w2, tweak_init, BLOCK_SIZE, MAX_EXKEY_SIZE_WORDS*4, input_size);
 
-    __private uchar temp_state_in[BLOCK_SIZE];
-    __private uchar temp_state_out[BLOCK_SIZE];
-
-    uint __attribute__((register)) local_w1[MAX_EXKEY_SIZE_WORDS];
-    uint __attribute__((register)) local_w2[MAX_EXKEY_SIZE_WORDS];
-    copy_extkey_to_local(local_w1, w1);
-    copy_extkey_to_local(local_w2, w2);
-
-    /* initialize tweak */
-    #pragma unroll
-    for (size_t i = 0; i < BLOCK_SIZE; i++) {
-        tweak1[i] = tweak_init[i];
-    }
-    encrypt(tweak1, local_w2, tweak2, num_rounds);
-
-    for (size_t blockid=0; blockid < (input_size / 2) / BLOCK_SIZE; blockid++) {
-        XTS_ROUND(encrypt);
-        gf128_multiply_by_alpha(tweak1, tweak2);
-        XTS_ROUND(encrypt);
-        gf128_multiply_by_alpha(tweak2, tweak1);
-    }
-    last_tweak = tweak1;
-
-    size_t bytes_done = ((input_size / 2) / BLOCK_SIZE) * BLOCK_SIZE * 2;
-    if (bytes_done + BLOCK_SIZE <= input_size) {
-        XTS_ROUND(encrypt);
-        gf128_multiply_by_alpha(tweak1, tweak2);
-        bytes_done += BLOCK_SIZE;
-        last_tweak = tweak2;
-    }
-
-    size_t bytes_left = input_size - bytes_done;
-    if (bytes_left % BLOCK_SIZE != 0) {
-        size_t last_partial_block_offset = bytes_done;
-        size_t last_full_block_offset = bytes_done - BLOCK_SIZE;
-
-        // Ctx stealing
-
-        // first part of the input state: partial ptx
-        #pragma unroll
-        for (size_t i = 0; i < bytes_left; ++i) {
-            size_t offset = last_partial_block_offset + i;
-            temp_state_in[i] = in[offset] ^ last_tweak[i];
-            // also copy the final partial block bytes
-            out[offset] = temp_state_out[offset - BLOCK_SIZE];
-        }
-        // last part of the input state: ctx stolen from previous operation
-        #pragma unroll
-        for (size_t i = bytes_left; i < BLOCK_SIZE; ++i) {
-            size_t offset = last_full_block_offset + i;
-            temp_state_in[i] = temp_state_out[offset] ^ last_tweak[i];
-        }
-
-        encrypt(temp_state_in, local_w1, temp_state_out, num_rounds);
-
-        // copy the output into the second-to-last out block
-        #pragma unroll
-        for (size_t i = 0; i < BLOCK_SIZE; ++i) {
-            size_t offset = last_full_block_offset + i;
-            out[offset] = temp_state_out[i] ^ last_tweak[i];
-        }
-
-    }
-}
+__attribute__((reqd_work_group_size(1, 1, 1)))
+__kernel void aesCipherXtsDec(__global uchar* restrict in,
+                              __global uint* restrict w1,
+                              __global uint* restrict w2,
+                              __global uchar* restrict out,
+                              __global uchar* restrict tweak_init,
+                              unsigned int num_rounds,
+                              unsigned int input_size) \
+    XTS_MODE_BOILERPLATE(DECRYPT_INTERFACE, ENCRYPT_INTERFACE, in, out, (__global uchar* restrict)w1, (__global uchar* restrict)w2, tweak_init, BLOCK_SIZE, MAX_EXKEY_SIZE_WORDS*4, input_size);

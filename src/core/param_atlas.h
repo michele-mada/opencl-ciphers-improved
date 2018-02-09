@@ -14,6 +14,6 @@ ParamAtlas* ParamAtlas_init();
 void ParamAtlas_destroy(ParamAtlas* atl);
 
 char* ParamAtlas_aget_full_kernel_path(ParamAtlas* atl, char *relative);
-
+char* ParamAtlas_aget_full_addon_path(ParamAtlas* atl);
 
 #endif
