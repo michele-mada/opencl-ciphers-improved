@@ -80,6 +80,9 @@ def main(cli):
     arr_kernels = np.array(kernels_only_dataset)
     arr_output = np.array(output_only_dataset)
     arr_input = np.array(input_only_dataset)
+    
+    if len(kernels_only_dataset) == 0:
+        arr_kernels = np.copy(arr_output)
 
     colors = {0: 'red', 1: 'blue', 2: 'green'}
     color_mapper = np.vectorize(lambda x: colors.get(x % 3))

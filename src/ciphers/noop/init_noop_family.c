@@ -14,8 +14,10 @@
 #define DUMMY_BUFF() clCreateBuffer(fam->environment->context, CL_MEM_READ_WRITE, 8, NULL, NULL)
 
 void init_noop_methods_and_state(CipherFamily* fam) {
-    fam->methods = NULL;
-    fam->num_methods = 0;
+    fam->methods = (CipherMethod**) malloc(sizeof(CipherMethod*) * 1);
+    // only used to contain the burst data
+    fam->methods[0] = CipherMethod_init(fam, "aesEncCipher", 1);
+    fam->num_methods = 1;
 
     NoopState *state = (NoopState*) malloc(sizeof(NoopState));
     state->in = DUMMY_BUFF();
@@ -30,6 +32,11 @@ void destroy_noop_methods_and_state(CipherFamily* fam) {
     clReleaseMemObject(state->out);
     clReleaseMemObject(state->in);
     free(fam->state);
+    size_t num_methods = fam->num_methods;
+    for (size_t m = 0; m < num_methods; m++) {
+        CipherMethod_destroy(fam->methods[m]);
+    }
+    free(fam->methods);
 }
 
 
