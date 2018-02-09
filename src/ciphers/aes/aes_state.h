@@ -18,11 +18,12 @@
 
 
 typedef struct AesState {
-    cl_mem in;
-    cl_mem out;
-    cl_mem exKey;
-    cl_mem exKeyTweak;
-    cl_mem iv;
+    cl_mem in[NUM_BUFFERS];
+    cl_mem out[NUM_BUFFERS];
+    cl_mem exKey[NUM_BUFFERS];
+    cl_mem exKeyTweak[NUM_BUFFERS];
+    cl_mem iv[NUM_BUFFERS];
+    int selected_buffer;
 } AesState;
 
 typedef struct {

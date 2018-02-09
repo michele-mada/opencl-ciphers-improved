@@ -33,11 +33,12 @@
 void prepare_buffers_aes(CipherFamily* aes_fam, size_t input_size, size_t ex_key_size) {
     cl_context context = aes_fam->environment->context;
     AesState *state = (AesState*) aes_fam->state;
-    prepare_buffer(context, &(state->in), CL_MEM_READ_WRITE, input_size * sizeof(uint8_t));
-    prepare_buffer(context, &(state->exKey), CL_MEM_READ_WRITE, ex_key_size * sizeof(uint32_t));
-    prepare_buffer(context, &(state->exKeyTweak), CL_MEM_READ_WRITE, ex_key_size * sizeof(uint32_t));
-    prepare_buffer(context, &(state->out), CL_MEM_READ_WRITE, input_size * sizeof(uint8_t));
-    prepare_buffer(context, &(state->iv), CL_MEM_READ_WRITE, AES_IV_SIZE * sizeof(uint8_t));
+    int nbuf = state->selected_buffer;
+    prepare_buffer(context, &(state->in[nbuf]), CL_MEM_READ_WRITE, input_size * sizeof(uint8_t));
+    prepare_buffer(context, &(state->exKey[nbuf]), CL_MEM_READ_WRITE, ex_key_size * sizeof(uint32_t));
+    prepare_buffer(context, &(state->exKeyTweak[nbuf]), CL_MEM_READ_WRITE, ex_key_size * sizeof(uint32_t));
+    prepare_buffer(context, &(state->out[nbuf]), CL_MEM_READ_WRITE, input_size * sizeof(uint8_t));
+    prepare_buffer(context, &(state->iv[nbuf]), CL_MEM_READ_WRITE, AES_IV_SIZE * sizeof(uint8_t));
 }
 
 void load_aes_input_key_iv(CipherFamily* aes_fam,
@@ -47,6 +48,7 @@ void load_aes_input_key_iv(CipherFamily* aes_fam,
                            uint8_t* iv,
                            int is_decrypt, int tweaked) {
     AesState *state = (AesState*) aes_fam->state;
+    int nbuf = state->selected_buffer;
     cl_int ret;
     uint32_t* key;
 
@@ -56,26 +58,26 @@ void load_aes_input_key_iv(CipherFamily* aes_fam,
         key = context->expanded_key_encrypt;
     }
 
-    ret = clEnqueueWriteBuffer(aes_fam->environment->command_queue,
-                               state->exKey,
+    ret = clEnqueueWriteBuffer(aes_fam->environment->command_queue[nbuf],
+                               state->exKey[nbuf],
                                CL_FALSE, 0, context->ex_key_dim * sizeof(uint32_t),
                                key, 0, NULL, NULL);
     if (ret != CL_SUCCESS) error_fatal("Failed to enqueue clEnqueueWriteBuffer (state->exKey) . Error = %s (%d)\n", get_cl_error_string(ret), ret);
     if (tweaked) {
-        ret = clEnqueueWriteBuffer(aes_fam->environment->command_queue,
-                                   state->exKeyTweak,
+        ret = clEnqueueWriteBuffer(aes_fam->environment->command_queue[nbuf],
+                                   state->exKeyTweak[nbuf],
                                    CL_FALSE, 0, context->ex_key_dim * sizeof(uint32_t),
                                    context->expanded_key_tweak, 0, NULL, NULL);
         if (ret != CL_SUCCESS) error_fatal("Failed to enqueue clEnqueueWriteBuffer (state->exKeyTweak) . Error = %s (%d)\n", get_cl_error_string(ret), ret);
     }
-    ret = clEnqueueWriteBuffer(aes_fam->environment->command_queue,
-                               state->in,
+    ret = clEnqueueWriteBuffer(aes_fam->environment->command_queue[nbuf],
+                               state->in[nbuf],
                                CL_FALSE, 0, input_size * sizeof(uint8_t),
                                input, 0, NULL, NULL);
     if (ret != CL_SUCCESS) error_fatal("Failed to enqueue clEnqueueWriteBuffer (state->in) . Error = %s (%d)\n", get_cl_error_string(ret), ret);
     if (iv != NULL) {
-        ret = clEnqueueWriteBuffer(aes_fam->environment->command_queue,
-                                   state->iv,
+        ret = clEnqueueWriteBuffer(aes_fam->environment->command_queue[nbuf],
+                                   state->iv[nbuf],
                                    CL_FALSE, 0, AES_IV_SIZE * sizeof(uint8_t),
                                    iv, 0, NULL, NULL);
         if (ret != CL_SUCCESS) error_fatal("Failed to enqueue clEnqueueWriteBuffer (state->iv) . Error = %s (%d)\n", get_cl_error_string(ret), ret);
@@ -86,24 +88,25 @@ void prepare_kernel_aes(CipherMethod* meth, cl_int input_size, cl_int num_rounds
     cl_int ret;
     CipherFamily *aes_fam = meth->family;
     AesState *state = (AesState*) aes_fam->state;
+    int nbuf = state->selected_buffer;
 
     size_t param_id = 0;
 
-	ret = clSetKernelArg(meth->kernel, param_id++, sizeof(cl_mem), (void *)&(state->in));
+	ret = clSetKernelArg(meth->kernel, param_id++, sizeof(cl_mem), (void *)&(state->in[nbuf]));
     KERNEL_PARAM_ERRORCHECK()
-    ret = clSetKernelArg(meth->kernel, param_id++, sizeof(cl_mem), (void *)&(state->exKey));
+    ret = clSetKernelArg(meth->kernel, param_id++, sizeof(cl_mem), (void *)&(state->exKey[nbuf]));
     KERNEL_PARAM_ERRORCHECK()
     if (with_tweak) {
-        ret = clSetKernelArg(meth->kernel, param_id++, sizeof(cl_mem), (void *)&(state->exKeyTweak));
+        ret = clSetKernelArg(meth->kernel, param_id++, sizeof(cl_mem), (void *)&(state->exKeyTweak[nbuf]));
         KERNEL_PARAM_ERRORCHECK()
     }
-	ret = clSetKernelArg(meth->kernel, param_id++, sizeof(cl_mem), (void *)&(state->out));
+	ret = clSetKernelArg(meth->kernel, param_id++, sizeof(cl_mem), (void *)&(state->out[nbuf]));
     KERNEL_PARAM_ERRORCHECK()
 
     // For tweaked methods, the tweak value is passed as IV, in compliance with
     // the openSSL style: https://wiki.openssl.org/index.php/EVP_Symmetric_Encryption_and_Decryption
     if (with_iv || with_tweak) {
-        ret = clSetKernelArg(meth->kernel, param_id++, sizeof(cl_mem), (void *)&(state->iv));
+        ret = clSetKernelArg(meth->kernel, param_id++, sizeof(cl_mem), (void *)&(state->iv[nbuf]));
         KERNEL_PARAM_ERRORCHECK()
     }
 
@@ -128,7 +131,8 @@ void perf_counter_cl_callback(cl_event event, cl_int event_command_exec_status, 
 
 void gather_aes_output(CipherFamily* aes_fam, uint8_t* output, size_t output_size, cl_event *last_sync) {
     AesState *state = (AesState*) aes_fam->state;
-    clEnqueueReadBuffer(aes_fam->environment->command_queue, state->out, CL_FALSE, 0, output_size, output, 0, NULL, last_sync);
+    int nbuf = state->selected_buffer;
+    clEnqueueReadBuffer(aes_fam->environment->command_queue[nbuf], state->out[nbuf], CL_FALSE, 0, output_size, output, 0, NULL, last_sync);
 
     struct async_perfdata *udata = malloc(sizeof(struct async_perfdata));
     udata->envptr = aes_fam->environment;
@@ -159,6 +163,7 @@ void aes_encrypt_decrypt_function(OpenCLEnv* env,           // global opencl env
                                   aes_callback_t callback,  // optional callback invoked after the critical section
                                   void *user_data) {        // argument of the optional callback
     CipherMethod* meth = env->ciphers[AES_CIPHERS]->methods[method_id];
+    AesState *state = (AesState*) meth->family->state;
 
     cl_event last_sync;
     cl_event kernel_done;
@@ -168,7 +173,7 @@ void aes_encrypt_decrypt_function(OpenCLEnv* env,           // global opencl env
         prepare_buffers_aes(meth->family, input_size, context->ex_key_dim);
         prepare_kernel_aes(meth, (cl_int)input_size, KEYSIZE_TO_Nr(aes_mode), iv != NULL, IS_TWEAKED_METHOD(method_id));
         load_aes_input_key_iv(meth->family, input, input_size, context, iv, is_decrypt, IS_TWEAKED_METHOD(method_id));
-        execute_meth_kernel(meth, &kernel_done);
+        execute_meth_kernel(meth, &kernel_done, state->selected_buffer);
         gather_aes_output(meth->family, output, input_size, &last_sync);
         //fprintf(stderr, "engine exiting critical zone\n");
     pthread_mutex_unlock(&(env->engine_lock));
@@ -190,6 +195,8 @@ void aes_encrypt_decrypt_function(OpenCLEnv* env,           // global opencl env
     } else {
         meth->burst_length_so_far++;
     }
+
+    state->selected_buffer = (state->selected_buffer + 1) % NUM_BUFFERS;
 
 }
 

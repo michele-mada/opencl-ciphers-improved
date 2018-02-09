@@ -34,7 +34,8 @@ void initialize_OpenCL_context(OpenCLEnv* env) {
    	env->context = clCreateContext(NULL, 1, env->selected_device, NULL, NULL, &ret);
    	if(ret != CL_SUCCESS) error_fatal("Failed to create context, error = %s (%d)\n", get_cl_error_string(ret), ret);
 	// Create Command Queue
-   	env->command_queue = clCreateCommandQueue(env->context, *(env->selected_device), CL_QUEUE_PROFILING_ENABLE, &ret);
+   	env->command_queue[0] = clCreateCommandQueue(env->context, *(env->selected_device), CL_QUEUE_PROFILING_ENABLE, &ret);
+    env->command_queue[1] = clCreateCommandQueue(env->context, *(env->selected_device), CL_QUEUE_PROFILING_ENABLE, &ret);
     if(ret != CL_SUCCESS) error_fatal("Failed to create commandqueue, error = %s (%d)\n",  get_cl_error_string(ret), ret);
 }
 
@@ -65,7 +66,8 @@ void recursive_destroy_environment(OpenCLEnv* env) {
 
 void OpenCLEnv_destroy(OpenCLEnv* env) {
     recursive_destroy_environment(env);
-    clReleaseCommandQueue(env->command_queue);
+    clReleaseCommandQueue(env->command_queue[0]);
+    clReleaseCommandQueue(env->command_queue[1]);
     clReleaseContext(env->context);
     ParamAtlas_destroy(env->parameters);
     free(env->selected_device);

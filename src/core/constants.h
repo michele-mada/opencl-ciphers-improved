@@ -14,6 +14,7 @@
 
 #define BASE_ENC_BLOCK_SIZE 4096
 
+#define NUM_BUFFERS 2
 
 
 #ifdef PLATFORM_CPU

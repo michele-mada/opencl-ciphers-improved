@@ -11,6 +11,7 @@
 #include <CL/cl.h>
 #endif
 
+#include "constants.h"
 #include "cipher_family.h"
 #include "param_atlas.h"
 #include "perf_counter_portable.h"
@@ -33,7 +34,7 @@
 
 typedef struct OpenCLEnv {
     cl_context context;
-    cl_command_queue command_queue;
+    cl_command_queue command_queue[NUM_BUFFERS];
     cl_platform_id selected_platform;
     cl_device_id* selected_device;
     size_t num_ciphers;

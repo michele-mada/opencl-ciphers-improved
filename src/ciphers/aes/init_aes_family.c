@@ -37,21 +37,26 @@ void init_aes_methods_and_state(CipherFamily* fam) {
     fam->num_methods = NUM_AES_METHODS;
 
     AesState *state = (AesState*) malloc(sizeof(AesState));
-    state->in = DUMMY_BUFF();
-    state->out = DUMMY_BUFF();
-    state->exKey = DUMMY_BUFF();
-    state->exKeyTweak = DUMMY_BUFF();
-    state->iv = DUMMY_BUFF();
+    for (size_t nbuf=0; nbuf<NUM_BUFFERS; nbuf++) {
+        state->in[nbuf] = DUMMY_BUFF();
+        state->out[nbuf] = DUMMY_BUFF();
+        state->exKey[nbuf] = DUMMY_BUFF();
+        state->exKeyTweak[nbuf] = DUMMY_BUFF();
+        state->iv[nbuf] = DUMMY_BUFF();
+    }
+    state->selected_buffer = 0;
     fam->state = state;
 }
 
 void destroy_aes_methods_and_state(CipherFamily* fam) {
     AesState *state = (AesState*) fam->state;
-    if (state->iv != NULL) clReleaseMemObject(state->iv);
-    if (state->exKey != NULL) clReleaseMemObject(state->exKey);
-    if (state->exKeyTweak != NULL) clReleaseMemObject(state->exKeyTweak);
-    if (state->out != NULL) clReleaseMemObject(state->out);
-    if (state->in != NULL) clReleaseMemObject(state->in);
+    for (size_t nbuf=0; nbuf<NUM_BUFFERS; nbuf++) {
+        clReleaseMemObject(state->iv[nbuf]);
+        clReleaseMemObject(state->exKey[nbuf]);
+        clReleaseMemObject(state->exKeyTweak[nbuf]);
+        clReleaseMemObject(state->out[nbuf]);
+        clReleaseMemObject(state->in[nbuf]);
+    }
     free(fam->state);
     size_t num_methods = fam->num_methods;
     for (size_t m = 0; m < num_methods; m++) {

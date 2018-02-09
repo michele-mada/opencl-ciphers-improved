@@ -55,16 +55,16 @@ void load_des_input_key_iv(CipherFamily* des_fam,
     size_t key_int_size = KEY_INT_SIZE();
     uint32_t* key = (is_decrypt ? CONTEXT_DSK() : CONTEXT_ESK());
 
-    clEnqueueWriteBuffer(des_fam->environment->command_queue,
+    clEnqueueWriteBuffer(des_fam->environment->command_queue[0],
                          state->key,
                          CL_TRUE, 0, key_int_size * sizeof(uint32_t),
                          key, 0, NULL, NULL);
-	clEnqueueWriteBuffer(des_fam->environment->command_queue,
+	clEnqueueWriteBuffer(des_fam->environment->command_queue[0],
                          state->in,
                          CL_TRUE, 0, input_size * sizeof(uint8_t),
                          input, 0, NULL, NULL);
     if (iv != NULL) {
-        clEnqueueWriteBuffer(des_fam->environment->command_queue,
+        clEnqueueWriteBuffer(des_fam->environment->command_queue[0],
                              state->iv,
                              CL_TRUE, 0, DES_IV_SIZE * sizeof(uint8_t),
                              iv, 0, NULL, NULL);
@@ -100,7 +100,7 @@ void prepare_kernel_des(CipherMethod* meth, cl_int input_size, int with_iv) {
 void gather_des_output(CipherFamily* des_fam, uint8_t* output, size_t output_size) {
     cl_event event;
     DesState *state = (DesState*) des_fam->state;
-    clEnqueueReadBuffer(des_fam->environment->command_queue, state->out, CL_TRUE, 0, output_size, output, 0, NULL, &event);
+    clEnqueueReadBuffer(des_fam->environment->command_queue[0], state->out, CL_TRUE, 0, output_size, output, 0, NULL, &event);
     clWaitForEvents(1, &event);
 }
 
@@ -119,7 +119,7 @@ void des_encrypt_decrypt_function(OpenCLEnv* env,
         prepare_buffers_des(meth->family, input_size, mode);
         prepare_kernel_des(meth, (cl_int)input_size, iv != NULL);
         load_des_input_key_iv(meth->family, input, input_size, context, mode, is_decrypt, iv);
-        execute_meth_kernel(meth, NULL);
+        execute_meth_kernel(meth, NULL, 0);
         gather_des_output(meth->family, output, input_size);
     pthread_mutex_unlock(&(env->engine_lock));
     // TODO: event sync here instead of inside gather_des_output

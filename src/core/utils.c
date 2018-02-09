@@ -3,7 +3,7 @@
 
 
 void load_CL_program_source(char* fileName, unsigned char** source_str, size_t* source_size) {
-    printf("Loading source %s\n", fileName);
+    //printf("Loading source %s\n", fileName);
     FILE *fp = fopen(fileName, "r");
     if (!fp) error_fatal("Failed to load program source \"%s\" (%s)\n", fileName, strerror(errno));
     fseek(fp,0,SEEK_END);
