@@ -6,6 +6,8 @@
 
 
 #define BLOCK_SIZE 8
+#define SINGLE_DES_EXPANDED_KEY_SIZE 32
+#define TRIPLE_DES_EXPANDED_KEY_SIZE 96
 
 
 /*
@@ -197,7 +199,7 @@ __constant uint SB8[64] = {
          SB1[(T >> 24) & 0x3F];                                                \
   }
 
-void des_crypt(__global uint *SK, __private uchar input[8], __private uchar output[8]){
+void des_crypt(uint *SK, __private uchar input[8], __private uchar output[8]){
 
   __private uint X, Y, T;
 
@@ -229,7 +231,7 @@ void des_crypt(__global uint *SK, __private uchar input[8], __private uchar outp
   PUT_UINT32_BE(X, output, 4);
 }
 
-void des3_crypt(__global uint *SK, __private uchar input[8], __private uchar output[8]) {
+void des3_crypt(uint *SK, __private uchar input[8], __private uchar output[8]) {
 
   __private uint X, Y, T;
 
@@ -294,62 +296,24 @@ void des3_crypt(__global uint *SK, __private uchar input[8], __private uchar out
   PUT_UINT32_BE(Y, output, 0);
   PUT_UINT32_BE(X, output, 4);
 }
+
+
+#define ENCRYPT_INTERFACE(in, key, out) des_crypt((uint*)key, in, out)
+#define ENCRYPT3_INTERFACE(in, key, out) des3_crypt((uint*)key, in, out)
 
 __attribute__((reqd_work_group_size(1, 1, 1)))
 __kernel void desCipher(__global uchar* restrict in,
-                         __global uint* restrict SK,
-                         __global uchar* restrict out,
-                         unsigned int input_size){
-    __private uchar state_in[BLOCK_SIZE];
-    __private uchar state_out[BLOCK_SIZE];
-    for (size_t blockid=0; blockid < input_size / BLOCK_SIZE; blockid++) {
-        #pragma unroll
-        for (size_t i = 0; i < BLOCK_SIZE; ++i) {
-            size_t offset = blockid * BLOCK_SIZE + i;
-            state_in[i] = in[offset];
-        }
-        des_crypt(SK, state_in, state_out);
-        #pragma unroll
-        for(size_t i = 0; i < BLOCK_SIZE; i++) {
-            size_t offset = blockid * BLOCK_SIZE + i;
-            out[offset] = state_out[i];
-        }
-    }
-}
+                        __global uint* restrict SK,
+                        __global uchar* restrict out,
+                        unsigned int input_size) \
+    ECB_MODE_BOILERPLATE(ENCRYPT_INTERFACE, in, out, (__global uchar* restrict)SK, BLOCK_SIZE, SINGLE_DES_EXPANDED_KEY_SIZE*4, input_size);
 
 __attribute__((reqd_work_group_size(1, 1, 1)))
 __kernel void des3Cipher(__global uchar* restrict in,
                          __global uint* restrict SK,
                          __global uchar* restrict out,
-                         unsigned int input_size){
-    __private uchar state_in[BLOCK_SIZE];
-    __private uchar state_out[BLOCK_SIZE];
-    for (size_t blockid=0; blockid < input_size / BLOCK_SIZE; blockid++) {
-        #pragma unroll
-        for (size_t i = 0; i < BLOCK_SIZE; ++i) {
-            size_t offset = blockid * BLOCK_SIZE + i;
-            state_in[i] = in[offset];
-        }
-        des3_crypt(SK, state_in, state_out);
-        #pragma unroll
-        for(size_t i = 0; i < BLOCK_SIZE; i++) {
-            size_t offset = blockid * BLOCK_SIZE + i;
-            out[offset] = state_out[i];
-        }
-    }
-}
-
-
-void des_increment_counter(__private uchar* counter, size_t amount) {
-    size_t n = BLOCK_SIZE, c = amount;
-    #pragma unroll
-    do {
-        --n;
-        c += counter[n];
-        counter[n] = (uchar)c;
-        c >>= 8;
-    } while (n);
-}
+                         unsigned int input_size) \
+     ECB_MODE_BOILERPLATE(ENCRYPT3_INTERFACE, in, out, (__global uchar* restrict)SK, BLOCK_SIZE, TRIPLE_DES_EXPANDED_KEY_SIZE*4, input_size);
 
 
 __attribute__((reqd_work_group_size(1, 1, 1)))
@@ -357,47 +321,13 @@ __kernel void desCtrCipher(__global uchar* restrict in,
                            __global uint* restrict SK,
                            __global uchar* restrict out,
                            __global uchar* restrict IV,
-                           unsigned int input_size) {
-    __private uchar counter[BLOCK_SIZE];
-    __private uchar outCipher[BLOCK_SIZE];
-    /* initialize counter */
-    #pragma unroll
-    for(size_t i = 0; i < BLOCK_SIZE; i++) {
-        counter[i] = IV[i];
-    }
-
-    for (size_t blockid=0; blockid < input_size / BLOCK_SIZE; blockid++) {
-        des_crypt(SK, counter, outCipher);
-        #pragma unroll
-        for (size_t i = 0; i < BLOCK_SIZE; i++) {
-            size_t offset = blockid * BLOCK_SIZE + i;
-            out[offset] = outCipher[i] ^ in[offset];
-        }
-        des_increment_counter(counter, 1);
-    }
-}
+                           unsigned int input_size) \
+    CTR_MODE_BOILERPLATE(ENCRYPT_INTERFACE, in, out, (__global uchar* restrict)SK, IV, BLOCK_SIZE, SINGLE_DES_EXPANDED_KEY_SIZE*4, input_size);
 
 __attribute__((reqd_work_group_size(1, 1, 1)))
 __kernel void des3CtrCipher(__global uchar* restrict in,
                             __global uint* restrict SK,
                             __global uchar* restrict out,
                             __global uchar* restrict IV,
-                            unsigned int input_size){
-    __private uchar counter[BLOCK_SIZE];
-    __private uchar outCipher[BLOCK_SIZE];
-    /* initialize counter */
-    #pragma unroll
-    for(size_t i = 0; i < BLOCK_SIZE; i++) {
-        counter[i] = IV[i];
-    }
-
-    for (size_t blockid=0; blockid < input_size / BLOCK_SIZE; blockid++) {
-        des3_crypt(SK, counter, outCipher);
-        #pragma unroll
-        for (size_t i = 0; i < BLOCK_SIZE; i++) {
-            size_t offset = blockid * BLOCK_SIZE + i;
-            out[offset] = outCipher[i] ^ in[offset];
-        }
-        des_increment_counter(counter, 1);
-    }
-}
+                            unsigned int input_size) \
+    CTR_MODE_BOILERPLATE(ENCRYPT3_INTERFACE, in, out, (__global uchar* restrict)SK, IV, BLOCK_SIZE, TRIPLE_DES_EXPANDED_KEY_SIZE*4, input_size);
