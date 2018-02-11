@@ -5,16 +5,17 @@
 #include "des_state.h"
 
 
-void opencl_des_set_encrypt_key(const unsigned char *userKey, const int bits, des_context *K);
-void opencl_des_set_decrypt_key(const unsigned char *userKey, const int bits, des_context *K);
+void opencl_des_set_encrypt_key(OpenCLEnv* env, const unsigned char *userKey, const int bits, des_context *K);
+void opencl_des_set_decrypt_key(OpenCLEnv* env, const unsigned char *userKey, const int bits, des_context *K);
 
-void opencl_des2_set_encrypt_key(const unsigned char *userKey, const int bits, des_context *K);
-void opencl_des2_set_decrypt_key(const unsigned char *userKey, const int bits, des_context *K);
+void opencl_des2_set_encrypt_key(OpenCLEnv* env, const unsigned char *userKey, const int bits, des_context *K);
+void opencl_des2_set_decrypt_key(OpenCLEnv* env, const unsigned char *userKey, const int bits, des_context *K);
 
-void opencl_des3_set_encrypt_key(const unsigned char *userKey, const int bits, des_context *K);
-void opencl_des3_set_decrypt_key(const unsigned char *userKey, const int bits, des_context *K);
+void opencl_des3_set_encrypt_key(OpenCLEnv* env, const unsigned char *userKey, const int bits, des_context *K);
+void opencl_des3_set_decrypt_key(OpenCLEnv* env, const unsigned char *userKey, const int bits, des_context *K);
 
 
+void opencl_des_set_iv(OpenCLEnv* env, uint8_t *iv, des_context *K);
 void opencl_des_update_iv_after_chunk_processed(des_context *K, size_t chunk_size);
 
 

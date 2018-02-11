@@ -23,7 +23,7 @@ typedef enum AesMethodsId {
 } AesMethodsId;
 
 
-#define IS_TWEAKED_METHOD(meth_id) ((meth_id) >= AES_128_XTS_ENC && (meth_id) <= AES_256_XTS_DEC)
+#define IS_AES_TWEAKED_METHOD(meth_id) ((meth_id) >= AES_128_XTS_ENC && (meth_id) <= AES_256_XTS_DEC)
 
 
 #endif

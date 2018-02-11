@@ -2,7 +2,7 @@
 #include "../../core/cipher_family.h"
 #include "../../core/utils.h"
 #include "../cipher_families_setup.h"
-#include "../common.h"
+#include "../common/common.h"
 #include "des_methods.h"
 #include "des_state.h"
 #include "des_expansion.h"
@@ -24,85 +24,15 @@
 #define BLOCK_SIZE 8
 
 
+#define FAMILY (env->ciphers[DES_CIPHERS])
+
+
+CipherOpenCLAtomics des_atomics;
+
 
 #define CONTEXT_DSK() (mode == SINGLE_DES ? ((des1_context*)context)->dsk : ((des3_context*)context)->dsk)
 #define CONTEXT_ESK() (mode == SINGLE_DES ? ((des1_context*)context)->esk : ((des3_context*)context)->esk)
 #define KEY_INT_SIZE() (mode == SINGLE_DES ? SINGLE_DES_EXPANDED_KEY_SIZE : TRIPLE_DES_EXPANDED_KEY_SIZE)
-
-
-void prepare_buffers_des(CipherFamily* des_fam, size_t input_size, int mode) {
-    cl_int ret;
-    cl_context context = des_fam->environment->context;
-    size_t key_int_size = KEY_INT_SIZE();
-    DesState *state = (DesState*) des_fam->state;
-
-    prepare_buffer(context, &(state->in), CL_MEM_READ_WRITE, input_size * sizeof(uint8_t));
-    prepare_buffer(context, &(state->out), CL_MEM_READ_WRITE, input_size * sizeof(uint8_t));
-    prepare_buffer(context, &(state->key), CL_MEM_READ_WRITE, key_int_size * sizeof(uint32_t));
-    prepare_buffer(context, &(state->iv), CL_MEM_READ_WRITE, DES_IV_SIZE * sizeof(uint8_t));
-}
-
-
-void load_des_input_key_iv(CipherFamily* des_fam,
-                           uint8_t* input,
-                           size_t input_size,
-                           void* context,
-                           int mode,
-                           int is_decrypt,
-                           uint8_t* iv) {
-    DesState *state = (DesState*) des_fam->state;
-
-    size_t key_int_size = KEY_INT_SIZE();
-    uint32_t* key = (is_decrypt ? CONTEXT_DSK() : CONTEXT_ESK());
-
-    clEnqueueWriteBuffer(des_fam->environment->command_queue[0],
-                         state->key,
-                         CL_TRUE, 0, key_int_size * sizeof(uint32_t),
-                         key, 0, NULL, NULL);
-	clEnqueueWriteBuffer(des_fam->environment->command_queue[0],
-                         state->in,
-                         CL_TRUE, 0, input_size * sizeof(uint8_t),
-                         input, 0, NULL, NULL);
-    if (iv != NULL) {
-        clEnqueueWriteBuffer(des_fam->environment->command_queue[0],
-                             state->iv,
-                             CL_TRUE, 0, DES_IV_SIZE * sizeof(uint8_t),
-                             iv, 0, NULL, NULL);
-    }
-}
-
-
-void prepare_kernel_des(CipherMethod* meth, cl_int input_size, int with_iv) {
-    cl_int ret;
-    CipherFamily *des_fam = meth->family;
-    DesState *state = (DesState*) des_fam->state;
-
-    size_t param_id = 0;
-
-	ret = clSetKernelArg(meth->kernel, param_id++, sizeof(cl_mem), (void *)&(state->in));
-    KERNEL_PARAM_ERRORCHECK()
-
-    ret = clSetKernelArg(meth->kernel, param_id++, sizeof(cl_mem), (void *)&(state->key));
-    KERNEL_PARAM_ERRORCHECK()
-
-	ret = clSetKernelArg(meth->kernel, param_id++, sizeof(cl_mem), (void *)&(state->out));
-    KERNEL_PARAM_ERRORCHECK()
-
-    if (with_iv) {
-        ret = clSetKernelArg(meth->kernel, param_id++, sizeof(cl_mem), (void *)&(state->iv));
-        KERNEL_PARAM_ERRORCHECK()
-    }
-
-    ret = clSetKernelArg(meth->kernel, param_id++, sizeof(cl_int), &input_size);
-    KERNEL_PARAM_ERRORCHECK()
-}
-
-void gather_des_output(CipherFamily* des_fam, uint8_t* output, size_t output_size) {
-    cl_event event;
-    DesState *state = (DesState*) des_fam->state;
-    clEnqueueReadBuffer(des_fam->environment->command_queue[0], state->out, CL_TRUE, 0, output_size, output, 0, NULL, &event);
-    clWaitForEvents(1, &event);
-}
 
 
 void des_encrypt_decrypt_function(OpenCLEnv* env,
@@ -114,48 +44,67 @@ void des_encrypt_decrypt_function(OpenCLEnv* env,
                                   uint8_t* iv,
                                   int mode,
                                   int is_decrypt) {
-    CipherMethod* meth = env->ciphers[DES_CIPHERS]->methods[method_id];
-    pthread_mutex_lock(&(env->engine_lock));
-        prepare_buffers_des(meth->family, input_size, mode);
-        prepare_kernel_des(meth, (cl_int)input_size, iv != NULL);
-        load_des_input_key_iv(meth->family, input, input_size, context, mode, is_decrypt, iv);
-        execute_meth_kernel(meth, NULL, 0);
-        gather_des_output(meth->family, output, input_size);
-    pthread_mutex_unlock(&(env->engine_lock));
-    // TODO: event sync here instead of inside gather_des_output
-    OpenCLEnv_perf_count_event(env, input_size);
+    CipherMethod* meth = FAMILY->methods[method_id];
+
+    omni_encrypt_decrypt_function(env,
+                                  &des_atomics,
+                                  meth,
+                                  input, input_size,
+                                  output, input_size,
+                                  iv, DES_IV_SIZE,
+                                  0,  // num_rounds not used
+                                  iv != NULL, IS_DES_TWEAKED_METHOD(method_id),
+                                  NULL, NULL);  //TODO: callback support
 }
 
 
 /* ----------------- begin key preparation ----------------- */
 
-void opencl_des_set_encrypt_key(const unsigned char *userKey, const int bits, des_context *K) {
+void des_load_key_once(OpenCLEnv* env, des_context *context, int mode, int is_decrypt) {
+    size_t key_int_size = KEY_INT_SIZE();
+    uint32_t* key = (is_decrypt ? CONTEXT_DSK() : CONTEXT_ESK());
+    des_atomics.prepare_key1_buffer(FAMILY, key_int_size * sizeof(uint32_t));
+    des_atomics.sync_load_key1(FAMILY, (uint8_t*) key, key_int_size * sizeof(uint32_t));
+}
+
+void opencl_des_set_encrypt_key(OpenCLEnv* env, const unsigned char *userKey, const int bits, des_context *K) {
     des1_expandkey(&K->single, userKey);
+    des_load_key_once(env, K, SINGLE_DES, ENCRYPT);
 }
 
-void opencl_des_set_decrypt_key(const unsigned char *userKey, const int bits, des_context *K) {
-    opencl_des_set_encrypt_key(userKey, bits, K);
+void opencl_des_set_decrypt_key(OpenCLEnv* env, const unsigned char *userKey, const int bits, des_context *K) {
+    des1_expandkey(&K->single, userKey);
+    des_load_key_once(env, K, SINGLE_DES, DECRYPT);
 }
 
-void opencl_des2_set_encrypt_key(const unsigned char *userKey, const int bits, des_context *K) {
+void opencl_des2_set_encrypt_key(OpenCLEnv* env, const unsigned char *userKey, const int bits, des_context *K) {
     tdes2_expandkey(&K->double_triple, userKey);
+    des_load_key_once(env, K, DOUBLE_DES, ENCRYPT);
 }
 
-void opencl_des2_set_decrypt_key(const unsigned char *userKey, const int bits, des_context *K) {
-    opencl_des2_set_encrypt_key(userKey, bits, K);
+void opencl_des2_set_decrypt_key(OpenCLEnv* env, const unsigned char *userKey, const int bits, des_context *K) {
+    tdes2_expandkey(&K->double_triple, userKey);
+    des_load_key_once(env, K, DOUBLE_DES, DECRYPT);
 }
 
-void opencl_des3_set_encrypt_key(const unsigned char *userKey, const int bits, des_context *K) {
+void opencl_des3_set_encrypt_key(OpenCLEnv* env, const unsigned char *userKey, const int bits, des_context *K) {
     tdes3_expandkey(&K->double_triple, userKey);
+    des_load_key_once(env, K, TRIPLE_DES, ENCRYPT);
 }
 
-void opencl_des3_set_decrypt_key(const unsigned char *userKey, const int bits, des_context *K) {
-    opencl_des3_set_encrypt_key(userKey, bits, K);
+void opencl_des3_set_decrypt_key(OpenCLEnv* env, const unsigned char *userKey, const int bits, des_context *K) {
+    tdes3_expandkey(&K->double_triple, userKey);
+    des_load_key_once(env, K, TRIPLE_DES, DECRYPT);
 }
 
 /* ----------------- end key preparation ----------------- */
 
 /* ----------------- begin iv manipulation ----------------- */
+
+void opencl_des_set_iv(OpenCLEnv* env, uint8_t *iv, des_context *K) {
+    memcpy(K->iv, iv, DES_IV_SIZE);
+    des_atomics.prepare_iv_buffer(FAMILY, DES_IV_SIZE);
+}
 
 void opencl_des_update_iv_after_chunk_processed(des_context *K, size_t chunk_size) {
     size_t n = DES_IV_SIZE, c = chunk_size;

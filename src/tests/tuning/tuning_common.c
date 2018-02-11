@@ -47,7 +47,7 @@ void tuning_step(OpenCLEnv* global_env, size_t nbytes, FILE *logfile) {
     struct timespec duration;
     aes_context K;
     printf("Host-side key schedule...\r", nbytes); fflush(stdout);
-    opencl_aes_128_set_encrypt_key((unsigned char*) key_128, 128, &K);
+    opencl_aes_128_set_encrypt_key(global_env, (unsigned char*) key_128, 128, &K);
     printf("Allocating %luB x 2...\r", nbytes); fflush(stdout);
     uint8_t *payload = alloc_random_payload(nbytes);
     uint8_t *trashcan = (uint8_t*) aligned_alloc(AOCL_ALIGNMENT, sizeof(uint8_t) * nbytes);

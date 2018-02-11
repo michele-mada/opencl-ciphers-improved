@@ -14,13 +14,6 @@
 #define SINGLE_DES_EXPANDED_KEY_SIZE 32
 #define TRIPLE_DES_EXPANDED_KEY_SIZE 96
 
-typedef struct DesState {
-    cl_mem out;
-    cl_mem in;
-    cl_mem key;
-    cl_mem iv;
-} DesState;
-
 
 typedef struct {
     uint32_t esk[SINGLE_DES_EXPANDED_KEY_SIZE]; /*!< DES encryption subkeys */

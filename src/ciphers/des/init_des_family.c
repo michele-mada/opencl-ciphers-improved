@@ -1,6 +1,7 @@
 #include "../../core/cipher_method.h"
 #include "../../core/cipher_family.h"
 #include "../../core/param_atlas.h"
+#include "../common/common.h"
 #include "des_state.h"
 #include "des_methods.h"
 
@@ -11,6 +12,8 @@
 #include <CL/cl.h>
 #endif
 
+
+extern CipherOpenCLAtomics des_atomics;
 
 
 void init_des_methods_and_state(CipherFamily* fam) {
@@ -25,21 +28,12 @@ void init_des_methods_and_state(CipherFamily* fam) {
 
     fam->num_methods = NUM_DES_METHODS;
 
-    DesState *state = (DesState*) malloc(sizeof(DesState));
-    state->in = NULL;
-    state->out = NULL;
-    state->key = NULL;
-    state->iv = NULL;
-    fam->state = state;
+    fam->state = CipherState_init(fam);
+    des_atomics = common_atomics;
 }
 
 void destroy_des_methods_and_state(CipherFamily* fam) {
-    DesState *state = (DesState*) fam->state;
-    if (state->iv != NULL) clReleaseMemObject(state->iv);
-    if (state->key != NULL) clReleaseMemObject(state->key);
-    if (state->out != NULL) clReleaseMemObject(state->out);
-    if (state->in != NULL) clReleaseMemObject(state->in);
-    free(fam->state);
+    CipherState_destroy(fam->state);
     size_t num_methods = fam->num_methods;
     for (size_t m = 0; m < num_methods; m++) {
         CipherMethod_destroy(fam->methods[m]);

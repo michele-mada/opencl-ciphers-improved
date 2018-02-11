@@ -17,15 +17,6 @@
 #define KEYSIZE_TO_EXKEYSIZE(keysize) (Nr_TO_EXKEYSIZE(KEYSIZE_TO_Nr(keysize)))
 
 
-typedef struct AesState {
-    cl_mem in[NUM_BUFFERS];
-    cl_mem out[NUM_BUFFERS];
-    cl_mem exKey[NUM_BUFFERS];
-    cl_mem exKeyTweak[NUM_BUFFERS];
-    cl_mem iv[NUM_BUFFERS];
-    int selected_buffer;
-} AesState;
-
 typedef struct {
     uint32_t expanded_key_encrypt[MAX_EXKEY_SIZE_WORDS];
     uint32_t expanded_key_tweak[MAX_EXKEY_SIZE_WORDS];

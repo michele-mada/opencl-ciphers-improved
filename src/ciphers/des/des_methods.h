@@ -14,7 +14,7 @@ typedef enum DesMethodsId {
 } DesMethodsId;
 
 
-#define DOES_METH_USE_IV(methid) (((methid) == DES_CTR) || ((methid) == DES2_CTR) || ((methid) == DES3_CTR))
+#define IS_DES_TWEAKED_METHOD(meth_id) (0)
 
 
 #endif

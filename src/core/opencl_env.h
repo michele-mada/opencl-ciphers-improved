@@ -55,6 +55,7 @@ void OpenCLEnv_set_enc_block_size(OpenCLEnv* env, size_t enc_block_size);
 
 void OpenCLEnv_perf_count_event(OpenCLEnv* env, size_t quantity_amount);
 void OpenCLEnv_perf_begin_event(OpenCLEnv* env);
+int OpenCLEnv_perf_is_enabled(OpenCLEnv* env);
 
 void OpenCLEnv_toggle_burst_mode(OpenCLEnv* env, int enabled);
 

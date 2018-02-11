@@ -95,6 +95,10 @@ void OpenCLEnv_perf_begin_event(OpenCLEnv* env) {
     }
 }
 
+int OpenCLEnv_perf_is_enabled(OpenCLEnv* env) {
+    return env->perf_counter != NULL;
+}
+
 void OpenCLEnv_toggle_burst_mode(OpenCLEnv* env, int enabled) {
     for (size_t f = 0; f < env->num_ciphers; f++) {
         CipherFamily_toggle_burst_mode(env->ciphers[f], enabled);

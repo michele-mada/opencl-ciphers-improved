@@ -305,6 +305,7 @@ __attribute__((reqd_work_group_size(1, 1, 1)))
 __kernel void desCipher(__global uchar* restrict in,
                         __global uint* restrict SK,
                         __global uchar* restrict out,
+                        int num_rounds,
                         unsigned int input_size) \
     ECB_MODE_BOILERPLATE(ENCRYPT_INTERFACE, in, out, (__global uchar* restrict)SK, BLOCK_SIZE, SINGLE_DES_EXPANDED_KEY_SIZE*4, input_size);
 
@@ -312,6 +313,7 @@ __attribute__((reqd_work_group_size(1, 1, 1)))
 __kernel void des3Cipher(__global uchar* restrict in,
                          __global uint* restrict SK,
                          __global uchar* restrict out,
+                         int num_rounds,
                          unsigned int input_size) \
      ECB_MODE_BOILERPLATE(ENCRYPT3_INTERFACE, in, out, (__global uchar* restrict)SK, BLOCK_SIZE, TRIPLE_DES_EXPANDED_KEY_SIZE*4, input_size);
 
@@ -321,6 +323,7 @@ __kernel void desCtrCipher(__global uchar* restrict in,
                            __global uint* restrict SK,
                            __global uchar* restrict out,
                            __global uchar* restrict IV,
+                           int num_rounds,
                            unsigned int input_size) \
     CTR_MODE_BOILERPLATE(ENCRYPT_INTERFACE, in, out, (__global uchar* restrict)SK, IV, BLOCK_SIZE, SINGLE_DES_EXPANDED_KEY_SIZE*4, input_size);
 
@@ -329,5 +332,6 @@ __kernel void des3CtrCipher(__global uchar* restrict in,
                             __global uint* restrict SK,
                             __global uchar* restrict out,
                             __global uchar* restrict IV,
+                            int num_rounds,
                             unsigned int input_size) \
     CTR_MODE_BOILERPLATE(ENCRYPT3_INTERFACE, in, out, (__global uchar* restrict)SK, IV, BLOCK_SIZE, TRIPLE_DES_EXPANDED_KEY_SIZE*4, input_size);

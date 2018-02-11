@@ -17,10 +17,10 @@
 
 
 typedef struct PerfCounter {
-    volatile struct timespec time_start;
-    volatile struct timespec time_last_sample;
-    volatile size_t accumulator;
-    volatile size_t accumulator_latch;  // avoid hitting 0 when restarting between consecutive separate runs
+    struct timespec time_start;
+    struct timespec time_last_sample;
+    size_t accumulator;
+    size_t accumulator_latch;  // avoid hitting 0 when restarting between consecutive separate runs
     pthread_t save_thread;
     pthread_mutex_t save_mutex;
     volatile int running;   // Assumed atomic

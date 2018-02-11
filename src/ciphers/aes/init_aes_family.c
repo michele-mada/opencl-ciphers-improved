@@ -1,6 +1,7 @@
 #include "../../core/cipher_method.h"
 #include "../../core/cipher_family.h"
 #include "../../core/param_atlas.h"
+#include "../common/common.h"
 #include "aes_state.h"
 #include "aes_methods.h"
 
@@ -12,7 +13,7 @@
 #endif
 
 
-#define DUMMY_BUFF() clCreateBuffer(fam->environment->context, CL_MEM_READ_WRITE, 8, NULL, NULL)
+extern CipherOpenCLAtomics aes_atomics;
 
 
 void init_aes_methods_and_state(CipherFamily* fam) {
@@ -36,28 +37,12 @@ void init_aes_methods_and_state(CipherFamily* fam) {
 
     fam->num_methods = NUM_AES_METHODS;
 
-    AesState *state = (AesState*) malloc(sizeof(AesState));
-    for (size_t nbuf=0; nbuf<NUM_BUFFERS; nbuf++) {
-        state->in[nbuf] = DUMMY_BUFF();
-        state->out[nbuf] = DUMMY_BUFF();
-        state->exKey[nbuf] = DUMMY_BUFF();
-        state->exKeyTweak[nbuf] = DUMMY_BUFF();
-        state->iv[nbuf] = DUMMY_BUFF();
-    }
-    state->selected_buffer = 0;
-    fam->state = state;
+    fam->state = CipherState_init(fam);
+    aes_atomics = common_atomics;
 }
 
 void destroy_aes_methods_and_state(CipherFamily* fam) {
-    AesState *state = (AesState*) fam->state;
-    for (size_t nbuf=0; nbuf<NUM_BUFFERS; nbuf++) {
-        clReleaseMemObject(state->iv[nbuf]);
-        clReleaseMemObject(state->exKey[nbuf]);
-        clReleaseMemObject(state->exKeyTweak[nbuf]);
-        clReleaseMemObject(state->out[nbuf]);
-        clReleaseMemObject(state->in[nbuf]);
-    }
-    free(fam->state);
+    CipherState_destroy(fam->state);
     size_t num_methods = fam->num_methods;
     for (size_t m = 0; m < num_methods; m++) {
         CipherMethod_destroy(fam->methods[m]);
