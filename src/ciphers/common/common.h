@@ -115,16 +115,12 @@ static const CipherOpenCLAtomics common_atomics = {
 void omni_encrypt_decrypt_function(OpenCLEnv* env,
                                    CipherOpenCLAtomics* atomics,
                                    CipherMethod* meth,
-                                   uint8_t* input,
-                                   size_t input_size,
-                                   uint8_t* output,
-                                   size_t output_size,
-                                   uint8_t* iv,
-                                   size_t iv_size,
+                                   uint8_t* input, size_t input_size,
+                                   uint8_t* output, size_t output_size,
+                                   uint8_t* iv, size_t iv_size,
                                    int num_rounds,
                                    int with_iv, int with_tweak,
-                                   cipher_callback_t callback,
-                                   void *user_data);
+                                   cipher_callback_t callback, void *user_data);
 
 
 #endif
