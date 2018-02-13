@@ -13,9 +13,9 @@ TestResult validate_des_ecb(OpenCLEnv *global_env, TestDatum *datum) \
     VALIDATION_DECORATOR({
         des_context K;
         opencl_des_set_encrypt_key(global_env, (unsigned char*) datum->key, KEYLENGTH, &K);
-        opencl_des_ecb_encrypt(global_env, datum->ptx, datum->ptx_length, &K, generated_ctx);
+        opencl_des_ecb_encrypt(global_env, datum->ptx, datum->ptx_length, &K, generated_ctx, NULL, NULL);
         opencl_des_set_decrypt_key(global_env, (unsigned char*) datum->key, KEYLENGTH, &K);
-        opencl_des_ecb_decrypt(global_env, datum->ctx, datum->ctx_length, &K, generated_ptx);
+        opencl_des_ecb_decrypt(global_env, datum->ctx, datum->ctx_length, &K, generated_ptx, NULL, NULL);
     })
 
 static int run_all_cases_ecb(OpenCLEnv *global_env) {

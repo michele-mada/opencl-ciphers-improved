@@ -99,7 +99,7 @@ void gf128_multiply_by_alpha(__private uchar *in, __private uchar *out, size_t b
         temp_state_in[i] = (global_in)[offset] ^ active_tweak[i];               \
     }                                                                           \
                                                                                 \
-    encdec_fun(temp_state_in, local_w1, temp_state_out);                        \
+    encdec_fun(temp_state_in, local_w, temp_state_out);                         \
                                                                                 \
     _Pragma("unroll")                                                           \
     for(size_t i = 0; i < (block_size); i++) {                                  \
@@ -119,17 +119,17 @@ void gf128_multiply_by_alpha(__private uchar *in, __private uchar *out, size_t b
     __private uchar temp_state_in[(block_size)];                                \
     __private uchar temp_state_out[(block_size)];                               \
                                                                                 \
-    uchar __attribute__((register)) local_w1[(key_size)];                       \
-    uchar __attribute__((register)) local_w2[(key_size)];                       \
-    copy_extkey_to_local(local_w1, (global_key1), (key_size));                  \
-    copy_extkey_to_local(local_w2, (global_key2), (key_size));                  \
+    uchar __attribute__((register)) local_w[(key_size)];                        \
+    copy_extkey_to_local(local_w, (global_key2), (key_size));                   \
                                                                                 \
     /* initialize tweak */                                                      \
     _Pragma("unroll")                                                           \
     for (size_t i = 0; i < (block_size); i++) {                                 \
         tweak1[i] = (global_tweak)[i];                                          \
     }                                                                           \
-    blockcipher_tweak(tweak1, local_w2, tweak2);                                \
+    blockcipher_tweak(tweak1, local_w, tweak2);                                 \
+                                                                                \
+    copy_extkey_to_local(local_w, (global_key1), (key_size));                   \
                                                                                 \
     active_tweak = tweak2; passive_tweak = tweak1;                              \
                                                                                 \
@@ -161,13 +161,13 @@ void gf128_multiply_by_alpha(__private uchar *in, __private uchar *out, size_t b
             temp_state_in[i] = temp_state_out[offset] ^ active_tweak[i];        \
         }                                                                       \
                                                                                 \
-        blockcipher(temp_state_in, local_w1, temp_state_out);                   \
+        blockcipher(temp_state_in, local_w, temp_state_out);                    \
                                                                                 \
         /* copy the output into the second-to-last out block */                 \
         _Pragma("unroll")                                                       \
         for (size_t i = 0; i < (block_size); ++i) {                             \
             size_t offset = last_full_block_offset + i;                         \
-            (global_out)[offset] = temp_state_out[i] ^ active_tweak[i];           \
+            (global_out)[offset] = temp_state_out[i] ^ active_tweak[i];         \
         }                                                                       \
     }                                                                           \
 }

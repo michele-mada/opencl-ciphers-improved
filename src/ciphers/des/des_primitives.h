@@ -2,41 +2,15 @@
 #define DES_PRIMITIVES_H
 
 
+#include "../common/callbacks.h"
+#include "../common/primitives.h"
 #include "des_state.h"
 
 
-void opencl_des_set_encrypt_key(OpenCLEnv* env, const unsigned char *userKey, const int bits, des_context *K);
-void opencl_des_set_decrypt_key(OpenCLEnv* env, const unsigned char *userKey, const int bits, des_context *K);
+ALL_PRIMITIVES_PROTOTYPES(des, des)
+ALL_PRIMITIVES_PROTOTYPES(des, des2)
+ALL_PRIMITIVES_PROTOTYPES(des, des3)
 
-void opencl_des2_set_encrypt_key(OpenCLEnv* env, const unsigned char *userKey, const int bits, des_context *K);
-void opencl_des2_set_decrypt_key(OpenCLEnv* env, const unsigned char *userKey, const int bits, des_context *K);
-
-void opencl_des3_set_encrypt_key(OpenCLEnv* env, const unsigned char *userKey, const int bits, des_context *K);
-void opencl_des3_set_decrypt_key(OpenCLEnv* env, const unsigned char *userKey, const int bits, des_context *K);
-
-
-void opencl_des_set_iv(OpenCLEnv* env, uint8_t *iv, des_context *K);
-void opencl_des_update_iv_after_chunk_processed(des_context *K, size_t chunk_size);
-
-
-void opencl_des_ecb_encrypt(OpenCLEnv* env, uint8_t* plaintext, size_t input_size, des_context* K, uint8_t* ciphertext);
-void opencl_des_ecb_decrypt(OpenCLEnv* env, uint8_t* ciphertext, size_t input_size, des_context* K, uint8_t* plaintext);
-
-void opencl_des2_ecb_encrypt(OpenCLEnv* env, uint8_t* plaintext, size_t input_size, des_context* K, uint8_t* ciphertext);
-void opencl_des2_ecb_decrypt(OpenCLEnv* env, uint8_t* ciphertext, size_t input_size, des_context* K, uint8_t* plaintext);
-
-void opencl_des3_ecb_encrypt(OpenCLEnv* env, uint8_t* plaintext, size_t input_size, des_context* K, uint8_t* ciphertext);
-void opencl_des3_ecb_decrypt(OpenCLEnv* env, uint8_t* ciphertext, size_t input_size, des_context* K, uint8_t* plaintext);
-
-
-void opencl_des_ctr_encrypt(OpenCLEnv* env, uint8_t* plaintext, size_t input_size, des_context* K, uint8_t* ciphertext);
-void opencl_des_ctr_decrypt(OpenCLEnv* env, uint8_t* ciphertext, size_t input_size, des_context* K, uint8_t* plaintext);
-
-void opencl_des2_ctr_encrypt(OpenCLEnv* env, uint8_t* plaintext, size_t input_size, des_context* K, uint8_t* ciphertext);
-void opencl_des2_ctr_decrypt(OpenCLEnv* env, uint8_t* ciphertext, size_t input_size, des_context* K, uint8_t* plaintext);
-
-void opencl_des3_ctr_encrypt(OpenCLEnv* env, uint8_t* plaintext, size_t input_size, des_context* K, uint8_t* ciphertext);
-void opencl_des3_ctr_decrypt(OpenCLEnv* env, uint8_t* ciphertext, size_t input_size, des_context* K, uint8_t* plaintext);
 
 
 #endif

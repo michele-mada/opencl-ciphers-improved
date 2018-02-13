@@ -1,5 +1,9 @@
 
 
+#define BLOCK_SIZE 16u
+#define NUM_LONGS 2
+#define MAX_EXKEY_SIZE_LONGS 34
+
 
 __constant uchar SBOX1[256] = {
     112, 130,  44, 236, 179,  39, 192, 229, 228, 133,  87,  53, 234,  12, 174,  65,
@@ -106,3 +110,153 @@ ulong FLINV(ulong FLINV_IN, ulong KE) {
 
     return FLINV_OUT;
 }
+
+
+#define CAMELLIA_ROUND(block1, block2) \
+{ \
+    (block2) = (block2) ^ F((block1), k[round_key_id++]); \
+}
+
+
+void crypt_18round(__private uchar state_in[BLOCK_SIZE],
+                   __private ulong* keys,
+                   __private uchar state_out[BLOCK_SIZE]) {
+    ulong *kw = keys, *k = keys + 4, *ke = keys + 22;
+    ulong *M = (ulong*) state_in;
+    ulong *C = (ulong*) state_out;
+    ulong D1, D2;
+    size_t round_key_id = 0;
+
+    D1 = M[0]; D2=M[1];  // initialization
+
+    D1 = D1 ^ kw[0]; D2 = D2 ^ kw[1];  // pre-whitening
+
+    CAMELLIA_ROUND(D1, D2);
+    CAMELLIA_ROUND(D2, D1);
+    CAMELLIA_ROUND(D1, D2);
+    CAMELLIA_ROUND(D2, D1);
+    CAMELLIA_ROUND(D1, D2);
+    CAMELLIA_ROUND(D2, D1);
+
+    D1 = FL(D1, ke[0]); D2 = FLINV(D2, ke[1]);
+
+    CAMELLIA_ROUND(D1, D2);
+    CAMELLIA_ROUND(D2, D1);
+    CAMELLIA_ROUND(D1, D2);
+    CAMELLIA_ROUND(D2, D1);
+    CAMELLIA_ROUND(D1, D2);
+    CAMELLIA_ROUND(D2, D1);
+
+    D1 = FL(D1, ke[2]); D2 = FLINV(D2, ke[3]);
+
+    CAMELLIA_ROUND(D1, D2);
+    CAMELLIA_ROUND(D2, D1);
+    CAMELLIA_ROUND(D1, D2);
+    CAMELLIA_ROUND(D2, D1);
+    CAMELLIA_ROUND(D1, D2);
+    CAMELLIA_ROUND(D2, D1);
+
+    D1 = D1 ^ kw[3]; D2 = D2 ^ kw[2];  // post-whitening
+
+    C[0] = D2;
+    C[1] = D1;
+}
+
+void crypt_24round(__private uchar state_in[BLOCK_SIZE],
+                   __private ulong* keys,
+                   __private uchar state_out[BLOCK_SIZE]) {
+    ulong *kw = keys, *k = keys + 4, *ke = keys + 28;
+    ulong *M = (ulong*) state_in;
+    ulong *C = (ulong*) state_out;
+    ulong D1, D2;
+    size_t round_key_id = 0;
+
+    D1 = M[0]; D2=M[1];  // initialization
+
+    D1 = D1 ^ kw[0]; D2 = D2 ^ kw[1];  // pre-whitening
+
+    CAMELLIA_ROUND(D1, D2);
+    CAMELLIA_ROUND(D2, D1);
+    CAMELLIA_ROUND(D1, D2);
+    CAMELLIA_ROUND(D2, D1);
+    CAMELLIA_ROUND(D1, D2);
+    CAMELLIA_ROUND(D2, D1);
+
+    D1 = FL(D1, ke[0]); D2 = FLINV(D2, ke[1]);
+
+    CAMELLIA_ROUND(D1, D2);
+    CAMELLIA_ROUND(D2, D1);
+    CAMELLIA_ROUND(D1, D2);
+    CAMELLIA_ROUND(D2, D1);
+    CAMELLIA_ROUND(D1, D2);
+    CAMELLIA_ROUND(D2, D1);
+
+    D1 = FL(D1, ke[2]); D2 = FLINV(D2, ke[3]);
+
+    CAMELLIA_ROUND(D1, D2);
+    CAMELLIA_ROUND(D2, D1);
+    CAMELLIA_ROUND(D1, D2);
+    CAMELLIA_ROUND(D2, D1);
+    CAMELLIA_ROUND(D1, D2);
+    CAMELLIA_ROUND(D2, D1);
+
+    D1 = FL(D1, ke[4]); D2 = FLINV(D2, ke[5]);
+
+    CAMELLIA_ROUND(D1, D2);
+    CAMELLIA_ROUND(D2, D1);
+    CAMELLIA_ROUND(D1, D2);
+    CAMELLIA_ROUND(D2, D1);
+    CAMELLIA_ROUND(D1, D2);
+    CAMELLIA_ROUND(D2, D1);
+
+    D1 = D1 ^ kw[3]; D2 = D2 ^ kw[2];  // post-whitening
+
+    C[0] = D2;
+    C[1] = D1;
+}
+
+
+void crypt(__private uchar state_in[BLOCK_SIZE],
+           __private ulong* keys,
+           __private uchar state_out[BLOCK_SIZE],
+           unsigned int num_rounds) {
+    if (num_rounds == 18) {
+        crypt_18round(state_in, keys, state_out);
+    } else {
+        crypt_24round(state_in, keys, state_out);
+    }
+}
+
+
+#define ENCRYPT_INTERFACE(in, key, out) crypt(in, (ulong*)key, out, num_rounds)
+#define DECRYPT_INTERFACE(in, key, out) crypt(in, (ulong*)key, out, num_rounds)
+
+
+__attribute__((reqd_work_group_size(1, 1, 1)))
+__kernel void camelliaCipher(__global uchar* restrict in,
+                             __global ulong* restrict keys,
+                             __global uchar* restrict out,
+                             unsigned int num_rounds,
+                             unsigned int input_size) \
+    ECB_MODE_BOILERPLATE(ENCRYPT_INTERFACE, in, out, (__global uchar* restrict)keys, BLOCK_SIZE, MAX_EXKEY_SIZE_LONGS*8, input_size);
+
+
+__attribute__((reqd_work_group_size(1, 1, 1)))
+__kernel void camelliaCipherCtr(__global uchar* restrict in,
+                                __global ulong* restrict keys,
+                                __global uchar* restrict out,
+                                __global uchar* restrict IV,
+                                unsigned int num_rounds,
+                                unsigned int input_size) \
+    CTR_MODE_BOILERPLATE(ENCRYPT_INTERFACE, in, out, (__global uchar* restrict)keys, IV, BLOCK_SIZE, MAX_EXKEY_SIZE_LONGS*8, input_size);
+
+
+__attribute__((reqd_work_group_size(1, 1, 1)))
+__kernel void camelliaCipherXts(__global uchar* restrict in,
+                                __global ulong* restrict keys1,
+                                __global ulong* restrict keys2,
+                                __global uchar* restrict out,
+                                __global uchar* restrict tweak_init,
+                                unsigned int num_rounds,
+                                unsigned int input_size) \
+    XTS_MODE_BOILERPLATE(ENCRYPT_INTERFACE, ENCRYPT_INTERFACE, in, out, (__global uchar* restrict)keys1, (__global uchar* restrict)keys2, tweak_init, BLOCK_SIZE, MAX_EXKEY_SIZE_LONGS*8, input_size);

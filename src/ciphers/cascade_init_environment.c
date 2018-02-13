@@ -8,6 +8,7 @@ extern void OpenCLEnv_cascade_init_environment(OpenCLEnv* env) {
 
     env->ciphers[DES_CIPHERS] = get_des_family(env);
     env->ciphers[AES_CIPHERS] = get_aes_family(env);
+    env->ciphers[CAMELLIA_CIPHERS] = get_camellia_family(env);
 
     env->num_ciphers = NUM_FAMILIES;
 }

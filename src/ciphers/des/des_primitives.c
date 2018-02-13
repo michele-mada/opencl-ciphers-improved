@@ -43,7 +43,9 @@ void des_encrypt_decrypt_function(OpenCLEnv* env,
                                   uint8_t* output,
                                   uint8_t* iv,
                                   int mode,
-                                  int is_decrypt) {
+                                  int is_decrypt,
+                                  cipher_callback_t callback,  // optional callback invoked after the critical section
+                                  void *user_data) {
     CipherMethod* meth = FAMILY->methods[method_id];
 
     omni_encrypt_decrypt_function(env,
@@ -54,7 +56,7 @@ void des_encrypt_decrypt_function(OpenCLEnv* env,
                                   iv, DES_IV_SIZE,
                                   0,  // num_rounds not used
                                   iv != NULL, IS_DES_TWEAKED_METHOD(method_id),
-                                  NULL, NULL);  //TODO: callback support
+                                  callback, user_data);  //TODO: callback support
 }
 
 
@@ -120,58 +122,58 @@ void opencl_des_update_iv_after_chunk_processed(des_context *K, size_t chunk_siz
 
 /* ----------------- begin ecb mode ----------------- */
 
-void opencl_des_ecb_encrypt(OpenCLEnv* env, uint8_t* plaintext, size_t input_size, des_context* K, uint8_t* ciphertext) {
-    des_encrypt_decrypt_function(env, DES_ECB, plaintext, input_size, (void*)&(K->single), ciphertext, NULL, SINGLE_DES, ENCRYPT);
+void opencl_des_ecb_encrypt(OpenCLEnv* env, uint8_t* plaintext, size_t input_size, des_context* K, uint8_t* ciphertext, cipher_callback_t callback, void *user_data) {
+    des_encrypt_decrypt_function(env, DES_ECB, plaintext, input_size, (void*)&(K->single), ciphertext, NULL, SINGLE_DES, ENCRYPT, callback, user_data);
 }
 
-void opencl_des_ecb_decrypt(OpenCLEnv* env, uint8_t* ciphertext, size_t input_size, des_context* K, uint8_t* plaintext) {
-    des_encrypt_decrypt_function(env, DES_ECB, ciphertext, input_size, (void*)&(K->single), plaintext, NULL, SINGLE_DES, DECRYPT);
-}
-
-
-void opencl_des2_ecb_encrypt(OpenCLEnv* env, uint8_t* plaintext, size_t input_size, des_context* K, uint8_t* ciphertext) {
-    des_encrypt_decrypt_function(env, DES2_ECB, plaintext, input_size, (void*)&(K->double_triple), ciphertext, NULL, DOUBLE_DES, ENCRYPT);
-}
-
-void opencl_des2_ecb_decrypt(OpenCLEnv* env, uint8_t* ciphertext, size_t input_size, des_context* K, uint8_t* plaintext) {
-    des_encrypt_decrypt_function(env, DES2_ECB, ciphertext, input_size, (void*)&(K->double_triple), plaintext, NULL, DOUBLE_DES, DECRYPT);
+void opencl_des_ecb_decrypt(OpenCLEnv* env, uint8_t* ciphertext, size_t input_size, des_context* K, uint8_t* plaintext, cipher_callback_t callback, void *user_data) {
+    des_encrypt_decrypt_function(env, DES_ECB, ciphertext, input_size, (void*)&(K->single), plaintext, NULL, SINGLE_DES, DECRYPT, callback, user_data);
 }
 
 
-void opencl_des3_ecb_encrypt(OpenCLEnv* env, uint8_t* plaintext, size_t input_size, des_context* K, uint8_t* ciphertext) {
-    des_encrypt_decrypt_function(env, DES3_ECB, plaintext, input_size, (void*)&(K->double_triple), ciphertext, NULL, TRIPLE_DES, ENCRYPT);
+void opencl_des2_ecb_encrypt(OpenCLEnv* env, uint8_t* plaintext, size_t input_size, des_context* K, uint8_t* ciphertext, cipher_callback_t callback, void *user_data) {
+    des_encrypt_decrypt_function(env, DES2_ECB, plaintext, input_size, (void*)&(K->double_triple), ciphertext, NULL, DOUBLE_DES, ENCRYPT, callback, user_data);
 }
 
-void opencl_des3_ecb_decrypt(OpenCLEnv* env, uint8_t* ciphertext, size_t input_size, des_context* K, uint8_t* plaintext) {
-    des_encrypt_decrypt_function(env, DES3_ECB, ciphertext, input_size, (void*)&(K->double_triple), plaintext, NULL, TRIPLE_DES, DECRYPT);
+void opencl_des2_ecb_decrypt(OpenCLEnv* env, uint8_t* ciphertext, size_t input_size, des_context* K, uint8_t* plaintext, cipher_callback_t callback, void *user_data) {
+    des_encrypt_decrypt_function(env, DES2_ECB, ciphertext, input_size, (void*)&(K->double_triple), plaintext, NULL, DOUBLE_DES, DECRYPT, callback, user_data);
+}
+
+
+void opencl_des3_ecb_encrypt(OpenCLEnv* env, uint8_t* plaintext, size_t input_size, des_context* K, uint8_t* ciphertext, cipher_callback_t callback, void *user_data) {
+    des_encrypt_decrypt_function(env, DES3_ECB, plaintext, input_size, (void*)&(K->double_triple), ciphertext, NULL, TRIPLE_DES, ENCRYPT, callback, user_data);
+}
+
+void opencl_des3_ecb_decrypt(OpenCLEnv* env, uint8_t* ciphertext, size_t input_size, des_context* K, uint8_t* plaintext, cipher_callback_t callback, void *user_data) {
+    des_encrypt_decrypt_function(env, DES3_ECB, ciphertext, input_size, (void*)&(K->double_triple), plaintext, NULL, TRIPLE_DES, DECRYPT, callback, user_data);
 }
 /* ----------------- end ecb mode ----------------- */
 
 /* ----------------- begin ctr mode ----------------- */
 
-void opencl_des_ctr_encrypt(OpenCLEnv* env, uint8_t* plaintext, size_t input_size, des_context* K, uint8_t* ciphertext) {
-    des_encrypt_decrypt_function(env, DES_CTR, plaintext, input_size, (void*)&(K->single), ciphertext, K->iv, SINGLE_DES, ENCRYPT);
+void opencl_des_ctr_encrypt(OpenCLEnv* env, uint8_t* plaintext, size_t input_size, des_context* K, uint8_t* ciphertext, cipher_callback_t callback, void *user_data) {
+    des_encrypt_decrypt_function(env, DES_CTR, plaintext, input_size, (void*)&(K->single), ciphertext, K->iv, SINGLE_DES, ENCRYPT, callback, user_data);
 }
 
-void opencl_des_ctr_decrypt(OpenCLEnv* env, uint8_t* ciphertext, size_t input_size, des_context* K, uint8_t* plaintext) {
-    des_encrypt_decrypt_function(env, DES_CTR, ciphertext, input_size, (void*)&(K->single), plaintext, K->iv, SINGLE_DES, DECRYPT);
-}
-
-
-void opencl_des2_ctr_encrypt(OpenCLEnv* env, uint8_t* plaintext, size_t input_size, des_context* K, uint8_t* ciphertext) {
-    des_encrypt_decrypt_function(env, DES2_CTR, plaintext, input_size, (void*)&(K->double_triple), ciphertext, K->iv, DOUBLE_DES, ENCRYPT);
-}
-
-void opencl_des2_ctr_decrypt(OpenCLEnv* env, uint8_t* ciphertext, size_t input_size, des_context* K, uint8_t* plaintext) {
-    des_encrypt_decrypt_function(env, DES2_CTR, ciphertext, input_size, (void*)&(K->double_triple), plaintext, K->iv, DOUBLE_DES, DECRYPT);
+void opencl_des_ctr_decrypt(OpenCLEnv* env, uint8_t* ciphertext, size_t input_size, des_context* K, uint8_t* plaintext, cipher_callback_t callback, void *user_data) {
+    des_encrypt_decrypt_function(env, DES_CTR, ciphertext, input_size, (void*)&(K->single), plaintext, K->iv, SINGLE_DES, DECRYPT, callback, user_data);
 }
 
 
-void opencl_des3_ctr_encrypt(OpenCLEnv* env, uint8_t* plaintext, size_t input_size, des_context* K, uint8_t* ciphertext) {
-    des_encrypt_decrypt_function(env, DES3_CTR, plaintext, input_size, (void*)&(K->double_triple), ciphertext, K->iv, TRIPLE_DES, ENCRYPT);
+void opencl_des2_ctr_encrypt(OpenCLEnv* env, uint8_t* plaintext, size_t input_size, des_context* K, uint8_t* ciphertext, cipher_callback_t callback, void *user_data) {
+    des_encrypt_decrypt_function(env, DES2_CTR, plaintext, input_size, (void*)&(K->double_triple), ciphertext, K->iv, DOUBLE_DES, ENCRYPT, callback, user_data);
 }
 
-void opencl_des3_ctr_decrypt(OpenCLEnv* env, uint8_t* ciphertext, size_t input_size, des_context* K, uint8_t* plaintext) {
-    des_encrypt_decrypt_function(env, DES3_CTR, ciphertext, input_size, (void*)&(K->double_triple), plaintext, K->iv, TRIPLE_DES, DECRYPT);
+void opencl_des2_ctr_decrypt(OpenCLEnv* env, uint8_t* ciphertext, size_t input_size, des_context* K, uint8_t* plaintext, cipher_callback_t callback, void *user_data) {
+    des_encrypt_decrypt_function(env, DES2_CTR, ciphertext, input_size, (void*)&(K->double_triple), plaintext, K->iv, DOUBLE_DES, DECRYPT, callback, user_data);
+}
+
+
+void opencl_des3_ctr_encrypt(OpenCLEnv* env, uint8_t* plaintext, size_t input_size, des_context* K, uint8_t* ciphertext, cipher_callback_t callback, void *user_data) {
+    des_encrypt_decrypt_function(env, DES3_CTR, plaintext, input_size, (void*)&(K->double_triple), ciphertext, K->iv, TRIPLE_DES, ENCRYPT, callback, user_data);
+}
+
+void opencl_des3_ctr_decrypt(OpenCLEnv* env, uint8_t* ciphertext, size_t input_size, des_context* K, uint8_t* plaintext, cipher_callback_t callback, void *user_data) {
+    des_encrypt_decrypt_function(env, DES3_CTR, ciphertext, input_size, (void*)&(K->double_triple), plaintext, K->iv, TRIPLE_DES, DECRYPT, callback, user_data);
 }
 /* ----------------- end ctr mode ----------------- */
