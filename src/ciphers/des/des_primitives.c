@@ -56,7 +56,7 @@ void des_encrypt_decrypt_function(OpenCLEnv* env,
                                   iv, DES_IV_SIZE,
                                   0,  // num_rounds not used
                                   iv != NULL, IS_DES_TWEAKED_METHOD(method_id),
-                                  callback, user_data);  //TODO: callback support
+                                  callback, user_data);
 }
 
 

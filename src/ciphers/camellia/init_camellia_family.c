@@ -13,7 +13,7 @@
 #endif
 
 
-extern CipherOpenCLAtomics aes_atomics;
+extern CipherOpenCLAtomics camellia_atomics;
 
 
 void init_camellia_methods_and_state(CipherFamily* fam) {
@@ -32,7 +32,7 @@ void init_camellia_methods_and_state(CipherFamily* fam) {
     fam->num_methods = NUM_CAMELLIA_METHODS;
 
     fam->state = CipherState_init(fam);
-    aes_atomics = common_atomics;
+    camellia_atomics = common_atomics;
 }
 
 void destroy_camellia_methods_and_state(CipherFamily* fam) {

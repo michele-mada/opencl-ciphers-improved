@@ -18,11 +18,13 @@
 typedef struct camellia18_context {
     uint64_t esk[CAMELLIA_18ROUND_EXPANDED_KEY_SIZE];
     uint64_t dsk[CAMELLIA_18ROUND_EXPANDED_KEY_SIZE];
+    uint64_t tsk[CAMELLIA_18ROUND_EXPANDED_KEY_SIZE];
 } camellia18_context;
 
 typedef struct camellia24_context {
     uint64_t esk[CAMELLIA_24ROUND_EXPANDED_KEY_SIZE];
     uint64_t dsk[CAMELLIA_24ROUND_EXPANDED_KEY_SIZE];
+    uint64_t tsk[CAMELLIA_24ROUND_EXPANDED_KEY_SIZE];
 } camellia24_context;
 
 typedef struct camellia_context {

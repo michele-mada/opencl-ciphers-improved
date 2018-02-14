@@ -1,8 +1,9 @@
-#ifndef AES_PRIMITIVES_H
-#define AES_PRIMITIVES_H
+#ifndef CAMELLIA_PRIMITIVES_H
+#define CAMELLIA_PRIMITIVES_H
 
 
 #include "../common/callbacks.h"
+#include "../common/primitives.h"
 #include "camellia_state.h"
 
 
