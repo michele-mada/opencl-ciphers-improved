@@ -11,6 +11,10 @@
 #include <CL/cl.h>
 #endif
 
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE 1
+#endif
+
 #include "constants.h"
 #include "cipher_family.h"
 #include "param_atlas.h"

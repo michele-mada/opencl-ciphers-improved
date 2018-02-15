@@ -62,13 +62,6 @@ void aes_encrypt_decrypt_function(OpenCLEnv* env,           // global opencl env
                                   void *user_data) {        // argument of the optional callback
     CipherMethod* meth = FAMILY->methods[method_id];
 
-    uint8_t* key;
-    if (is_decrypt) {
-        key = (uint8_t*) context->expanded_key_decrypt;
-    } else {
-        key = (uint8_t*) context->expanded_key_encrypt;
-    }
-
     omni_encrypt_decrypt_function(env,
                                   &aes_atomics,
                                   meth,

@@ -1,5 +1,5 @@
-#ifndef DES_TEST_DATA_H
-#define DES_TEST_DATA_H
+#ifndef AES_TEST_DATA_H
+#define AES_TEST_DATA_H
 
 
 #include "test_common.h"

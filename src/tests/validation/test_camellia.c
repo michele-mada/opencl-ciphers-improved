@@ -56,7 +56,7 @@ TestResult validate_aes_128_xts(OpenCLEnv *global_env, TestDatum *datum) \
         opencl_aes_128_xts_decrypt(global_env, datum->ctx, datum->ctx_length, &K, generated_ptx, NULL, NULL);
     })*/
 
-static int run_all_cases_ecb(OpenCLEnv *global_env) {
+static int camellia_run_all_cases_ecb(OpenCLEnv *global_env) {
     TestResult succeeded = {0, 0, 0};
     int all_cases = NUM_CASES_ECB_128 + NUM_CASES_ECB_192 + NUM_CASES_ECB_256;
     printf("Testing Camellia ECB... ");
@@ -67,7 +67,7 @@ static int run_all_cases_ecb(OpenCLEnv *global_env) {
     return (succeeded.encryptions_successful == all_cases) && (succeeded.decryptions_successful == all_cases);
 }
 
-/*static int run_all_cases_ctr(OpenCLEnv *global_env) {
+/*static int camellia_run_all_cases_ctr(OpenCLEnv *global_env) {
     TestResult succeeded = {0, 0, 0};
     int all_cases = NUM_CASES_CTR_128 + NUM_CASES_CTR_192 + NUM_CASES_CTR_256;
     printf("Testing AES CTR... ");
@@ -78,7 +78,7 @@ static int run_all_cases_ecb(OpenCLEnv *global_env) {
     return (succeeded.encryptions_successful == all_cases) && (succeeded.decryptions_successful == all_cases);
 }
 
-static int run_all_cases_xts(OpenCLEnv *global_env) {
+static int camellia_run_all_cases_xts(OpenCLEnv *global_env) {
     TestResult succeeded = {0, 0, 0};
     int all_cases = NUM_CASES_XTS_128 + NUM_CASES_CTR_192 + NUM_CASES_CTR_256;
     printf("Testing AES XTS... ");
@@ -88,5 +88,5 @@ static int run_all_cases_xts(OpenCLEnv *global_env) {
 }*/
 
 int test_camellia(OpenCLEnv* global_env) {
-    return run_all_cases_ecb(global_env)/* && run_all_cases_ctr(global_env) && run_all_cases_xts(global_env)*/;
+    return camellia_run_all_cases_ecb(global_env)/* && run_all_cases_ctr(global_env) && run_all_cases_xts(global_env)*/;
 }

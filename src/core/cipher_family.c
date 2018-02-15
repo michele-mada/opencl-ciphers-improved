@@ -14,7 +14,7 @@ void load_program_cl(CipherFamily* fam, char* source_filename) {
     fam->program = clCreateProgramWithSource(
         fam->environment->context,
         2,
-        (const char **) source_code,
+        (const unsigned char **) source_code,
         (const size_t *) source_size,
         &ret);
     if(ret != CL_SUCCESS) error_fatal("Failed to create program; source: \"%s\" error = %s (%d)\n", source_filename, get_cl_error_string(ret), ret);

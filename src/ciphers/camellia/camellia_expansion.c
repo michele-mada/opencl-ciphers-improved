@@ -1,4 +1,5 @@
 #include "camellia_expansion.h"
+#include "../../core/constants.h"
 
 
 
@@ -89,6 +90,20 @@ const uint64_t Sigma5 = 0x10E527FADE682D1Dul;
 const uint64_t Sigma6 = 0xB05688C2B3E6C1FDul;
 
 
+uint64_t fix_endianness(uint64_t number) {
+    uint8_t temp;
+    if (!is_bigendian()) {
+        uint8_t *bytes = (uint8_t*) &number;
+        temp = bytes[0]; bytes[0] = bytes[7]; bytes[7] = temp;
+        temp = bytes[1]; bytes[1] = bytes[6]; bytes[6] = temp;
+        temp = bytes[2]; bytes[2] = bytes[5]; bytes[5] = temp;
+        temp = bytes[3]; bytes[3] = bytes[4]; bytes[4] = temp;
+        return *((uint64_t*) bytes);
+    }
+    return number;
+}
+
+
 uint64_t rol128lo(uint64_t xhi, uint64_t xlo, unsigned n) {
     if (n > 64) {
         return n? (xhi << (n - 64)) | (xlo >> (128 - n)) : xhi;
@@ -143,6 +158,7 @@ uint64_t F(uint64_t F_IN, uint64_t KE) {
                    | ((uint64_t)y6 << 16)
                    | ((uint64_t)y7 <<  8)
                    | y8;
+
     return F_OUT;
 }
 
@@ -155,14 +171,14 @@ void camellia_expandkey(uint64_t *user_key, uint64_t *exkey_enc, uint64_t *exkey
     uint64_t *enc_kw, *enc_k, *enc_ke;
     uint64_t *dec_kw, *dec_k, *dec_ke;
 
-    K[0] = user_key[0]; K[1] = user_key[1];
+    K[0] = fix_endianness(user_key[0]); K[1] = fix_endianness(user_key[1]);
 
     if (keylen == 128) {
         K[2] = 0; K[3] = 0;
-    } else if (keylen == 128) {
-        K[2] = user_key[2]; K[3] = ~user_key[2];
+    } else if (keylen == 192) {
+        K[2] = fix_endianness(user_key[2]); K[3] = ~fix_endianness(user_key[2]);
     } else {
-        K[2] = user_key[2]; K[3] = user_key[3];
+        K[2] = fix_endianness(user_key[2]); K[3] = fix_endianness(user_key[3]);
     }
 
     uint64_t KLhi = K[0];
@@ -203,8 +219,8 @@ void camellia_expandkey(uint64_t *user_key, uint64_t *exkey_enc, uint64_t *exkey
         enc_kw = exkey_enc; enc_k = exkey_enc + 4; enc_ke = exkey_enc + 22;
         dec_kw = exkey_dec; dec_k = exkey_dec + 4; dec_ke = exkey_dec + 22;
 
-        enc_kw[0] = dec_kw[3] = rol128hi(KLhi, KLlo,   0);
-        enc_kw[1] = dec_kw[2] = rol128lo(KLhi, KLlo,   0);
+        enc_kw[0] = dec_kw[2] = rol128hi(KLhi, KLlo,   0);
+        enc_kw[1] = dec_kw[3] = rol128lo(KLhi, KLlo,   0);
 
         enc_k[0]  = dec_k[17] = rol128hi(KAhi, KAlo,   0);
         enc_k[1]  = dec_k[16] = rol128lo(KAhi, KAlo,   0);
@@ -233,15 +249,15 @@ void camellia_expandkey(uint64_t *user_key, uint64_t *exkey_enc, uint64_t *exkey
         enc_k[16] = dec_k[1] = rol128hi(KLhi, KLlo, 111);
         enc_k[17] = dec_k[0] = rol128lo(KLhi, KLlo, 111);
 
-        enc_kw[2] = dec_kw[1] = rol128hi(KAhi, KAlo, 111);
-        enc_kw[3] = dec_kw[0] = rol128lo(KAhi, KAlo, 111);
+        enc_kw[2] = dec_kw[0] = rol128hi(KAhi, KAlo, 111);
+        enc_kw[3] = dec_kw[1] = rol128lo(KAhi, KAlo, 111);
     }
     else { // 192 or 256
         enc_kw = exkey_enc; enc_k = exkey_enc + 4; enc_ke = exkey_enc + 28;
         dec_kw = exkey_dec; dec_k = exkey_dec + 4; dec_ke = exkey_dec + 28;
 
-        enc_kw[0] = dec_kw[3] = rol128hi(KLhi, KLlo,   0);
-        enc_kw[1] = dec_kw[2] = rol128lo(KLhi, KLlo,   0);
+        enc_kw[0] = dec_kw[2] = rol128hi(KLhi, KLlo,   0);
+        enc_kw[1] = dec_kw[3] = rol128lo(KLhi, KLlo,   0);
 
         enc_k[0]  = dec_k[23] = rol128hi(KBhi, KBlo,   0);
         enc_k[1]  = dec_k[22] = rol128lo(KBhi, KBlo,   0);
@@ -280,7 +296,7 @@ void camellia_expandkey(uint64_t *user_key, uint64_t *exkey_enc, uint64_t *exkey
         enc_k[22] = dec_k[1]  = rol128hi(KLhi, KLlo, 111);
         enc_k[23] = dec_k[0]  = rol128lo(KLhi, KLlo, 111);
 
-        enc_kw[2] = dec_kw[1] = rol128hi(KBhi, KBlo, 111);
-        enc_kw[3] = dec_kw[0] = rol128lo(KBhi, KBlo, 111);
+        enc_kw[2] = dec_kw[0] = rol128hi(KBhi, KBlo, 111);
+        enc_kw[3] = dec_kw[1] = rol128lo(KBhi, KBlo, 111);
     }
 }

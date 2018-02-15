@@ -2,6 +2,8 @@
 #define PERF_COUNTER_H
 
 
+#define _POSIX_C_SOURCE 199309L
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -42,7 +44,7 @@ static inline void timespec_diff(struct timespec *start, struct timespec *stop, 
 }
 #endif
 
-static void savefile_worker(void *owner) {
+static void* savefile_worker(void *owner) {
     PerfCounter *perf_counter = (PerfCounter*) owner;
     while (perf_counter->running) {
         usleep(perf_counter->refresh_time * 1000);
@@ -72,6 +74,8 @@ static void savefile_worker(void *owner) {
         }
         pthread_mutex_unlock(&(perf_counter->save_mutex));
     }
+
+    return NULL;
 }
 
 static void PerfCounter_start(PerfCounter* perf_counter) {

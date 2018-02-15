@@ -18,7 +18,7 @@ TestResult validate_des_ecb(OpenCLEnv *global_env, TestDatum *datum) \
         opencl_des_ecb_decrypt(global_env, datum->ctx, datum->ctx_length, &K, generated_ptx, NULL, NULL);
     })
 
-static int run_all_cases_ecb(OpenCLEnv *global_env) {
+static int des_run_all_cases_ecb(OpenCLEnv *global_env) {
     TestResult succeeded = {0, 0, 0};
     int all_cases = NUM_CASES_ECB;
     printf("Testing DES ECB... ");
@@ -28,5 +28,5 @@ static int run_all_cases_ecb(OpenCLEnv *global_env) {
 }
 
 int test_des(OpenCLEnv* global_env) {
-    return run_all_cases_ecb(global_env);  // && other
+    return des_run_all_cases_ecb(global_env);  // && other
 }

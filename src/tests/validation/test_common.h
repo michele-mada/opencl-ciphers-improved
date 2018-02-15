@@ -2,6 +2,8 @@
 #define TEST_COMMON_H
 
 #include <stdio.h>
+#include <malloc.h>
+#include <string.h>
 #include <stdlib.h>
 #include <inttypes.h>
 #include "../../core/opencl_env.h"
@@ -29,9 +31,10 @@ typedef struct TestResult {
 
 #define TESTRESULT_ADD(addto, addfrom)                                          \
 {                                                                               \
-    addto.num_tests_done += addfrom.num_tests_done;                             \
-    addto.encryptions_successful += addfrom.encryptions_successful;             \
-    addto.decryptions_successful += addfrom.decryptions_successful;             \
+    TestResult datum = addfrom;                                                 \
+    addto.num_tests_done += datum.num_tests_done;                               \
+    addto.encryptions_successful += datum.encryptions_successful;               \
+    addto.decryptions_successful += datum.decryptions_successful;               \
 }
 
 

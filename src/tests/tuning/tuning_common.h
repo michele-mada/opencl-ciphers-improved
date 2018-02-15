@@ -5,13 +5,15 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <malloc.h>
+#include <string.h>
 #include <inttypes.h>
 #include "../../core/opencl_env.h"
 #include "../../core/utils.h"
 
 
 #define AOCL_ALIGNMENT 64
-#define PAYLOAD_MAX_SIZE 1073741824*2   // 1*2 GB
+#define PAYLOAD_MAX_SIZE 1073741824UL*2   // 1*2 GB
 #define REPETITIONS 100
 #define CLOCK_USED CLOCK_REALTIME
 #define RANDOM_SOURCE "/dev/urandom"
