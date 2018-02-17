@@ -47,8 +47,10 @@ void destroy_camellia_methods_and_state(CipherFamily* fam) {
 
 
 CipherFamily* get_camellia_family(struct OpenCLEnv* environment) {
-    char *kernel_path = ParamAtlas_aget_full_kernel_path(environment->parameters, "camellia_swi");
-    CipherFamily* aes = CipherFamily_init(environment, kernel_path, &init_camellia_methods_and_state, &destroy_camellia_methods_and_state);
-    free(kernel_path);
+    char **kernel_paths = make_kernel_filename_list(environment->parameters,
+                                                    kernels_camellia,
+                                                    num_sources_camellia);
+    CipherFamily* aes = CipherFamily_init(environment, kernel_paths, num_sources_camellia, &init_camellia_methods_and_state, &destroy_camellia_methods_and_state);
+    free_kernel_filename_list(kernel_paths, num_sources_camellia);
     return aes;
 }

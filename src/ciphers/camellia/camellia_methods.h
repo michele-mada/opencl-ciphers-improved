@@ -20,4 +20,8 @@ typedef enum CamelliaMethodsId {
 #define IS_CAMELLIA_TWEAKED_METHOD(meth_id) ((meth_id) >= CAMELLIA_128_XTS && (meth_id) <= CAMELLIA_256_XTS)
 
 
+static int num_sources_camellia = 1;
+static const char *kernels_camellia[] = {"camellia_swi"};
+
+
 #endif

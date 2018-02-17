@@ -64,3 +64,20 @@ char* ParamAtlas_aget_full_addon_path(ParamAtlas* atl) {
     #endif
     return dest;
 }
+
+
+
+char** make_kernel_filename_list(ParamAtlas* atl, const char *kernel_names[], size_t num_names) {
+    char **kernel_filename_list = (char**) malloc(sizeof(char*) * num_names);
+    for (size_t i=0; i<num_names; i++) {
+        kernel_filename_list[i] = ParamAtlas_aget_full_kernel_path(atl, kernel_names[i]);
+    }
+    return kernel_filename_list;
+}
+
+void free_kernel_filename_list(char** kernel_filename_list, size_t num_names) {
+    for (size_t i=0; i<num_names; i++) {
+        free(kernel_filename_list[i]);
+    }
+    free(kernel_filename_list);
+}

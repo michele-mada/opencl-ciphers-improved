@@ -5,7 +5,12 @@
 
 void load_kernel(CipherMethod* meth, char* kernel_name) {
     cl_int ret;
-    meth->kernel = clCreateKernel(meth->family->program, kernel_name, &ret);
+    // try to create the kernel from each of the loaded programs
+    // stops when the right one is found
+    for (size_t i=0; i<meth->family->num_programs; i++) {
+        meth->kernel = clCreateKernel(meth->family->programs[i], kernel_name, &ret);
+        if (ret == CL_SUCCESS) break;
+    }
     if (ret != CL_SUCCESS) error_fatal("Failed to create kernel \"%s\", error = %s (%d)\n", kernel_name, get_cl_error_string(ret), ret);
 }
 

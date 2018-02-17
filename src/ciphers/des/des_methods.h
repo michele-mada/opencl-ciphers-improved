@@ -17,4 +17,8 @@ typedef enum DesMethodsId {
 #define IS_DES_TWEAKED_METHOD(meth_id) (0)
 
 
+static int num_sources_des = 1;
+static const char *kernels_des[] = {"des_swi"};
+
+
 #endif

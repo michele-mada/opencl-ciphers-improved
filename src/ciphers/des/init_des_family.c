@@ -44,8 +44,10 @@ void destroy_des_methods_and_state(CipherFamily* fam) {
 
 
 CipherFamily* get_des_family(struct OpenCLEnv* environment) {
-    char *kernel_path = ParamAtlas_aget_full_kernel_path(environment->parameters, "des_swi");
-    CipherFamily* des = CipherFamily_init(environment, kernel_path, &init_des_methods_and_state, &destroy_des_methods_and_state);
-    free(kernel_path);
+    char **kernel_paths = make_kernel_filename_list(environment->parameters,
+                                                    kernels_des,
+                                                    num_sources_des);
+    CipherFamily* des = CipherFamily_init(environment, kernel_paths, num_sources_des, &init_des_methods_and_state, &destroy_des_methods_and_state);
+    free_kernel_filename_list(kernel_paths, num_sources_des);
     return des;
 }
