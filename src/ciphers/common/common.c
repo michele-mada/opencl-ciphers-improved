@@ -1,4 +1,5 @@
 #include "common.h"
+#include "../../profiler/profiler_params.h"
 
 
 CipherState *CipherState_init(CipherFamily *fam) {
@@ -76,6 +77,7 @@ void common_sync_load_key1(CipherFamily* fam, uint8_t* key, size_t key_size) {
                                0, NULL,
                                &step1);
     if (ret != CL_SUCCESS) error_fatal("Failed to enqueue clEnqueueWriteBuffer (state->exKey[%d]) . Error = %s (%d)\n", nbuf, get_cl_error_string(ret), ret);
+    PROFILE_EVENT(&step1, input, nbuf);
     clWaitForEvents(1, &step1);
 }
 
@@ -92,6 +94,7 @@ void common_sync_load_key2(CipherFamily* fam, uint8_t* key, size_t key_size) {
                                0, NULL,
                                &step1);
     if (ret != CL_SUCCESS) error_fatal("Failed to enqueue clEnqueueWriteBuffer (state->exKeySecond[%d]) . Error = %s (%d)\n", nbuf, get_cl_error_string(ret), ret);
+    PROFILE_EVENT(&step1, input, nbuf);
     clWaitForEvents(1, &step1);
 }
 
@@ -99,27 +102,30 @@ void common_load_iv(CipherFamily* fam, uint8_t* iv, size_t iv_size) {
     CipherState *state = (CipherState*) fam->state;
     int nbuf = state->selected_buffer;
     cl_int ret;
+    cl_event evdone;
     ret = clEnqueueWriteBuffer(fam->environment->command_queue[nbuf],
                                state->iv[nbuf],
                                CL_FALSE, 0, iv_size * sizeof(uint8_t),
                                iv,
                                0, NULL,
-                               NULL);
+                               &evdone);
     if (ret != CL_SUCCESS) error_fatal("Failed to enqueue clEnqueueWriteBuffer (state->iv) . Error = %s (%d)\n", get_cl_error_string(ret), ret);
+    PROFILE_EVENT(&evdone, input, nbuf);
 }
 
 void common_load_input(CipherFamily* fam, uint8_t* input, size_t input_size) {
     CipherState *state = (CipherState*) fam->state;
     int nbuf = state->selected_buffer;
     cl_int ret;
-
+    cl_event evdone;
     ret = clEnqueueWriteBuffer(fam->environment->command_queue[nbuf],
                                state->in[nbuf],
                                CL_FALSE, 0, input_size * sizeof(uint8_t),
                                input,
                                0, NULL,
-                               NULL);
+                               &evdone);
     if (ret != CL_SUCCESS) error_fatal("Failed to enqueue clEnqueueWriteBuffer (state->in) . Error = %s (%d)\n", get_cl_error_string(ret), ret);
+    PROFILE_EVENT(&evdone, input, nbuf);
 }
 
 
@@ -163,6 +169,7 @@ void common_prepare_kernel(CipherMethod* meth, int input_size, int num_rounds, i
 
 void common_execute_kernel(CipherMethod* meth, cl_event *finish, int num_buffer) {
     cl_int ret;
+    cl_event evdone;
     size_t global_work_size = GLOBAL_WORK_SIZE;
     size_t local_work_size = LOCAL_WORK_SIZE;
     size_t work_dim = WORK_DIM;
@@ -172,8 +179,10 @@ void common_execute_kernel(CipherMethod* meth, cl_event *finish, int num_buffer)
                                  NULL,  // global offset
                                  &global_work_size,  // global work size
                                  &local_work_size,  // local work size
-                                 0, NULL, NULL);
+                                 0, NULL,
+                                 &evdone);
     if (ret != CL_SUCCESS) error_fatal("Failed to enqueue NDRangeKernel. Error = %s (%d)\n", get_cl_error_string(ret), ret);
+    PROFILE_EVENT(&evdone, kernel, num_buffer);
 }
 
 
@@ -191,6 +200,7 @@ void common_gather_output(CipherFamily* fam, uint8_t* output, size_t output_size
     int nbuf = state->selected_buffer;
     clEnqueueReadBuffer(fam->environment->command_queue[nbuf], state->out[nbuf], CL_FALSE, 0, output_size, output, 0, NULL, last_sync);
 
+    PROFILE_EVENT(last_sync, output, nbuf);
     if (OpenCLEnv_perf_is_enabled(fam->environment)) {
         struct async_perfdata *udata = malloc(sizeof(struct async_perfdata));
         udata->envptr = fam->environment;

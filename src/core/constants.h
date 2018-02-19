@@ -28,5 +28,7 @@ const static int i = 1;
 #endif
 
 
+#define USE_CUSTOM_PROFILER
+
 
 #endif

@@ -2,6 +2,7 @@
 #include "../core/opencl_env.h"
 #include "../core/utils.h"
 #include "../core/constants.h"
+#include "../profiler/profiler_params.h"
 #include "validation/test_common.h"
 #include "tuning/tuning_common.h"
 
@@ -18,7 +19,17 @@ int run_validation() {
 
     printf("Running with enc_block_size=%lu\n", OpenCLEnv_get_enc_block_size(global_env));
 
+    #ifdef USE_CUSTOM_PROFILER
+        GlobalProfiler_init("validation");
+        setup_global_profiler_params();
+    #endif
+
     int success = test_all(global_env);
+
+    #ifdef USE_CUSTOM_PROFILER
+        GlobalProfiler_destroy();
+    #endif
+
     printf("Test %s\n", (success ? "passed" : "failed"));
 
     OpenCLEnv_destroy(global_env);
@@ -37,7 +48,16 @@ int run_tuning() {
         stride = atol(custom_stride);
     }
 
+    #ifdef USE_CUSTOM_PROFILER
+        GlobalProfiler_init("aes");
+        setup_global_profiler_params();
+    #endif
+
     auto_tune(global_env, stride, "tuning_data.txt");
+
+    #ifdef USE_CUSTOM_PROFILER
+        GlobalProfiler_destroy();
+    #endif
 
     OpenCLEnv_destroy(global_env);
 

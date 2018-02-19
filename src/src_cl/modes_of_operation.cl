@@ -147,7 +147,6 @@ void gf128_multiply_by_alpha(__private uchar *in, __private uchar *out, size_t b
         size_t last_full_block_offset = bytes_done - (block_size);              \
         /* Ctx stealing */                                                      \
         /* first part of the input state: partial ptx */                        \
-        _Pragma("unroll")                                                       \
         for (size_t i = 0; i < bytes_left; ++i) {                               \
             size_t offset = last_partial_block_offset + i;                      \
             temp_state_in[i] = (global_in)[offset] ^ active_tweak[i];           \
@@ -155,7 +154,6 @@ void gf128_multiply_by_alpha(__private uchar *in, __private uchar *out, size_t b
             (global_out)[offset] = temp_state_out[offset - (block_size)];       \
         }                                                                       \
         /* last part of the input state: ctx stolen from previous operation */  \
-        _Pragma("unroll")                                                       \
         for (size_t i = bytes_left; i < (block_size); ++i) {                    \
             size_t offset = last_full_block_offset + i;                         \
             temp_state_in[i] = temp_state_out[offset] ^ active_tweak[i];        \
