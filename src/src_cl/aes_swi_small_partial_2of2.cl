@@ -292,17 +292,6 @@ void decrypt(__private uchar state_in[BLOCK_SIZE],
 #define DECRYPT_INTERFACE(in, key, out) decrypt(in, (uint*)key, out, num_rounds)
 
 
-void aes_xts_encdec(__global uchar* restrict in,
-                    __global uint* restrict w1,
-                    __global uint* restrict w2,
-                    __global uchar* restrict out,
-                    __global uchar* restrict tweak_init,
-                    unsigned int num_rounds,
-                    unsigned int input_size,
-                    int is_enc) \
-    XTS_MODE_BOILERPLATE_DUAL(ENCRYPT_INTERFACE, DECRYPT_INTERFACE, ENCRYPT_INTERFACE, is_enc, in, out, (__global uchar* restrict)w1, (__global uchar* restrict)w2, tweak_init, BLOCK_SIZE, MAX_EXKEY_SIZE_WORDS*4, input_size);
-
-
 __attribute__((reqd_work_group_size(1, 1, 1)))
 __kernel void aesCipherXtsEnc(__global uchar* restrict in,
                               __global uint* restrict w1,
@@ -310,9 +299,8 @@ __kernel void aesCipherXtsEnc(__global uchar* restrict in,
                               __global uchar* restrict out,
                               __global uchar* restrict tweak_init,
                               unsigned int num_rounds,
-                              unsigned int input_size) {
-    aes_xts_encdec(in, w1, w2, out, tweak_init, num_rounds, input_size, 1);
-}
+                              unsigned int input_size) \
+    XTS_MODE_BOILERPLATE(ENCRYPT_INTERFACE, ENCRYPT_INTERFACE, in, out, (__global uchar* restrict)w1, (__global uchar* restrict)w2, tweak_init, BLOCK_SIZE, MAX_EXKEY_SIZE_WORDS*4, input_size);
 
 __attribute__((reqd_work_group_size(1, 1, 1)))
 __kernel void aesCipherXtsDec(__global uchar* restrict in,
@@ -321,6 +309,5 @@ __kernel void aesCipherXtsDec(__global uchar* restrict in,
                               __global uchar* restrict out,
                               __global uchar* restrict tweak_init,
                               unsigned int num_rounds,
-                              unsigned int input_size) {
-    aes_xts_encdec(in, w1, w2, out, tweak_init, num_rounds, input_size, 0);
-}
+                              unsigned int input_size) \
+    XTS_MODE_BOILERPLATE(DECRYPT_INTERFACE, ENCRYPT_INTERFACE, in, out, (__global uchar* restrict)w1, (__global uchar* restrict)w2, tweak_init, BLOCK_SIZE, MAX_EXKEY_SIZE_WORDS*4, input_size);
