@@ -123,17 +123,17 @@ __constant uint SB8[64] = {
 #ifndef GET_UINT32_BE
 #define GET_UINT32_BE(n, b, i)                                                 \
   {                                                                            \
-    (n) = ((uint)(b)[(i)] << 24) | ((uint)(b)[(i) + 1] << 16) |        \
-          ((uint)(b)[(i) + 2] << 8) | ((uint)(b)[(i) + 3]);            \
+    (n) = ((uint)(b)[(i)] << 24) | ((uint)(b)[(i) + 1] << 16) |                \
+          ((uint)(b)[(i) + 2] << 8) | ((uint)(b)[(i) + 3]);                    \
   }
 #endif
 #ifndef PUT_UINT32_BE
 #define PUT_UINT32_BE(n, b, i)                                                 \
   {                                                                            \
-    (b)[(i)] = (uchar)((n) >> 24);                                           \
-    (b)[(i) + 1] = (uchar)((n) >> 16);                                       \
-    (b)[(i) + 2] = (uchar)((n) >> 8);                                        \
-    (b)[(i) + 3] = (uchar)((n));                                             \
+    (b)[(i)] = (uchar)((n) >> 24);                                             \
+    (b)[(i) + 1] = (uchar)((n) >> 16);                                         \
+    (b)[(i) + 2] = (uchar)((n) >> 8);                                          \
+    (b)[(i) + 3] = (uchar)((n));                                               \
   }
 #endif
 

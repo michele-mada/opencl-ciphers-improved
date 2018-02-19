@@ -198,9 +198,11 @@ ulong FLINV(ulong FLINV_IN, ulong KE) {
 }
 
 
-#define CAMELLIA_ROUND(block1, block2) \
+#define CAMELLIA_ROUND_AND_SWAP(block1, block2) \
 { \
-    (block2) = (block2) ^ F((block1), k[round_key_id++]); \
+    temp = (block1); \
+    (block1) = (block2) ^ F((block1), k[round_key_id++]); \
+    (block2) = temp; \
 }
 
 
@@ -210,37 +212,37 @@ void crypt_18round(__private uchar state_in[BLOCK_SIZE],
     ulong *kw = keys, *k = keys + 4, *ke = keys + 22;
     ulong *M = (ulong*) state_in;
     ulong *C = (ulong*) state_out;
-    ulong D1, D2;
+    ulong D1, D2, temp;
     size_t round_key_id = 0;
 
     D1 = FIX_ENDIANNESS(M[0]); D2=FIX_ENDIANNESS(M[1]);  // initialization
 
     D1 = D1 ^ kw[0]; D2 = D2 ^ kw[1];  // pre-whitening
 
-    CAMELLIA_ROUND(D1, D2);
-    CAMELLIA_ROUND(D2, D1);
-    CAMELLIA_ROUND(D1, D2);
-    CAMELLIA_ROUND(D2, D1);
-    CAMELLIA_ROUND(D1, D2);
-    CAMELLIA_ROUND(D2, D1);
+    CAMELLIA_ROUND_AND_SWAP(D1, D2);
+    CAMELLIA_ROUND_AND_SWAP(D1, D2);
+    CAMELLIA_ROUND_AND_SWAP(D1, D2);
+    CAMELLIA_ROUND_AND_SWAP(D1, D2);
+    CAMELLIA_ROUND_AND_SWAP(D1, D2);
+    CAMELLIA_ROUND_AND_SWAP(D1, D2);
 
     D1 = FL(D1, ke[0]); D2 = FLINV(D2, ke[1]);
 
-    CAMELLIA_ROUND(D1, D2);
-    CAMELLIA_ROUND(D2, D1);
-    CAMELLIA_ROUND(D1, D2);
-    CAMELLIA_ROUND(D2, D1);
-    CAMELLIA_ROUND(D1, D2);
-    CAMELLIA_ROUND(D2, D1);
+    CAMELLIA_ROUND_AND_SWAP(D1, D2);
+    CAMELLIA_ROUND_AND_SWAP(D1, D2);
+    CAMELLIA_ROUND_AND_SWAP(D1, D2);
+    CAMELLIA_ROUND_AND_SWAP(D1, D2);
+    CAMELLIA_ROUND_AND_SWAP(D1, D2);
+    CAMELLIA_ROUND_AND_SWAP(D1, D2);
 
     D1 = FL(D1, ke[2]); D2 = FLINV(D2, ke[3]);
 
-    CAMELLIA_ROUND(D1, D2);
-    CAMELLIA_ROUND(D2, D1);
-    CAMELLIA_ROUND(D1, D2);
-    CAMELLIA_ROUND(D2, D1);
-    CAMELLIA_ROUND(D1, D2);
-    CAMELLIA_ROUND(D2, D1);
+    CAMELLIA_ROUND_AND_SWAP(D1, D2);
+    CAMELLIA_ROUND_AND_SWAP(D1, D2);
+    CAMELLIA_ROUND_AND_SWAP(D1, D2);
+    CAMELLIA_ROUND_AND_SWAP(D1, D2);
+    CAMELLIA_ROUND_AND_SWAP(D1, D2);
+    CAMELLIA_ROUND_AND_SWAP(D1, D2);
 
     D1 = D1 ^ kw[3]; D2 = D2 ^ kw[2];  // post-whitening
 
@@ -254,46 +256,46 @@ void crypt_24round(__private uchar state_in[BLOCK_SIZE],
     ulong *kw = keys, *k = keys + 4, *ke = keys + 28;
     ulong *M = (ulong*) state_in;
     ulong *C = (ulong*) state_out;
-    ulong D1, D2;
+    ulong D1, D2, temp;
     size_t round_key_id = 0;
 
     D1 = FIX_ENDIANNESS(M[0]); D2=FIX_ENDIANNESS(M[1]);  // initialization
 
     D1 = D1 ^ kw[0]; D2 = D2 ^ kw[1];  // pre-whitening
 
-    CAMELLIA_ROUND(D1, D2);
-    CAMELLIA_ROUND(D2, D1);
-    CAMELLIA_ROUND(D1, D2);
-    CAMELLIA_ROUND(D2, D1);
-    CAMELLIA_ROUND(D1, D2);
-    CAMELLIA_ROUND(D2, D1);
+    CAMELLIA_ROUND_AND_SWAP(D1, D2);
+    CAMELLIA_ROUND_AND_SWAP(D1, D2);
+    CAMELLIA_ROUND_AND_SWAP(D1, D2);
+    CAMELLIA_ROUND_AND_SWAP(D1, D2);
+    CAMELLIA_ROUND_AND_SWAP(D1, D2);
+    CAMELLIA_ROUND_AND_SWAP(D1, D2);
 
     D1 = FL(D1, ke[0]); D2 = FLINV(D2, ke[1]);
 
-    CAMELLIA_ROUND(D1, D2);
-    CAMELLIA_ROUND(D2, D1);
-    CAMELLIA_ROUND(D1, D2);
-    CAMELLIA_ROUND(D2, D1);
-    CAMELLIA_ROUND(D1, D2);
-    CAMELLIA_ROUND(D2, D1);
+    CAMELLIA_ROUND_AND_SWAP(D1, D2);
+    CAMELLIA_ROUND_AND_SWAP(D1, D2);
+    CAMELLIA_ROUND_AND_SWAP(D1, D2);
+    CAMELLIA_ROUND_AND_SWAP(D1, D2);
+    CAMELLIA_ROUND_AND_SWAP(D1, D2);
+    CAMELLIA_ROUND_AND_SWAP(D1, D2);
 
     D1 = FL(D1, ke[2]); D2 = FLINV(D2, ke[3]);
 
-    CAMELLIA_ROUND(D1, D2);
-    CAMELLIA_ROUND(D2, D1);
-    CAMELLIA_ROUND(D1, D2);
-    CAMELLIA_ROUND(D2, D1);
-    CAMELLIA_ROUND(D1, D2);
-    CAMELLIA_ROUND(D2, D1);
+    CAMELLIA_ROUND_AND_SWAP(D1, D2);
+    CAMELLIA_ROUND_AND_SWAP(D1, D2);
+    CAMELLIA_ROUND_AND_SWAP(D1, D2);
+    CAMELLIA_ROUND_AND_SWAP(D1, D2);
+    CAMELLIA_ROUND_AND_SWAP(D1, D2);
+    CAMELLIA_ROUND_AND_SWAP(D1, D2);
 
     D1 = FL(D1, ke[4]); D2 = FLINV(D2, ke[5]);
 
-    CAMELLIA_ROUND(D1, D2);
-    CAMELLIA_ROUND(D2, D1);
-    CAMELLIA_ROUND(D1, D2);
-    CAMELLIA_ROUND(D2, D1);
-    CAMELLIA_ROUND(D1, D2);
-    CAMELLIA_ROUND(D2, D1);
+    CAMELLIA_ROUND_AND_SWAP(D1, D2);
+    CAMELLIA_ROUND_AND_SWAP(D1, D2);
+    CAMELLIA_ROUND_AND_SWAP(D1, D2);
+    CAMELLIA_ROUND_AND_SWAP(D1, D2);
+    CAMELLIA_ROUND_AND_SWAP(D1, D2);
+    CAMELLIA_ROUND_AND_SWAP(D1, D2);
 
     D1 = D1 ^ kw[3]; D2 = D2 ^ kw[2];  // post-whitening
 

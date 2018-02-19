@@ -10,7 +10,8 @@
 int test_all(OpenCLEnv *global_env) {
     return test_des(global_env) && \
             test_aes(global_env) && \
-            test_camellia(global_env);
+            test_camellia(global_env) && \
+            test_cast5(global_env);
 }
 
 

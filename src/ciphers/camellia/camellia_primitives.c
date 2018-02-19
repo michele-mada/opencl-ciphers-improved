@@ -49,7 +49,7 @@ void camellia_encrypt_decrypt_function(OpenCLEnv* env,
                                   input, input_size,
                                   output, input_size,
                                   iv, CAMELLIA_IV_SIZE,
-                                  mode,  // num_rounds not used
+                                  mode,
                                   iv != NULL, IS_CAMELLIA_TWEAKED_METHOD(method_id),
                                   callback, user_data);
 }

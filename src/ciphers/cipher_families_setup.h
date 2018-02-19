@@ -6,7 +6,7 @@ enum CipherFamilyId {
     DES_CIPHERS = 0,
     AES_CIPHERS,
     CAMELLIA_CIPHERS,
-
+    CAST5_CIPHERS,
 
 
     NUM_FAMILIES
@@ -16,6 +16,7 @@ enum CipherFamilyId {
 extern CipherFamily* get_des_family(struct OpenCLEnv* environment);
 extern CipherFamily* get_aes_family(struct OpenCLEnv* environment);
 extern CipherFamily* get_camellia_family(struct OpenCLEnv* environment);
+extern CipherFamily* get_cast5_family(struct OpenCLEnv* environment);
 
 
 #endif

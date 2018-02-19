@@ -50,7 +50,7 @@ CipherFamily* get_camellia_family(struct OpenCLEnv* environment) {
     char **kernel_paths = make_kernel_filename_list(environment->parameters,
                                                     kernels_camellia,
                                                     num_sources_camellia);
-    CipherFamily* aes = CipherFamily_init(environment, kernel_paths, num_sources_camellia, &init_camellia_methods_and_state, &destroy_camellia_methods_and_state);
+    CipherFamily* camellia = CipherFamily_init(environment, kernel_paths, num_sources_camellia, &init_camellia_methods_and_state, &destroy_camellia_methods_and_state);
     free_kernel_filename_list(kernel_paths, num_sources_camellia);
-    return aes;
+    return camellia;
 }

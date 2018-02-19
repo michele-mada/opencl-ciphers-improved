@@ -16,6 +16,7 @@ typedef struct TestDatum {
     uint8_t ptx[MAX_VECTOR_LENGTH];
     uint8_t ptx_length;
     uint8_t key[MAX_VECTOR_LENGTH];
+    uint8_t key_length;
     uint8_t iv[MAX_VECTOR_LENGTH];
     uint8_t ctx[MAX_VECTOR_LENGTH];
     uint8_t ctx_length;
@@ -84,6 +85,7 @@ static inline void print_hex_string(uint8_t *hexstring, size_t length) {
 extern int test_des(OpenCLEnv* global_env);
 extern int test_aes(OpenCLEnv* global_env);
 extern int test_camellia(OpenCLEnv* global_env);
+extern int test_cast5(OpenCLEnv* global_env);
 
 
 #endif
