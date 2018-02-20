@@ -1,1 +1,0 @@
-/home/michele/polimi/tesi/crypto/opencl/opencl-ciphers-improved/src_cl/aes_swi_small_partial_1of2.cl
