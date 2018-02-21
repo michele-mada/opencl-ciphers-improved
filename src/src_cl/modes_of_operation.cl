@@ -21,19 +21,20 @@ void copy_extkey_to_local(__private uchar* local_w, __global uchar* restrict w, 
     }
 }
 
-void gf128_multiply_by_alpha(__private uchar *in, __private uchar *out, size_t block_size) {
-    uchar carry_in, carry_out;
-
-    carry_in = 0;
-    #pragma unroll
-    for (size_t j=0; j<block_size; j++) {
-        carry_out = (in[j] >> 7) & 1;
-        out[j] = ((in[j] << 1) + carry_in) & 0xFF;
-        carry_in = carry_out;
-    }
-    if (carry_out != 0) {
-        out[0] ^= GF_128_FDBK;
-    }
+#define GF128_MULTIPLY_BY_ALPHA(block_in, block_out, block_size)                \
+{                                                                               \
+    uchar carry_in, carry_out;                                                  \
+                                                                                \
+    carry_in = 0;                                                               \
+    _Pragma("unroll")                                                           \
+    for (size_t j=0; j<(block_size); j++) {                                     \
+        carry_out = ((block_in)[j] >> 7) & 1;                                   \
+        (block_out)[j] = (((block_in)[j] << 1) + carry_in) & 0xFF;              \
+        carry_in = carry_out;                                                   \
+    }                                                                           \
+    if (carry_out != 0) {                                                       \
+        (block_out)[0] ^= GF_128_FDBK;                                          \
+    }                                                                           \
 }
 
 
@@ -136,7 +137,7 @@ void gf128_multiply_by_alpha(__private uchar *in, __private uchar *out, size_t b
                                                                                 \
     for (size_t blockid=0; blockid < (input_size) / (block_size); blockid++) {  \
         XTS_ROUND(blockcipher, (block_size), (global_in), (global_out));        \
-        gf128_multiply_by_alpha(active_tweak, passive_tweak, (block_size));     \
+        GF128_MULTIPLY_BY_ALPHA(active_tweak, passive_tweak, block_size);     \
         temp_tweak = active_tweak; active_tweak = passive_tweak; passive_tweak = temp_tweak;        \
     }                                                                           \
                                                                                 \
