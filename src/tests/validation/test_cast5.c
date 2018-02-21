@@ -11,10 +11,8 @@ TestResult validate_cast5_ecb(OpenCLEnv *global_env, TestDatum *datum) \
     VALIDATION_DECORATOR({
         cast5_context K;
         opencl_cast5_set_encrypt_key(global_env, (unsigned char*) datum->key, datum->key_length*8, &K);
-        printf("enc "); fflush(stdout);
         opencl_cast5_ecb_encrypt(global_env, datum->ptx, datum->ptx_length, &K, generated_ctx, NULL, NULL);
         opencl_cast5_set_decrypt_key(global_env, (unsigned char*) datum->key, datum->key_length*8, &K);
-        printf("dec "); fflush(stdout);
         opencl_cast5_ecb_decrypt(global_env, datum->ctx, datum->ctx_length, &K, generated_ptx, NULL, NULL);
     })
 

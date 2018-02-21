@@ -19,12 +19,16 @@ extern CipherOpenCLAtomics cast5_atomics;
 void init_cast5_methods_and_state(CipherFamily* fam) {
     fam->methods = (CipherMethod**) malloc(sizeof(CipherMethod*) * NUM_CAST5_METHODS);
 
-    fam->methods[CAST5_80_ECB] = CipherMethod_init(fam, "cast5Cipher", 1);
-    fam->methods[CAST5_128_ECB] = CipherMethod_init(fam, "cast5Cipher", 1);
+    fam->methods[CAST5_80_ECB_ENC] = CipherMethod_init(fam, "cast5CipherEnc", 1);
+    fam->methods[CAST5_80_ECB_DEC] = CipherMethod_init(fam, "cast5CipherDec", 1);
+    fam->methods[CAST5_128_ECB_ENC] = CipherMethod_init(fam, "cast5CipherEnc", 1);
+    fam->methods[CAST5_128_ECB_DEC] = CipherMethod_init(fam, "cast5CipherDec", 1);
     fam->methods[CAST5_80_CTR] = CipherMethod_init(fam, "cast5CipherCtr", 1);
     fam->methods[CAST5_128_CTR] = CipherMethod_init(fam, "cast5CipherCtr", 1);
-    fam->methods[CAST5_80_XTS] = CipherMethod_init(fam, "cast5CipherXts", 1);
-    fam->methods[CAST5_128_XTS] = CipherMethod_init(fam, "cast5CipherXts", 1);
+    fam->methods[CAST5_80_XTS_ENC] = CipherMethod_init(fam, "cast5CipherXtsEnc", 1);
+    fam->methods[CAST5_80_XTS_DEC] = CipherMethod_init(fam, "cast5CipherXtsDec", 1);
+    fam->methods[CAST5_128_XTS_ENC] = CipherMethod_init(fam, "cast5CipherXtsEnc", 1);
+    fam->methods[CAST5_128_XTS_DEC] = CipherMethod_init(fam, "cast5CipherXtsDec", 1);
 
     fam->num_methods = NUM_CAST5_METHODS;
 

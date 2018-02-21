@@ -4,6 +4,9 @@
 #define MAX_EXKEY_SIZE_WORDS 32
 
 
+#define HOST_LITTLE_ENDIAN
+
+
 __constant uint SBOX1[256] = {
     0x30fb40d4, 0x9fa0ff0b, 0x6beccd2f, 0x3f258c7a,
     0x1e213f2f, 0x9c004dd3, 0x6003e540, 0xcf9fc949,
@@ -276,7 +279,20 @@ __constant uint SBOX4[256] = {
 #define LROTATEU32(n, r) (((n) << (r)) | ((n) >> (32 - (r))))
 
 
-uint f1(uint D, uint Km, uint Kr) {
+#define REVERSE_ENDIANNESS(number)           \
+        ((number & 0x000000FF) << (3*8)      \
+            | (number & 0xFF000000) >> (3*8) \
+            | (number & 0x0000FF00) << (1*8) \
+            | (number & 0x00FF0000) >> (1*8))
+
+#ifdef HOST_LITTLE_ENDIAN
+    #define FIX_ENDIANNESS(number) REVERSE_ENDIANNESS(number)
+#else
+    #define FIX_ENDIANNESS(number) number
+#endif
+
+
+uint f1(uint D, uint Km, uchar Kr) {
     uint I = LROTATEU32((Km + D), Kr);
 
     uchar Ia = (I >> (8 * 3)) & 0xff;
@@ -287,7 +303,7 @@ uint f1(uint D, uint Km, uint Kr) {
     return ((SBOX1[Ia] ^ SBOX2[Ib]) - SBOX3[Ic]) + SBOX4[Id];
 }
 
-uint f2(uint D, uint Km, uint Kr) {
+uint f2(uint D, uint Km, uchar Kr) {
     uint I = LROTATEU32((Km ^ D), Kr);
 
     uchar Ia = (I >> (8 * 3)) & 0xff;
@@ -298,7 +314,7 @@ uint f2(uint D, uint Km, uint Kr) {
     return ((SBOX1[Ia] - SBOX2[Ib]) + SBOX3[Ic]) ^ SBOX4[Id];
 }
 
-uint f3(uint D, uint Km, uint Kr) {
+uint f3(uint D, uint Km, uchar Kr) {
     uint I = LROTATEU32((Km - D), Kr);
 
     uchar Ia = (I >> (8 * 3)) & 0xff;
@@ -320,12 +336,12 @@ uint f3(uint D, uint Km, uint Kr) {
 }
 
 
-void crypt_12round(__private uchar state_in[BLOCK_SIZE],
-                   __private uint* key,
-                   __private uchar state_out[BLOCK_SIZE]) {
+void encrypt_12round(__private uchar state_in[BLOCK_SIZE],
+                     __private uint* key,
+                     __private uchar state_out[BLOCK_SIZE]) {
     uint L, R, temp, f;
-    L = ((uint*)state_in)[1];
-    R = ((uint*)state_in)[0];
+    L = FIX_ENDIANNESS(((uint*)state_in)[0]);
+    R = FIX_ENDIANNESS(((uint*)state_in)[1]);
 
     CAST5_ROUND_AND_SWAP(0, 1, L, R);
     CAST5_ROUND_AND_SWAP(1, 2, L, R);
@@ -340,36 +356,62 @@ void crypt_12round(__private uchar state_in[BLOCK_SIZE],
     CAST5_ROUND_AND_SWAP(10, 2, L, R);
     CAST5_ROUND_AND_SWAP(11, 3, L, R);
 
+    L = FIX_ENDIANNESS(L);
+    R = FIX_ENDIANNESS(R);
+
     uchar *LB = (uchar*) &L;
     uchar *RB = (uchar*) &R;
     #pragma unroll
     for (size_t i=0; i<4; i++) {
-        state_out[i] = LB[i];
+        state_out[i] = RB[i];
     }
     #pragma unroll
     for (size_t i=4; i<8; i++) {
-        state_out[i] = RB[i-4];
+        state_out[i] = LB[i-4];
     }
 }
 
-void crypt_16round(__private uchar state_in[BLOCK_SIZE],
-                   __private uint* key,
-                   __private uchar state_out[BLOCK_SIZE]) {
+void decrypt_12round(__private uchar state_in[BLOCK_SIZE],
+                     __private uint* key,
+                     __private uchar state_out[BLOCK_SIZE]) {
     uint L, R, temp, f;
-    L = ((uint*)state_in)[1];
-    R = ((uint*)state_in)[0];
+    L = FIX_ENDIANNESS(((uint*)state_in)[0]);
+    R = FIX_ENDIANNESS(((uint*)state_in)[1]);
 
-    printf("in: ");
-    for (size_t i=0; i<BLOCK_SIZE; i++) {
-        printf("%02X ", state_in[i]);
-    }
-    printf("\n");
+    CAST5_ROUND_AND_SWAP(0 + 4, 3, L, R);
+    CAST5_ROUND_AND_SWAP(1 + 4, 2, L, R);
+    CAST5_ROUND_AND_SWAP(2 + 4, 1, L, R);
+    CAST5_ROUND_AND_SWAP(3 + 4, 3, L, R);
+    CAST5_ROUND_AND_SWAP(4 + 4, 2, L, R);
+    CAST5_ROUND_AND_SWAP(5 + 4, 1, L, R);
+    CAST5_ROUND_AND_SWAP(6 + 4, 3, L, R);
+    CAST5_ROUND_AND_SWAP(7 + 4, 2, L, R);
+    CAST5_ROUND_AND_SWAP(8 + 4, 1, L, R);
+    CAST5_ROUND_AND_SWAP(9 + 4, 3, L, R);
+    CAST5_ROUND_AND_SWAP(10 + 4, 2, L, R);
+    CAST5_ROUND_AND_SWAP(11 + 4, 1, L, R);
 
-    printf("key: ");
-    for (size_t i=0; i<32; i++) {
-        printf("%04X ", key[i]);
+    L = FIX_ENDIANNESS(L);
+    R = FIX_ENDIANNESS(R);
+
+    uchar *LB = (uchar*) &L;
+    uchar *RB = (uchar*) &R;
+    #pragma unroll
+    for (size_t i=0; i<4; i++) {
+        state_out[i] = RB[i];
     }
-    printf("\n");
+    #pragma unroll
+    for (size_t i=4; i<8; i++) {
+        state_out[i] = LB[i-4];
+    }
+}
+
+void encrypt_16round(__private uchar state_in[BLOCK_SIZE],
+                     __private uint* key,
+                     __private uchar state_out[BLOCK_SIZE]) {
+    uint L, R, temp, f;
+    L = FIX_ENDIANNESS(((uint*)state_in)[0]);
+    R = FIX_ENDIANNESS(((uint*)state_in)[1]);
 
     CAST5_ROUND_AND_SWAP(0, 1, L, R);
     CAST5_ROUND_AND_SWAP(1, 2, L, R);
@@ -388,46 +430,101 @@ void crypt_16round(__private uchar state_in[BLOCK_SIZE],
     CAST5_ROUND_AND_SWAP(14, 3, L, R);
     CAST5_ROUND_AND_SWAP(15, 1, L, R);
 
+    L = FIX_ENDIANNESS(L);
+    R = FIX_ENDIANNESS(R);
+
     uchar *LB = (uchar*) &L;
     uchar *RB = (uchar*) &R;
     #pragma unroll
     for (size_t i=0; i<4; i++) {
-        state_out[i] = LB[i];
+        state_out[i] = RB[i];
     }
     #pragma unroll
     for (size_t i=4; i<8; i++) {
-        state_out[i] = RB[i-4];
+        state_out[i] = LB[i-4];
     }
-
-    printf("out: ");
-    for (size_t i=0; i<BLOCK_SIZE; i++) {
-        printf("%02X ", state_out[i]);
-    }
-    printf("\n");
 }
 
-void crypt(__private uchar state_in[BLOCK_SIZE],
-           __private uint* keys,
-           __private uchar state_out[BLOCK_SIZE],
-           unsigned int num_rounds) {
+void decrypt_16round(__private uchar state_in[BLOCK_SIZE],
+                     __private uint* key,
+                     __private uchar state_out[BLOCK_SIZE]) {
+    uint L, R, temp, f;
+    L = FIX_ENDIANNESS(((uint*)state_in)[0]);
+    R = FIX_ENDIANNESS(((uint*)state_in)[1]);
+
+    CAST5_ROUND_AND_SWAP(0, 1, L, R);
+    CAST5_ROUND_AND_SWAP(1, 3, L, R);
+    CAST5_ROUND_AND_SWAP(2, 2, L, R);
+    CAST5_ROUND_AND_SWAP(3, 1, L, R);
+    CAST5_ROUND_AND_SWAP(4, 3, L, R);
+    CAST5_ROUND_AND_SWAP(5, 2, L, R);
+    CAST5_ROUND_AND_SWAP(6, 1, L, R);
+    CAST5_ROUND_AND_SWAP(7, 3, L, R);
+    CAST5_ROUND_AND_SWAP(8, 2, L, R);
+    CAST5_ROUND_AND_SWAP(9, 1, L, R);
+    CAST5_ROUND_AND_SWAP(10, 3, L, R);
+    CAST5_ROUND_AND_SWAP(11, 2, L, R);
+    CAST5_ROUND_AND_SWAP(12, 1, L, R);
+    CAST5_ROUND_AND_SWAP(13, 3, L, R);
+    CAST5_ROUND_AND_SWAP(14, 2, L, R);
+    CAST5_ROUND_AND_SWAP(15, 1, L, R);
+
+    L = FIX_ENDIANNESS(L);
+    R = FIX_ENDIANNESS(R);
+
+    uchar *LB = (uchar*) &L;
+    uchar *RB = (uchar*) &R;
+    #pragma unroll
+    for (size_t i=0; i<4; i++) {
+        state_out[i] = RB[i];
+    }
+    #pragma unroll
+    for (size_t i=4; i<8; i++) {
+        state_out[i] = LB[i-4];
+    }
+}
+
+void encrypt(__private uchar state_in[BLOCK_SIZE],
+             __private uint* keys,
+             __private uchar state_out[BLOCK_SIZE],
+             unsigned int num_rounds) {
     if (num_rounds == 12) {
-        crypt_12round(state_in, keys, state_out);
+        encrypt_12round(state_in, keys, state_out);
     } else {
-        crypt_16round(state_in, keys, state_out);
+        encrypt_16round(state_in, keys, state_out);
     }
 }
 
-#define ENCRYPT_INTERFACE(in, key, out) crypt(in, (uint*)key, out, num_rounds)
-#define DECRYPT_INTERFACE(in, key, out) crypt(in, (uint*)key, out, num_rounds)
+void decrypt(__private uchar state_in[BLOCK_SIZE],
+             __private uint* keys,
+             __private uchar state_out[BLOCK_SIZE],
+             unsigned int num_rounds) {
+    if (num_rounds == 12) {
+        decrypt_12round(state_in, keys, state_out);
+    } else {
+        decrypt_16round(state_in, keys, state_out);
+    }
+}
+
+#define ENCRYPT_INTERFACE(in, key, out) encrypt(in, (uint*)key, out, num_rounds)
+#define DECRYPT_INTERFACE(in, key, out) decrypt(in, (uint*)key, out, num_rounds)
 
 
 __attribute__((reqd_work_group_size(1, 1, 1)))
-__kernel void cast5Cipher(__global uchar* restrict in,
-                          __global uint* restrict keys,
-                          __global uchar* restrict out,
-                          unsigned int num_rounds,
-                          unsigned int input_size) \
+__kernel void cast5CipherEnc(__global uchar* restrict in,
+                             __global uint* restrict keys,
+                             __global uchar* restrict out,
+                             unsigned int num_rounds,
+                             unsigned int input_size) \
     ECB_MODE_BOILERPLATE(ENCRYPT_INTERFACE, in, out, (__global uchar* restrict)keys, BLOCK_SIZE, MAX_EXKEY_SIZE_WORDS*4, input_size);
+
+__attribute__((reqd_work_group_size(1, 1, 1)))
+__kernel void cast5CipherDec(__global uchar* restrict in,
+                             __global uint* restrict keys,
+                             __global uchar* restrict out,
+                             unsigned int num_rounds,
+                             unsigned int input_size) \
+    ECB_MODE_BOILERPLATE(DECRYPT_INTERFACE, in, out, (__global uchar* restrict)keys, BLOCK_SIZE, MAX_EXKEY_SIZE_WORDS*4, input_size);
 
 
 __attribute__((reqd_work_group_size(1, 1, 1)))
@@ -441,11 +538,21 @@ __kernel void cast5CipherCtr(__global uchar* restrict in,
 
 
 __attribute__((reqd_work_group_size(1, 1, 1)))
-__kernel void cast5CipherXts(__global uchar* restrict in,
-                             __global uint* restrict keys1,
-                             __global uint* restrict keys2,
-                             __global uchar* restrict out,
-                             __global uchar* restrict tweak_init,
-                             unsigned int num_rounds,
-                             unsigned int input_size) \
+__kernel void cast5CipherXtsEnc(__global uchar* restrict in,
+                                __global uint* restrict keys1,
+                                __global uint* restrict keys2,
+                                __global uchar* restrict out,
+                                __global uchar* restrict tweak_init,
+                                unsigned int num_rounds,
+                                unsigned int input_size) \
     XTS_MODE_BOILERPLATE(ENCRYPT_INTERFACE, ENCRYPT_INTERFACE, in, out, (__global uchar* restrict)keys1, (__global uchar* restrict)keys2, tweak_init, BLOCK_SIZE, MAX_EXKEY_SIZE_WORDS*4, input_size);
+
+__attribute__((reqd_work_group_size(1, 1, 1)))
+__kernel void cast5CipherXtsDec(__global uchar* restrict in,
+                                __global uint* restrict keys1,
+                                __global uint* restrict keys2,
+                                __global uchar* restrict out,
+                                __global uchar* restrict tweak_init,
+                                unsigned int num_rounds,
+                                unsigned int input_size) \
+    XTS_MODE_BOILERPLATE(DECRYPT_INTERFACE, ENCRYPT_INTERFACE, in, out, (__global uchar* restrict)keys1, (__global uchar* restrict)keys2, tweak_init, BLOCK_SIZE, MAX_EXKEY_SIZE_WORDS*4, input_size);

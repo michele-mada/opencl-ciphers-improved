@@ -26,9 +26,10 @@ typedef enum AesMethodsId {
 #define IS_AES_TWEAKED_METHOD(meth_id) ((meth_id) >= AES_128_XTS_ENC && (meth_id) <= AES_256_XTS_DEC)
 
 
-static int num_sources_aes = 2;
-static const char *kernels_aes[] = {"aes_swi_partial_1of2",
-                                    "aes_swi_partial_2of2"};
+static int num_sources_aes = 3;
+static const char *kernels_aes[] = {"aes_swi_partial_1of3",
+                                    "aes_swi_partial_2of3",
+                                    "aes_swi_partial_3of3"};
 
 
 #endif

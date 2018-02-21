@@ -274,18 +274,28 @@ const uint32_t SBOX8[0x100] = {
 
 void cast5_expandkey(uint8_t *user_key, uint32_t *key_enc, uint32_t *key_dec, size_t keylen) {
     uint8_t input_key[16];
+    uint8_t temp;
     memset(input_key, 0, 16);
 
     for (size_t i=0; i<keylen/8; i++) {
         input_key[i] = user_key[i];
     }
 
+    if (!is_bigendian()) {
+        for (size_t j=0; j<4; j++) {
+            temp = input_key[j*4 + 0]; input_key[j*4 + 0] = input_key[j*4 + 3]; input_key[j*4 + 3] = temp;
+            temp = input_key[j*4 + 1]; input_key[j*4 + 1] = input_key[j*4 + 2]; input_key[j*4 + 2] = temp;
+        }
+    }
+
     uint32_t *xw = (uint32_t*)input_key;
     uint32_t zw[4];
 
-    // Assume little endian (remove the "3 -" part if big endian instead)
-    // Don't worry for performance, the expression is folded at compiler time
-    #define byte(x, n) ((x[n / 4] >> ((3 - (n % 4)) * 8)) & 0xff)
+    /*#if (is_bigendian())
+        #define byte(x, n) ((x[n / 4] >> ((    (n % 4)) * 8)) & 0xff)
+    #else*/
+        #define byte(x, n) ((x[n / 4] >> ((3 - (n % 4)) * 8)) & 0xff)
+    //#endif
     #define zb(n) byte(zw, n)
     #define xb(n) byte(xw, n)
 
@@ -294,40 +304,40 @@ void cast5_expandkey(uint8_t *user_key, uint32_t *key_enc, uint32_t *key_dec, si
     zw[2] = xw[3] ^ SBOX5[zb(0x7)] ^ SBOX6[zb(0x6)] ^ SBOX7[zb(0x5)] ^ SBOX8[zb(0x4)] ^ SBOX5[xb(0x9)];
     zw[3] = xw[1] ^ SBOX5[zb(0xA)] ^ SBOX6[zb(0x9)] ^ SBOX7[zb(0xB)] ^ SBOX8[zb(0x8)] ^ SBOX6[xb(0xB)];
 
-    key_enc[0]  = key_dec[31] = SBOX5[zb(0x8)] ^ SBOX6[zb(0x9)] ^ SBOX7[zb(0x7)] ^ SBOX8[zb(0x6)] ^ SBOX5[zb(0x2)];
-    key_enc[1]  = key_dec[30] = SBOX5[zb(0xA)] ^ SBOX6[zb(0xB)] ^ SBOX7[zb(0x5)] ^ SBOX8[zb(0x4)] ^ SBOX6[zb(0x6)];
-    key_enc[2]  = key_dec[29] = SBOX5[zb(0xC)] ^ SBOX6[zb(0xD)] ^ SBOX7[zb(0x3)] ^ SBOX8[zb(0x2)] ^ SBOX7[zb(0x9)];
-    key_enc[3]  = key_dec[28] = SBOX5[zb(0xE)] ^ SBOX6[zb(0xF)] ^ SBOX7[zb(0x1)] ^ SBOX8[zb(0x0)] ^ SBOX8[zb(0xC)];
+    key_enc[0]  = key_dec[15] = SBOX5[zb(0x8)] ^ SBOX6[zb(0x9)] ^ SBOX7[zb(0x7)] ^ SBOX8[zb(0x6)] ^ SBOX5[zb(0x2)];
+    key_enc[1]  = key_dec[14] = SBOX5[zb(0xA)] ^ SBOX6[zb(0xB)] ^ SBOX7[zb(0x5)] ^ SBOX8[zb(0x4)] ^ SBOX6[zb(0x6)];
+    key_enc[2]  = key_dec[13] = SBOX5[zb(0xC)] ^ SBOX6[zb(0xD)] ^ SBOX7[zb(0x3)] ^ SBOX8[zb(0x2)] ^ SBOX7[zb(0x9)];
+    key_enc[3]  = key_dec[12] = SBOX5[zb(0xE)] ^ SBOX6[zb(0xF)] ^ SBOX7[zb(0x1)] ^ SBOX8[zb(0x0)] ^ SBOX8[zb(0xC)];
 
     xw[0] = zw[2] ^ SBOX5[zb(0x5)] ^ SBOX6[zb(0x7)] ^ SBOX7[zb(0x4)] ^ SBOX8[zb(0x6)] ^ SBOX7[zb(0x0)];
     xw[1] = zw[0] ^ SBOX5[xb(0x0)] ^ SBOX6[xb(0x2)] ^ SBOX7[xb(0x1)] ^ SBOX8[xb(0x3)] ^ SBOX8[zb(0x2)];
     xw[2] = zw[1] ^ SBOX5[xb(0x7)] ^ SBOX6[xb(0x6)] ^ SBOX7[xb(0x5)] ^ SBOX8[xb(0x4)] ^ SBOX5[zb(0x1)];
     xw[3] = zw[3] ^ SBOX5[xb(0xA)] ^ SBOX6[xb(0x9)] ^ SBOX7[xb(0xB)] ^ SBOX8[xb(0x8)] ^ SBOX6[zb(0x3)];
 
-    key_enc[4]  = key_dec[27] = SBOX5[xb(0x3)] ^ SBOX6[xb(0x2)] ^ SBOX7[xb(0xC)] ^ SBOX8[xb(0xD)] ^ SBOX5[xb(0x8)];
-    key_enc[5]  = key_dec[26] = SBOX5[xb(0x1)] ^ SBOX6[xb(0x0)] ^ SBOX7[xb(0xE)] ^ SBOX8[xb(0xF)] ^ SBOX6[xb(0xD)];
-    key_enc[6]  = key_dec[25] = SBOX5[xb(0x7)] ^ SBOX6[xb(0x6)] ^ SBOX7[xb(0x8)] ^ SBOX8[xb(0x9)] ^ SBOX7[xb(0x3)];
-    key_enc[7]  = key_dec[24] = SBOX5[xb(0x5)] ^ SBOX6[xb(0x4)] ^ SBOX7[xb(0xA)] ^ SBOX8[xb(0xB)] ^ SBOX8[xb(0x7)];
+    key_enc[4]  = key_dec[11] = SBOX5[xb(0x3)] ^ SBOX6[xb(0x2)] ^ SBOX7[xb(0xC)] ^ SBOX8[xb(0xD)] ^ SBOX5[xb(0x8)];
+    key_enc[5]  = key_dec[10] = SBOX5[xb(0x1)] ^ SBOX6[xb(0x0)] ^ SBOX7[xb(0xE)] ^ SBOX8[xb(0xF)] ^ SBOX6[xb(0xD)];
+    key_enc[6]  = key_dec[9]  = SBOX5[xb(0x7)] ^ SBOX6[xb(0x6)] ^ SBOX7[xb(0x8)] ^ SBOX8[xb(0x9)] ^ SBOX7[xb(0x3)];
+    key_enc[7]  = key_dec[8]  = SBOX5[xb(0x5)] ^ SBOX6[xb(0x4)] ^ SBOX7[xb(0xA)] ^ SBOX8[xb(0xB)] ^ SBOX8[xb(0x7)];
 
     zw[0] = xw[0] ^ SBOX5[xb(0xD)] ^ SBOX6[xb(0xF)] ^ SBOX7[xb(0xC)] ^ SBOX8[xb(0xE)] ^ SBOX7[xb(0x8)];
     zw[1] = xw[2] ^ SBOX5[zb(0x0)] ^ SBOX6[zb(0x2)] ^ SBOX7[zb(0x1)] ^ SBOX8[zb(0x3)] ^ SBOX8[xb(0xA)];
     zw[2] = xw[3] ^ SBOX5[zb(0x7)] ^ SBOX6[zb(0x6)] ^ SBOX7[zb(0x5)] ^ SBOX8[zb(0x4)] ^ SBOX5[xb(0x9)];
     zw[3] = xw[1] ^ SBOX5[zb(0xA)] ^ SBOX6[zb(0x9)] ^ SBOX7[zb(0xB)] ^ SBOX8[zb(0x8)] ^ SBOX6[xb(0xB)];
 
-    key_enc[8]  = key_dec[23] = SBOX5[zb(0x3)] ^ SBOX6[zb(0x2)] ^ SBOX7[zb(0xC)] ^ SBOX8[zb(0xD)] ^ SBOX5[zb(0x9)];
-    key_enc[9]  = key_dec[22] = SBOX5[zb(0x1)] ^ SBOX6[zb(0x0)] ^ SBOX7[zb(0xE)] ^ SBOX8[zb(0xF)] ^ SBOX6[zb(0xC)];
-    key_enc[10] = key_dec[21] = SBOX5[zb(0x7)] ^ SBOX6[zb(0x6)] ^ SBOX7[zb(0x8)] ^ SBOX8[zb(0x9)] ^ SBOX7[zb(0x2)];
-    key_enc[11] = key_dec[20] = SBOX5[zb(0x5)] ^ SBOX6[zb(0x4)] ^ SBOX7[zb(0xA)] ^ SBOX8[zb(0xB)] ^ SBOX8[zb(0x6)];
+    key_enc[8]  = key_dec[7]  = SBOX5[zb(0x3)] ^ SBOX6[zb(0x2)] ^ SBOX7[zb(0xC)] ^ SBOX8[zb(0xD)] ^ SBOX5[zb(0x9)];
+    key_enc[9]  = key_dec[6]  = SBOX5[zb(0x1)] ^ SBOX6[zb(0x0)] ^ SBOX7[zb(0xE)] ^ SBOX8[zb(0xF)] ^ SBOX6[zb(0xC)];
+    key_enc[10] = key_dec[5]  = SBOX5[zb(0x7)] ^ SBOX6[zb(0x6)] ^ SBOX7[zb(0x8)] ^ SBOX8[zb(0x9)] ^ SBOX7[zb(0x2)];
+    key_enc[11] = key_dec[4]  = SBOX5[zb(0x5)] ^ SBOX6[zb(0x4)] ^ SBOX7[zb(0xA)] ^ SBOX8[zb(0xB)] ^ SBOX8[zb(0x6)];
 
     xw[0] = zw[2] ^ SBOX5[zb(0x5)] ^ SBOX6[zb(0x7)] ^ SBOX7[zb(0x4)] ^ SBOX8[zb(0x6)] ^ SBOX7[zb(0x0)];
     xw[1] = zw[0] ^ SBOX5[xb(0x0)] ^ SBOX6[xb(0x2)] ^ SBOX7[xb(0x1)] ^ SBOX8[xb(0x3)] ^ SBOX8[zb(0x2)];
     xw[2] = zw[1] ^ SBOX5[xb(0x7)] ^ SBOX6[xb(0x6)] ^ SBOX7[xb(0x5)] ^ SBOX8[xb(0x4)] ^ SBOX5[zb(0x1)];
     xw[3] = zw[3] ^ SBOX5[xb(0xA)] ^ SBOX6[xb(0x9)] ^ SBOX7[xb(0xB)] ^ SBOX8[xb(0x8)] ^ SBOX6[zb(0x3)];
 
-    key_enc[12] = key_dec[19] = SBOX5[xb(0x8)] ^ SBOX6[xb(0x9)] ^ SBOX7[xb(0x7)] ^ SBOX8[xb(0x6)] ^ SBOX5[xb(0x3)];
-    key_enc[13] = key_dec[18] = SBOX5[xb(0xA)] ^ SBOX6[xb(0xB)] ^ SBOX7[xb(0x5)] ^ SBOX8[xb(0x4)] ^ SBOX6[xb(0x7)];
-    key_enc[14] = key_dec[17] = SBOX5[xb(0xC)] ^ SBOX6[xb(0xD)] ^ SBOX7[xb(0x3)] ^ SBOX8[xb(0x2)] ^ SBOX7[xb(0x8)];
-    key_enc[15] = key_dec[16] = SBOX5[xb(0xE)] ^ SBOX6[xb(0xF)] ^ SBOX7[xb(0x1)] ^ SBOX8[xb(0x0)] ^ SBOX8[xb(0xD)];
+    key_enc[12] = key_dec[3]  = SBOX5[xb(0x8)] ^ SBOX6[xb(0x9)] ^ SBOX7[xb(0x7)] ^ SBOX8[xb(0x6)] ^ SBOX5[xb(0x3)];
+    key_enc[13] = key_dec[2]  = SBOX5[xb(0xA)] ^ SBOX6[xb(0xB)] ^ SBOX7[xb(0x5)] ^ SBOX8[xb(0x4)] ^ SBOX6[xb(0x7)];
+    key_enc[14] = key_dec[1]  = SBOX5[xb(0xC)] ^ SBOX6[xb(0xD)] ^ SBOX7[xb(0x3)] ^ SBOX8[xb(0x2)] ^ SBOX7[xb(0x8)];
+    key_enc[15] = key_dec[0]  = SBOX5[xb(0xE)] ^ SBOX6[xb(0xF)] ^ SBOX7[xb(0x1)] ^ SBOX8[xb(0x0)] ^ SBOX8[xb(0xD)];
 
     // [The remaining half is identical to what is given above, carrying on
     // from the last created xb(0x0)..xb(0xF) to generate keys K17 - K32.]
@@ -337,40 +347,40 @@ void cast5_expandkey(uint8_t *user_key, uint32_t *key_enc, uint32_t *key_dec, si
     zw[2] = xw[3] ^ SBOX5[zb(0x7)] ^ SBOX6[zb(0x6)] ^ SBOX7[zb(0x5)] ^ SBOX8[zb(0x4)] ^ SBOX5[xb(0x9)];
     zw[3] = xw[1] ^ SBOX5[zb(0xA)] ^ SBOX6[zb(0x9)] ^ SBOX7[zb(0xB)] ^ SBOX8[zb(0x8)] ^ SBOX6[xb(0xB)];
 
-    key_enc[16] = key_dec[15] = SBOX5[zb(0x8)] ^ SBOX6[zb(0x9)] ^ SBOX7[zb(0x7)] ^ SBOX8[zb(0x6)] ^ SBOX5[zb(0x2)];
-    key_enc[17] = key_dec[14] = SBOX5[zb(0xA)] ^ SBOX6[zb(0xB)] ^ SBOX7[zb(0x5)] ^ SBOX8[zb(0x4)] ^ SBOX6[zb(0x6)];
-    key_enc[18] = key_dec[15] = SBOX5[zb(0xC)] ^ SBOX6[zb(0xD)] ^ SBOX7[zb(0x3)] ^ SBOX8[zb(0x2)] ^ SBOX7[zb(0x9)];
-    key_enc[19] = key_dec[12] = SBOX5[zb(0xE)] ^ SBOX6[zb(0xF)] ^ SBOX7[zb(0x1)] ^ SBOX8[zb(0x0)] ^ SBOX8[zb(0xC)];
+    key_enc[16] = key_dec[31] = SBOX5[zb(0x8)] ^ SBOX6[zb(0x9)] ^ SBOX7[zb(0x7)] ^ SBOX8[zb(0x6)] ^ SBOX5[zb(0x2)];
+    key_enc[17] = key_dec[30] = SBOX5[zb(0xA)] ^ SBOX6[zb(0xB)] ^ SBOX7[zb(0x5)] ^ SBOX8[zb(0x4)] ^ SBOX6[zb(0x6)];
+    key_enc[18] = key_dec[29] = SBOX5[zb(0xC)] ^ SBOX6[zb(0xD)] ^ SBOX7[zb(0x3)] ^ SBOX8[zb(0x2)] ^ SBOX7[zb(0x9)];
+    key_enc[19] = key_dec[28] = SBOX5[zb(0xE)] ^ SBOX6[zb(0xF)] ^ SBOX7[zb(0x1)] ^ SBOX8[zb(0x0)] ^ SBOX8[zb(0xC)];
 
     xw[0] = zw[2] ^ SBOX5[zb(0x5)] ^ SBOX6[zb(0x7)] ^ SBOX7[zb(0x4)] ^ SBOX8[zb(0x6)] ^ SBOX7[zb(0x0)];
     xw[1] = zw[0] ^ SBOX5[xb(0x0)] ^ SBOX6[xb(0x2)] ^ SBOX7[xb(0x1)] ^ SBOX8[xb(0x3)] ^ SBOX8[zb(0x2)];
     xw[2] = zw[1] ^ SBOX5[xb(0x7)] ^ SBOX6[xb(0x6)] ^ SBOX7[xb(0x5)] ^ SBOX8[xb(0x4)] ^ SBOX5[zb(0x1)];
     xw[3] = zw[3] ^ SBOX5[xb(0xA)] ^ SBOX6[xb(0x9)] ^ SBOX7[xb(0xB)] ^ SBOX8[xb(0x8)] ^ SBOX6[zb(0x3)];
 
-    key_enc[20] = key_dec[11] = SBOX5[xb(0x3)] ^ SBOX6[xb(0x2)] ^ SBOX7[xb(0xC)] ^ SBOX8[xb(0xD)] ^ SBOX5[xb(0x8)];
-    key_enc[21] = key_dec[10] = SBOX5[xb(0x1)] ^ SBOX6[xb(0x0)] ^ SBOX7[xb(0xE)] ^ SBOX8[xb(0xF)] ^ SBOX6[xb(0xD)];
-    key_enc[22] = key_dec[9]  = SBOX5[xb(0x7)] ^ SBOX6[xb(0x6)] ^ SBOX7[xb(0x8)] ^ SBOX8[xb(0x9)] ^ SBOX7[xb(0x3)];
-    key_enc[23] = key_dec[8]  = SBOX5[xb(0x5)] ^ SBOX6[xb(0x4)] ^ SBOX7[xb(0xA)] ^ SBOX8[xb(0xB)] ^ SBOX8[xb(0x7)];
+    key_enc[20] = key_dec[27] = SBOX5[xb(0x3)] ^ SBOX6[xb(0x2)] ^ SBOX7[xb(0xC)] ^ SBOX8[xb(0xD)] ^ SBOX5[xb(0x8)];
+    key_enc[21] = key_dec[26] = SBOX5[xb(0x1)] ^ SBOX6[xb(0x0)] ^ SBOX7[xb(0xE)] ^ SBOX8[xb(0xF)] ^ SBOX6[xb(0xD)];
+    key_enc[22] = key_dec[25] = SBOX5[xb(0x7)] ^ SBOX6[xb(0x6)] ^ SBOX7[xb(0x8)] ^ SBOX8[xb(0x9)] ^ SBOX7[xb(0x3)];
+    key_enc[23] = key_dec[24] = SBOX5[xb(0x5)] ^ SBOX6[xb(0x4)] ^ SBOX7[xb(0xA)] ^ SBOX8[xb(0xB)] ^ SBOX8[xb(0x7)];
 
     zw[0] = xw[0] ^ SBOX5[xb(0xD)] ^ SBOX6[xb(0xF)] ^ SBOX7[xb(0xC)] ^ SBOX8[xb(0xE)] ^ SBOX7[xb(0x8)];
     zw[1] = xw[2] ^ SBOX5[zb(0x0)] ^ SBOX6[zb(0x2)] ^ SBOX7[zb(0x1)] ^ SBOX8[zb(0x3)] ^ SBOX8[xb(0xA)];
     zw[2] = xw[3] ^ SBOX5[zb(0x7)] ^ SBOX6[zb(0x6)] ^ SBOX7[zb(0x5)] ^ SBOX8[zb(0x4)] ^ SBOX5[xb(0x9)];
     zw[3] = xw[1] ^ SBOX5[zb(0xA)] ^ SBOX6[zb(0x9)] ^ SBOX7[zb(0xB)] ^ SBOX8[zb(0x8)] ^ SBOX6[xb(0xB)];
 
-    key_enc[24] = key_dec[7]  = SBOX5[zb(0x3)] ^ SBOX6[zb(0x2)] ^ SBOX7[zb(0xC)] ^ SBOX8[zb(0xD)] ^ SBOX5[zb(0x9)];
-    key_enc[25] = key_dec[6]  = SBOX5[zb(0x1)] ^ SBOX6[zb(0x0)] ^ SBOX7[zb(0xE)] ^ SBOX8[zb(0xF)] ^ SBOX6[zb(0xC)];
-    key_enc[26] = key_dec[5]  = SBOX5[zb(0x7)] ^ SBOX6[zb(0x6)] ^ SBOX7[zb(0x8)] ^ SBOX8[zb(0x9)] ^ SBOX7[zb(0x2)];
-    key_enc[27] = key_dec[4]  = SBOX5[zb(0x5)] ^ SBOX6[zb(0x4)] ^ SBOX7[zb(0xA)] ^ SBOX8[zb(0xB)] ^ SBOX8[zb(0x6)];
+    key_enc[24] = key_dec[23] = SBOX5[zb(0x3)] ^ SBOX6[zb(0x2)] ^ SBOX7[zb(0xC)] ^ SBOX8[zb(0xD)] ^ SBOX5[zb(0x9)];
+    key_enc[25] = key_dec[22] = SBOX5[zb(0x1)] ^ SBOX6[zb(0x0)] ^ SBOX7[zb(0xE)] ^ SBOX8[zb(0xF)] ^ SBOX6[zb(0xC)];
+    key_enc[26] = key_dec[21] = SBOX5[zb(0x7)] ^ SBOX6[zb(0x6)] ^ SBOX7[zb(0x8)] ^ SBOX8[zb(0x9)] ^ SBOX7[zb(0x2)];
+    key_enc[27] = key_dec[20] = SBOX5[zb(0x5)] ^ SBOX6[zb(0x4)] ^ SBOX7[zb(0xA)] ^ SBOX8[zb(0xB)] ^ SBOX8[zb(0x6)];
 
     xw[0] = zw[2] ^ SBOX5[zb(0x5)] ^ SBOX6[zb(0x7)] ^ SBOX7[zb(0x4)] ^ SBOX8[zb(0x6)] ^ SBOX7[zb(0x0)];
     xw[1] = zw[0] ^ SBOX5[xb(0x0)] ^ SBOX6[xb(0x2)] ^ SBOX7[xb(0x1)] ^ SBOX8[xb(0x3)] ^ SBOX8[zb(0x2)];
     xw[2] = zw[1] ^ SBOX5[xb(0x7)] ^ SBOX6[xb(0x6)] ^ SBOX7[xb(0x5)] ^ SBOX8[xb(0x4)] ^ SBOX5[zb(0x1)];
     xw[3] = zw[3] ^ SBOX5[xb(0xA)] ^ SBOX6[xb(0x9)] ^ SBOX7[xb(0xB)] ^ SBOX8[xb(0x8)] ^ SBOX6[zb(0x3)];
 
-    key_enc[28] = key_dec[3]  = SBOX5[xb(0x8)] ^ SBOX6[xb(0x9)] ^ SBOX7[xb(0x7)] ^ SBOX8[xb(0x6)] ^ SBOX5[xb(0x3)];
-    key_enc[29] = key_dec[2]  = SBOX5[xb(0xA)] ^ SBOX6[xb(0xB)] ^ SBOX7[xb(0x5)] ^ SBOX8[xb(0x4)] ^ SBOX6[xb(0x7)];
-    key_enc[30] = key_dec[1]  = SBOX5[xb(0xC)] ^ SBOX6[xb(0xD)] ^ SBOX7[xb(0x3)] ^ SBOX8[xb(0x2)] ^ SBOX7[xb(0x8)];
-    key_enc[31] = key_dec[0]  = SBOX5[xb(0xE)] ^ SBOX6[xb(0xF)] ^ SBOX7[xb(0x1)] ^ SBOX8[xb(0x0)] ^ SBOX8[xb(0xD)];
+    key_enc[28] = key_dec[19] = SBOX5[xb(0x8)] ^ SBOX6[xb(0x9)] ^ SBOX7[xb(0x7)] ^ SBOX8[xb(0x6)] ^ SBOX5[xb(0x3)];
+    key_enc[29] = key_dec[18] = SBOX5[xb(0xA)] ^ SBOX6[xb(0xB)] ^ SBOX7[xb(0x5)] ^ SBOX8[xb(0x4)] ^ SBOX6[xb(0x7)];
+    key_enc[30] = key_dec[17] = SBOX5[xb(0xC)] ^ SBOX6[xb(0xD)] ^ SBOX7[xb(0x3)] ^ SBOX8[xb(0x2)] ^ SBOX7[xb(0x8)];
+    key_enc[31] = key_dec[16] = SBOX5[xb(0xE)] ^ SBOX6[xb(0xF)] ^ SBOX7[xb(0x1)] ^ SBOX8[xb(0x0)] ^ SBOX8[xb(0xD)];
 
     #undef byte
     #undef xb

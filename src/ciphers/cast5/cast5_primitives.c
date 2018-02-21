@@ -30,20 +30,34 @@
 CipherOpenCLAtomics cast5_atomics;
 
 
-int get_method_id(int usage_mode, int num_rounds) {
-    switch (usage_mode) {
-        case CAST5_MODE_ECB:
-            if (num_rounds == CAST5_16_ROUNDS) return CAST5_128_ECB;
-            else return CAST5_80_ECB;
-        case CAST5_MODE_CTR:
-            if (num_rounds == CAST5_16_ROUNDS) return CAST5_128_CTR;
-            else return CAST5_80_CTR;
-        case CAST5_MODE_XTS:
-            if (num_rounds == CAST5_16_ROUNDS) return CAST5_128_XTS;
-            else return CAST5_80_XTS;
-
+int get_method_id(int usage_mode, int num_rounds, int is_decrypt) {
+    if (is_decrypt) {
+        switch (usage_mode) {
+            case CAST5_MODE_ECB:
+                if (num_rounds == CAST5_16_ROUNDS) return CAST5_128_ECB_DEC;
+                else return CAST5_80_ECB_DEC;
+            case CAST5_MODE_CTR:
+                if (num_rounds == CAST5_16_ROUNDS) return CAST5_128_CTR;
+                else return CAST5_80_CTR;
+            case CAST5_MODE_XTS:
+                if (num_rounds == CAST5_16_ROUNDS) return CAST5_128_XTS_DEC;
+                else return CAST5_80_XTS_DEC;
+        }
+    } else {
+        switch (usage_mode) {
+            case CAST5_MODE_ECB:
+                if (num_rounds == CAST5_16_ROUNDS) return CAST5_128_ECB_ENC;
+                else return CAST5_80_ECB_ENC;
+            case CAST5_MODE_CTR:
+                if (num_rounds == CAST5_16_ROUNDS) return CAST5_128_CTR;
+                else return CAST5_80_CTR;
+            case CAST5_MODE_XTS:
+                if (num_rounds == CAST5_16_ROUNDS) return CAST5_128_XTS_ENC;
+                else return CAST5_80_XTS_ENC;
+        }
     }
-    return CAST5_80_ECB;
+
+    return CAST5_80_ECB_ENC;
 }
 
 
@@ -60,7 +74,7 @@ void cast5_encrypt_decrypt_function(OpenCLEnv* env,
     int rounds = CAST5_12_ROUNDS;
     if (context->keylength > 10) rounds = CAST5_16_ROUNDS;
 
-    int method_id = get_method_id(usage_mode, rounds);
+    int method_id = get_method_id(usage_mode, rounds, is_decrypt);
 
     CipherMethod* meth = FAMILY->methods[method_id];
 
