@@ -1,5 +1,5 @@
 
-
+#define GF_128_BLOCKSIZE 16
 #define GF_128_FDBK 0x87
 
 
@@ -21,20 +21,33 @@ void copy_extkey_to_local(__private uchar* local_w, __global uchar* restrict w, 
     }
 }
 
-#define GF128_MULTIPLY_BY_ALPHA(block_in, block_out, block_size)                \
-{                                                                               \
-    uchar carry_in, carry_out;                                                  \
-                                                                                \
-    carry_in = 0;                                                               \
-    _Pragma("unroll")                                                           \
-    for (size_t j=0; j<(block_size); j++) {                                     \
-        carry_out = ((block_in)[j] >> 7) & 1;                                   \
-        (block_out)[j] = (((block_in)[j] << 1) + carry_in) & 0xFF;              \
-        carry_in = carry_out;                                                   \
-    }                                                                           \
-    if (carry_out != 0) {                                                       \
-        (block_out)[0] ^= GF_128_FDBK;                                          \
-    }                                                                           \
+void gf128_multiply_by_alpha(uchar *block_in, uchar *block_out) {
+    uchar carry_in, carry_out;
+    ulong *qblock_in = (ulong*)(block_in);
+    ulong *qblock_out = (ulong*)(block_out);
+
+    ulong qblock_out_0_t1;
+    ulong qblock_out_0_t2;
+
+    carry_in = 0;
+
+    carry_out = (qblock_in[0] >> ((sizeof(ulong)*8) - 1)) & 1;
+    qblock_out_0_t1 = ((qblock_in[0] << 1) + carry_in);
+    qblock_out_0_t2 = qblock_out_0_t1 ^ GF_128_FDBK;
+    carry_in = carry_out;
+
+    #pragma unroll
+    for (size_t j=1; j<GF_128_BLOCKSIZE/sizeof(ulong); j++) {
+        carry_out = ((qblock_in)[j] >> ((sizeof(ulong)*8) - 1)) & 1;
+        qblock_out[j] = (((qblock_in)[j] << 1) + carry_in);
+        carry_in = carry_out;
+    }
+
+    if (carry_out != 0) {
+        qblock_out[0] = qblock_out_0_t2;
+    } else {
+        qblock_out[0] = qblock_out_0_t1;
+    }
 }
 
 
@@ -110,7 +123,7 @@ void copy_extkey_to_local(__private uchar* local_w, __global uchar* restrict w, 
 }
 
 #define XTS_MODE_BOILERPLATE(blockcipher, blockcipher_tweak,                    \
-                             global_in, global_out, global_key1, global_key2, global_tweak,        \
+                             global_in, global_out, global_key1, global_key2, global_tweak,     \
                              block_size, key_size, input_size)                  \
 {                                                                               \
     __private uchar tweak1[(block_size)];                                       \
@@ -137,8 +150,8 @@ void copy_extkey_to_local(__private uchar* local_w, __global uchar* restrict w, 
                                                                                 \
     for (size_t blockid=0; blockid < (input_size) / (block_size); blockid++) {  \
         XTS_ROUND(blockcipher, (block_size), (global_in), (global_out));        \
-        GF128_MULTIPLY_BY_ALPHA(active_tweak, passive_tweak, block_size);     \
-        temp_tweak = active_tweak; active_tweak = passive_tweak; passive_tweak = temp_tweak;        \
+        gf128_multiply_by_alpha(active_tweak, passive_tweak);                   \
+        temp_tweak = active_tweak; active_tweak = passive_tweak; passive_tweak = temp_tweak;    \
     }                                                                           \
                                                                                 \
     size_t bytes_done = ((input_size) / (block_size)) * (block_size);           \
