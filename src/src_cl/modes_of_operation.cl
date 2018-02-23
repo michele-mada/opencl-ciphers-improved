@@ -31,17 +31,12 @@ void gf128_multiply_by_alpha(uchar *block_in, uchar *block_out) {
 
     carry_in = 0;
 
-    carry_out = (qblock_in[0] >> ((sizeof(ulong)*8) - 1)) & 1;
     qblock_out_0_t1 = ((qblock_in[0] << 1) + carry_in);
     qblock_out_0_t2 = qblock_out_0_t1 ^ GF_128_FDBK;
-    carry_in = carry_out;
+    carry_in = (qblock_in[0] >> ((sizeof(ulong)*8) - 1)) & 1;
 
-    #pragma unroll
-    for (size_t j=1; j<GF_128_BLOCKSIZE/sizeof(ulong); j++) {
-        carry_out = ((qblock_in)[j] >> ((sizeof(ulong)*8) - 1)) & 1;
-        qblock_out[j] = (((qblock_in)[j] << 1) + carry_in);
-        carry_in = carry_out;
-    }
+    carry_out = ((qblock_in)[1] >> ((sizeof(ulong)*8) - 1)) & 1;
+    qblock_out[1] = (((qblock_in)[1] << 1) + carry_in);
 
     if (carry_out != 0) {
         qblock_out[0] = qblock_out_0_t2;
@@ -55,8 +50,8 @@ void gf128_multiply_by_alpha(uchar *block_in, uchar *block_out) {
                              global_in, global_out, global_key,                 \
                              block_size, key_size, input_size)                  \
 {                                                                               \
-    __private uchar state_in[(block_size)];                                     \
-    __private uchar state_out[(block_size)];                                    \
+    uchar __attribute__((register)) state_in[(block_size)];                     \
+    uchar __attribute__((register)) state_out[(block_size)];                    \
     uchar __attribute__((register)) local_w[(key_size)];                        \
     copy_extkey_to_local(local_w, (global_key), (key_size));                    \
                                                                                 \
@@ -79,9 +74,9 @@ void gf128_multiply_by_alpha(uchar *block_in, uchar *block_out) {
                              global_in, global_out, global_key, global_iv,      \
                              block_size, key_size, input_size)                  \
 {                                                                               \
-    __private uchar counter[(block_size)];                                      \
-    __private uchar state_in[(block_size)];                                     \
-    __private uchar state_out[(block_size)];                                    \
+    uchar __attribute__((register)) counter[(block_size)];                      \
+    uchar __attribute__((register)) state_in[(block_size)];                     \
+    uchar __attribute__((register)) state_out[(block_size)];                    \
     uchar __attribute__((register)) local_w[(key_size)];                        \
     copy_extkey_to_local(local_w, (global_key), (key_size));                    \
     /* initialize counter */                                                    \
@@ -126,12 +121,12 @@ void gf128_multiply_by_alpha(uchar *block_in, uchar *block_out) {
                              global_in, global_out, global_key1, global_key2, global_tweak,     \
                              block_size, key_size, input_size)                  \
 {                                                                               \
-    __private uchar tweak1[(block_size)];                                       \
-    __private uchar tweak2[(block_size)];                                       \
-    __private uchar *active_tweak, *passive_tweak, *temp_tweak;                 \
+    uchar __attribute__((register)) tweak1[(block_size)];                       \
+    uchar __attribute__((register)) tweak2[(block_size)];                       \
+    uchar *active_tweak, *passive_tweak, *temp_tweak;                           \
                                                                                 \
-    __private uchar temp_state_in[(block_size)];                                \
-    __private uchar temp_state_out[(block_size)];                               \
+    uchar __attribute__((register)) temp_state_in[(block_size)];                \
+    uchar __attribute__((register)) temp_state_out[(block_size)];               \
                                                                                 \
     uchar __attribute__((register)) local_w1[(key_size)];                       \
     copy_extkey_to_local(local_w1, (global_key1), (key_size));                  \
