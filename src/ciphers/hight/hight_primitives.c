@@ -3,19 +3,10 @@
 #include "../../core/utils.h"
 #include "../cipher_families_setup.h"
 #include "../common/common.h"
-#include "cast5_methods.h"
-#include "cast5_state.h"
-#include "cast5_expansion.h"
-#include "cast5_primitives.h"
-
-
-#define CAST5_12_ROUNDS 12
-#define CAST5_16_ROUNDS 16
-
-
-#define CAST5_MODE_ECB 0
-#define CAST5_MODE_CTR 1
-#define CAST5_MODE_XTS 2
+#include "hight_methods.h"
+#include "hight_state.h"
+#include "hight_expansion.h"
+#include "hight_primitives.h"
 
 
 #define ENCRYPT 0
@@ -24,43 +15,12 @@
 #define BLOCK_SIZE 8
 
 
-#define FAMILY (env->ciphers[CAST5_CIPHERS])
+#define FAMILY (env->ciphers[HIGHT_CIPHERS])
 
 
-CipherOpenCLAtomics cast5_atomics;
+CipherOpenCLAtomics hight_atomics;
 
-
-int get_method_id(int usage_mode, int num_rounds, int is_decrypt) {
-    if (is_decrypt) {
-        switch (usage_mode) {
-            case CAST5_MODE_ECB:
-                if (num_rounds == CAST5_16_ROUNDS) return CAST5_128_ECB_DEC;
-                else return CAST5_80_ECB_DEC;
-            case CAST5_MODE_CTR:
-                if (num_rounds == CAST5_16_ROUNDS) return CAST5_128_CTR;
-                else return CAST5_80_CTR;
-            /*case CAST5_MODE_XTS:
-                if (num_rounds == CAST5_16_ROUNDS) return CAST5_128_XTS_DEC;
-                else return CAST5_80_XTS_DEC;*/
-        }
-    } else {
-        switch (usage_mode) {
-            case CAST5_MODE_ECB:
-                if (num_rounds == CAST5_16_ROUNDS) return CAST5_128_ECB_ENC;
-                else return CAST5_80_ECB_ENC;
-            case CAST5_MODE_CTR:
-                if (num_rounds == CAST5_16_ROUNDS) return CAST5_128_CTR;
-                else return CAST5_80_CTR;
-            /*case CAST5_MODE_XTS:
-                if (num_rounds == CAST5_16_ROUNDS) return CAST5_128_XTS_ENC;
-                else return CAST5_80_XTS_ENC;*/
-        }
-    }
-
-    return CAST5_80_ECB_ENC;
-}
-
-
+/*
 void cast5_encrypt_decrypt_function(OpenCLEnv* env,
                                     int usage_mode,
                                     uint8_t* input,
@@ -88,11 +48,11 @@ void cast5_encrypt_decrypt_function(OpenCLEnv* env,
                                   iv != NULL, IS_CAST5_TWEAKED_METHOD(method_id),
                                   callback, user_data);
 }
-
+*/
 
 /* ----------------- begin key preparation ----------------- */
 
-void opencl_cast5_set_encrypt_key(OpenCLEnv* env, const unsigned char *userKey, const int bits, cast5_context *K) {
+/*void opencl_cast5_set_encrypt_key(OpenCLEnv* env, const unsigned char *userKey, const int bits, cast5_context *K) {
     cast5_expandkey(userKey, K->esk, K->dsk, bits);
     K->keylength = bits/8;
     cast5_atomics.prepare_key1_buffer(FAMILY, CAST5_EXPANDED_KEY_SIZE * sizeof(uint32_t));
@@ -112,13 +72,13 @@ void opencl_cast5_set_tweak_key(OpenCLEnv* env, const unsigned char *userKey, co
     K->keylength = bits/8;
     cast5_atomics.prepare_key2_buffer(FAMILY, CAST5_EXPANDED_KEY_SIZE * sizeof(uint32_t));
     cast5_atomics.sync_load_key2(FAMILY, (uint8_t*) K->tsk, CAST5_EXPANDED_KEY_SIZE * sizeof(uint32_t));
-}
+}*/
 
 /* ----------------- end key preparation ----------------- */
 
 /* ----------------- begin iv manipulation ----------------- */
 
-void opencl_cast5_set_iv(OpenCLEnv* env, uint8_t *iv, cast5_context *K) {
+/*void opencl_cast5_set_iv(OpenCLEnv* env, uint8_t *iv, cast5_context *K) {
     memcpy(K->iv, iv, CAST5_IV_SIZE);
     cast5_atomics.prepare_iv_buffer(FAMILY, CAST5_IV_SIZE);
 }
@@ -131,31 +91,31 @@ void opencl_cast5_update_iv_after_chunk_processed(cast5_context *K, size_t chunk
         K->iv[n] = (char)c;
         c >>= 8;
     } while (n);
-}
+}*/
 
 /* ----------------- end iv manipulation ----------------- */
 
 /* ----------------- begin ecb mode ----------------- */
 
-void opencl_cast5_ecb_encrypt(OpenCLEnv* env, uint8_t* plaintext, size_t input_size, cast5_context* K, uint8_t* ciphertext, cipher_callback_t callback, void *user_data) {
+/*void opencl_cast5_ecb_encrypt(OpenCLEnv* env, uint8_t* plaintext, size_t input_size, cast5_context* K, uint8_t* ciphertext, cipher_callback_t callback, void *user_data) {
     cast5_encrypt_decrypt_function(env, CAST5_MODE_ECB, plaintext, input_size, K, ciphertext, NULL, ENCRYPT, callback, user_data);
 }
 
 void opencl_cast5_ecb_decrypt(OpenCLEnv* env, uint8_t* ciphertext, size_t input_size, cast5_context* K, uint8_t* plaintext, cipher_callback_t callback, void *user_data) {
     cast5_encrypt_decrypt_function(env, CAST5_MODE_ECB, ciphertext, input_size, K, plaintext, NULL, DECRYPT, callback, user_data);
-}
+}*/
 
 /* ----------------- end ecb mode ----------------- */
 
 /* ----------------- begin ctr mode ----------------- */
 
-void opencl_cast5_ctr_encrypt(OpenCLEnv* env, uint8_t* plaintext, size_t input_size, cast5_context* K, uint8_t* ciphertext, cipher_callback_t callback, void *user_data) {
+/*void opencl_cast5_ctr_encrypt(OpenCLEnv* env, uint8_t* plaintext, size_t input_size, cast5_context* K, uint8_t* ciphertext, cipher_callback_t callback, void *user_data) {
     cast5_encrypt_decrypt_function(env, CAST5_MODE_CTR, plaintext, input_size, K, ciphertext, K->iv, ENCRYPT, callback, user_data);
 }
 
 void opencl_cast5_ctr_decrypt(OpenCLEnv* env, uint8_t* ciphertext, size_t input_size, cast5_context* K, uint8_t* plaintext, cipher_callback_t callback, void *user_data) {
     cast5_encrypt_decrypt_function(env, CAST5_MODE_CTR, ciphertext, input_size, K, plaintext, K->iv, DECRYPT, callback, user_data);
-}
+}*/
 
 /* ----------------- end ctr mode ----------------- */
 

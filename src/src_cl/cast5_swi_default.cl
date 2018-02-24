@@ -535,24 +535,3 @@ __kernel void cast5CipherCtr(__global uchar* restrict in,
                              unsigned int num_rounds,
                              unsigned int input_size) \
     CTR_MODE_BOILERPLATE(ENCRYPT_INTERFACE, in, out, (__global uchar* restrict)keys, IV, BLOCK_SIZE, MAX_EXKEY_SIZE_WORDS*4, input_size);
-
-
-__attribute__((reqd_work_group_size(1, 1, 1)))
-__kernel void cast5CipherXtsEnc(__global uchar* restrict in,
-                                __global uint* restrict keys1,
-                                __global uint* restrict keys2,
-                                __global uchar* restrict out,
-                                __global uchar* restrict tweak_init,
-                                unsigned int num_rounds,
-                                unsigned int input_size) \
-    XTS_MODE_BOILERPLATE(ENCRYPT_INTERFACE, ENCRYPT_INTERFACE, in, out, (__global uchar* restrict)keys1, (__global uchar* restrict)keys2, tweak_init, BLOCK_SIZE, MAX_EXKEY_SIZE_WORDS*4, input_size);
-
-__attribute__((reqd_work_group_size(1, 1, 1)))
-__kernel void cast5CipherXtsDec(__global uchar* restrict in,
-                                __global uint* restrict keys1,
-                                __global uint* restrict keys2,
-                                __global uchar* restrict out,
-                                __global uchar* restrict tweak_init,
-                                unsigned int num_rounds,
-                                unsigned int input_size) \
-    XTS_MODE_BOILERPLATE(DECRYPT_INTERFACE, ENCRYPT_INTERFACE, in, out, (__global uchar* restrict)keys1, (__global uchar* restrict)keys2, tweak_init, BLOCK_SIZE, MAX_EXKEY_SIZE_WORDS*4, input_size);
