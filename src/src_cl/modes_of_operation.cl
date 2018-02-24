@@ -29,9 +29,7 @@ void gf128_multiply_by_alpha(uchar *block_in, uchar *block_out) {
     ulong qblock_out_0_t1;
     ulong qblock_out_0_t2;
 
-    carry_in = 0;
-
-    qblock_out_0_t1 = ((qblock_in[0] << 1) + carry_in);
+    qblock_out_0_t1 = (qblock_in[0] << 1);
     qblock_out_0_t2 = qblock_out_0_t1 ^ GF_128_FDBK;
     carry_in = (qblock_in[0] >> ((sizeof(ulong)*8) - 1)) & 1;
 
@@ -105,15 +103,23 @@ void gf128_multiply_by_alpha(uchar *block_in, uchar *block_out) {
     _Pragma("unroll")                                                           \
     for (size_t i = 0; i < (block_size); ++i) {                                 \
         size_t offset = blockid * (block_size) + i;                             \
-        temp_state_in[i] = (global_in)[offset] ^ active_tweak[i];               \
+        temp_state_in[i] = (global_in)[offset];                                 \
+    }                                                                           \
+    _Pragma("unroll")                                                           \
+    for (size_t i = 0; i < (block_size); ++i) {                                 \
+        temp_state_out[i] = temp_state_in[i] ^ active_tweak[i];                 \
     }                                                                           \
                                                                                 \
-    encdec_fun(temp_state_in, local_w1, temp_state_out);                        \
+    encdec_fun(temp_state_out, local_w1, temp_state_in);                        \
                                                                                 \
     _Pragma("unroll")                                                           \
     for(size_t i = 0; i < (block_size); i++) {                                  \
+        temp_state_out[i] = temp_state_in[i] ^ active_tweak[i];                 \
+    }                                                                           \
+    _Pragma("unroll")                                                           \
+    for(size_t i = 0; i < (block_size); i++) {                                  \
         size_t offset = blockid * (block_size) + i;                             \
-        (global_out)[offset] = temp_state_out[i] ^ active_tweak[i];             \
+        (global_out)[offset] = temp_state_out[i];                               \
     }                                                                           \
 }
 
