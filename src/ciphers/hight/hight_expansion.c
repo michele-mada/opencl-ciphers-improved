@@ -17,7 +17,7 @@
 
 
 
-void hight_expandkey(uint8_t *user_key, uint32_t *key_enc, uint32_t *key_dec, size_t keylen) {
+void hight_expandkey(uint8_t *user_key, uint8_t *key_enc, uint8_t *key_dec, size_t keylen) {
     uint8_t *WK_enc = key_enc;
     uint8_t *WK_dec = key_dec;
     uint8_t *SK_enc = key_enc + 8;
@@ -56,12 +56,11 @@ void hight_expandkey(uint8_t *user_key, uint32_t *key_enc, uint32_t *key_dec, si
     for (int i = 0; i < 8; ++i) {
         #pragma unroll
         for (int j = 0; j < 8; ++j) {
-            SK_enc[16*i + j] = SK_dec[128 - (16*i + j)] = user_key[(8 + j - i) % 8] + d[16*i + j];
+            SK_enc[16*i + j] = SK_dec[127 - (16*i + j)] = user_key[(8 + j - i) % 8] + d[16*i + j];
         }
         #pragma unroll
         for (int j = 0; j < 8; ++j) {
-            SK_enc[16*i + j + 8] = SK_dec[128 - (16*i + j + 8)] = user_key[(8 + j - i)%8 + 8] + d[16*i + j + 8];
+            SK_enc[16*i + j + 8] = SK_dec[127 - (16*i + j + 8)] = user_key[(8 + j - i)%8 + 8] + d[16*i + j + 8];
         }
     }
-
 }

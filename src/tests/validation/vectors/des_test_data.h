@@ -2,7 +2,7 @@
 #define DES_TEST_DATA_H
 
 
-#include "test_common.h"
+#include "../test_common.h"
 
 
 #define NUM_CASES_ECB 1

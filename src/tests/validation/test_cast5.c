@@ -1,7 +1,7 @@
 #include <stdlib.h>
 
 #include "test_common.h"
-#include "cast5_test_data.h"
+#include "vectors/cast5_test_data.h"
 #include "../../core/opencl_env.h"
 #include "../../ciphers/primitives.h"
 
