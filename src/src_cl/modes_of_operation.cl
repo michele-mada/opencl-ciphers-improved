@@ -21,7 +21,7 @@ void copy_extkey_to_local(__private uchar* local_w, __global uchar* restrict w, 
     }
 }
 
-void gf128_multiply_by_alpha(uchar *block_in, uchar *block_out) {
+void gf128_multiply_by_alpha(uchar* restrict block_in, uchar* restrict block_out) {
     uchar carry_in, carry_out;
     ulong *qblock_in = (ulong*)(block_in);
     ulong *qblock_out = (ulong*)(block_out);
@@ -33,8 +33,8 @@ void gf128_multiply_by_alpha(uchar *block_in, uchar *block_out) {
     qblock_out_0_t2 = qblock_out_0_t1 ^ GF_128_FDBK;
     carry_in = (qblock_in[0] >> ((sizeof(ulong)*8) - 1)) & 1;
 
-    carry_out = ((qblock_in)[1] >> ((sizeof(ulong)*8) - 1)) & 1;
-    qblock_out[1] = (((qblock_in)[1] << 1) + carry_in);
+    qblock_out[1] = ((qblock_in[1] << 1) + carry_in);
+    carry_out = (qblock_in[1] >> ((sizeof(ulong)*8) - 1)) & 1;
 
     if (carry_out != 0) {
         qblock_out[0] = qblock_out_0_t2;
@@ -103,23 +103,15 @@ void gf128_multiply_by_alpha(uchar *block_in, uchar *block_out) {
     _Pragma("unroll")                                                           \
     for (size_t i = 0; i < (block_size); ++i) {                                 \
         size_t offset = blockid * (block_size) + i;                             \
-        temp_state_in[i] = (global_in)[offset];                                 \
-    }                                                                           \
-    _Pragma("unroll")                                                           \
-    for (size_t i = 0; i < (block_size); ++i) {                                 \
-        temp_state_out[i] = temp_state_in[i] ^ active_tweak[i];                 \
+        temp_state_in[i] = (global_in)[offset] ^ active_tweak[i];               \
     }                                                                           \
                                                                                 \
-    encdec_fun(temp_state_out, local_w1, temp_state_in);                        \
+    encdec_fun(temp_state_in, local_w1, temp_state_out);                        \
                                                                                 \
-    _Pragma("unroll")                                                           \
-    for(size_t i = 0; i < (block_size); i++) {                                  \
-        temp_state_out[i] = temp_state_in[i] ^ active_tweak[i];                 \
-    }                                                                           \
     _Pragma("unroll")                                                           \
     for(size_t i = 0; i < (block_size); i++) {                                  \
         size_t offset = blockid * (block_size) + i;                             \
-        (global_out)[offset] = temp_state_out[i];                               \
+        (global_out)[offset] = temp_state_out[i] ^ active_tweak[i];             \
     }                                                                           \
 }
 
