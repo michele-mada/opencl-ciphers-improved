@@ -21,7 +21,7 @@ void copy_extkey_to_local(__private uchar* local_w, __global uchar* restrict w, 
     }
 }
 
-void gf128_multiply_by_alpha(uchar* restrict block_in, uchar* restrict block_out) {
+void gf128_multiply_by_alpha(uchar* block_in, uchar* block_out) {
     uchar carry_in, carry_out;
     ulong *qblock_in = (ulong*)(block_in);
     ulong *qblock_out = (ulong*)(block_out);
