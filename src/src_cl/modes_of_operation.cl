@@ -98,20 +98,20 @@ void gf128_multiply_by_alpha(uchar* restrict block_in, uchar* restrict block_out
     }                                                                           \
 }
 
-#define XTS_ROUND(encdec_fun, block_size, global_in, global_out)                \
+#define XTS_ROUND(encdec_fun, block_size, block_id, global_in, global_out, tweak_val)     \
 {                                                                               \
     _Pragma("unroll")                                                           \
     for (size_t i = 0; i < (block_size); ++i) {                                 \
-        size_t offset = blockid * (block_size) + i;                             \
-        temp_state_in[i] = (global_in)[offset] ^ active_tweak[i];               \
+        size_t offset = (block_id) * (block_size) + i;                             \
+        temp_state_in[i] = (global_in)[offset] ^ (tweak_val)[i];                \
     }                                                                           \
                                                                                 \
     encdec_fun(temp_state_in, local_w1, temp_state_out);                        \
                                                                                 \
     _Pragma("unroll")                                                           \
     for(size_t i = 0; i < (block_size); i++) {                                  \
-        size_t offset = blockid * (block_size) + i;                             \
-        (global_out)[offset] = temp_state_out[i] ^ active_tweak[i];             \
+        size_t offset = (block_id) * (block_size) + i;                             \
+        (global_out)[offset] = temp_state_out[i] ^ (tweak_val)[i];              \
     }                                                                           \
 }
 
@@ -121,7 +121,6 @@ void gf128_multiply_by_alpha(uchar* restrict block_in, uchar* restrict block_out
 {                                                                               \
     uchar __attribute__((register)) tweak1[(block_size)];                       \
     uchar __attribute__((register)) tweak2[(block_size)];                       \
-    uchar *active_tweak, *passive_tweak, *temp_tweak;                           \
                                                                                 \
     uchar __attribute__((register)) temp_state_in[(block_size)];                \
     uchar __attribute__((register)) temp_state_out[(block_size)];               \
@@ -138,13 +137,11 @@ void gf128_multiply_by_alpha(uchar* restrict block_in, uchar* restrict block_out
     }                                                                           \
     blockcipher_tweak(tweak1, local_w2, tweak2);                                \
                                                                                 \
-                                                                                \
-    active_tweak = tweak2; passive_tweak = tweak1;                              \
-                                                                                \
-    for (size_t blockid=0; blockid < (input_size) / (block_size); blockid++) {  \
-        XTS_ROUND(blockcipher, (block_size), (global_in), (global_out));        \
-        gf128_multiply_by_alpha(active_tweak, passive_tweak);                   \
-        temp_tweak = active_tweak; active_tweak = passive_tweak; passive_tweak = temp_tweak;    \
+    for (size_t blockid=0; blockid < (input_size) / ((block_size)*2); blockid++) {  \
+        XTS_ROUND(blockcipher, (block_size), blockid*2, (global_in), (global_out), tweak2);    \
+        gf128_multiply_by_alpha(tweak2, tweak1);                                \
+        XTS_ROUND(blockcipher, (block_size), (blockid*2)+1, (global_in), (global_out), tweak1);    \
+        gf128_multiply_by_alpha(tweak1, tweak2);                                \
     }                                                                           \
                                                                                 \
     size_t bytes_done = ((input_size) / (block_size)) * (block_size);           \
@@ -157,14 +154,14 @@ void gf128_multiply_by_alpha(uchar* restrict block_in, uchar* restrict block_out
         /* first part of the input state: partial ptx */                        \
         for (size_t i = 0; i < bytes_left; ++i) {                               \
             size_t offset = last_partial_block_offset + i;                      \
-            temp_state_in[i] = (global_in)[offset] ^ active_tweak[i];           \
+            temp_state_in[i] = (global_in)[offset] ^ tweak2[i];                 \
             /* also copy the final partial block bytes */                       \
             (global_out)[offset] = temp_state_out[offset - (block_size)];       \
         }                                                                       \
         /* last part of the input state: ctx stolen from previous operation */  \
         for (size_t i = bytes_left; i < (block_size); ++i) {                    \
             size_t offset = last_full_block_offset + i;                         \
-            temp_state_in[i] = temp_state_out[offset] ^ active_tweak[i];        \
+            temp_state_in[i] = temp_state_out[offset] ^ tweak2[i];              \
         }                                                                       \
                                                                                 \
         blockcipher(temp_state_in, local_w1, temp_state_out);                   \
@@ -173,7 +170,7 @@ void gf128_multiply_by_alpha(uchar* restrict block_in, uchar* restrict block_out
         _Pragma("unroll")                                                       \
         for (size_t i = 0; i < (block_size); ++i) {                             \
             size_t offset = last_full_block_offset + i;                         \
-            (global_out)[offset] = temp_state_out[i] ^ active_tweak[i];         \
+            (global_out)[offset] = temp_state_out[i] ^ tweak2[i];               \
         }                                                                       \
     }                                                                           \
 }
