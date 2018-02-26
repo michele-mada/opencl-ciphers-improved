@@ -39,7 +39,7 @@ def is_update_required(source_item, depend_list, verbose=False):
                               build_sources)
     
     triggers = list(filter(lambda dep_w_mtime: dep_w_mtime[1] > item_binary_mtime, 
-                           depend_mtimes))
+                           depends_with_mtimes))
     
     if verbose and len(triggers) > 0:
         print("Updating {:<32} built on: {}".format(source_item, 
