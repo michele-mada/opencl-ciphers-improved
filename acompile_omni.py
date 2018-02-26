@@ -4,6 +4,7 @@ import os
 import subprocess
 import datetime
 import argparse
+import time
 from multiprocessing.pool import ThreadPool
 
 
@@ -59,7 +60,19 @@ def is_new_build_required(source_item, verbose=False):
     return False
 
 
-def do_build_item(source_item):
+
+def is_compile_env_avail():
+    all_sources_present = os.path.isfile("./__all_sources.cl")
+    #various others
+    
+    return not all_sources_present
+
+
+def do_build_item(source_pair):
+    (num, source_item) = source_pair
+    time.sleep(2.0 * num)  # backoff
+    while not is_compile_env_avail():  # stall the actual compilation until the environment is not clean
+        time.sleep(1.0)
     return subprocess.call("%s \"%s\"" % (compile_command, source_item), shell=True)
 
 
@@ -112,7 +125,7 @@ if __name__ == "__main__":
                 exit(0)
         
         with ThreadPool(cli.threads) as p:
-            return_statuses = p.map(do_build_item, exec_buildlist)
+            return_statuses = p.map(do_build_item, enumerate(exec_buildlist))
         
         nsuccess = len(list(filter(lambda rs: rs == 0, return_statuses)))
         print("Done compiling; %d success, %d failed." % (nsuccess, len(return_statuses)-nsuccess))
