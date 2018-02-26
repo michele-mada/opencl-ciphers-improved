@@ -81,8 +81,11 @@ if __name__ == "__main__":
     
     if cli.source != "None":
         buildlist = cli.source.split(",")
-    else:
+    elif cli.update:
         buildlist = sources
+    else:
+        print("Please either provide a source parameter or use the update '-u' mode.")
+        exit(-1)
         
     exec_buildlist = []
     
