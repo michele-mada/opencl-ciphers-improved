@@ -17,7 +17,7 @@ sources = ["camellia_swi_default",
 depends = ["modes_of_operation"]
 
 
-compile_command = "ubertime acompile_mon_multisrc"
+compile_command = "ubertime acompile_mon_multisrc_subdir"
 
 src_folder = "./src_cl/"
 bin_folder = "./bin_cl/"
@@ -60,19 +60,8 @@ def is_new_build_required(source_item, verbose=False):
     return False
 
 
-
-def is_compile_env_avail():
-    all_sources_present = os.path.isfile("./__all_sources.cl")
-    #various others
-    
-    return not all_sources_present
-
-
 def do_build_item(source_pair):
     (num, source_item) = source_pair
-    time.sleep(2.0 * num)  # backoff
-    while not is_compile_env_avail():  # stall the actual compilation until the environment is not clean
-        time.sleep(1.0)
     return subprocess.call("%s \"%s\"" % (compile_command, source_item), shell=True)
 
 
