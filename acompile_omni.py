@@ -69,6 +69,7 @@ def parsecli():
     parser.add_argument("-u", "--update", help="Update mode", action="store_true")
     parser.add_argument("-f", "--force", help="Skip modification time check and rebuild all", action="store_true")
     parser.add_argument("-v", "--verbose", help="Verbose mode", action="store_true")
+    parser.add_argument("-n", "--non-interactive", help="Run in unattended mode", action="store_true")
     parser.add_argument("-t", "--threads", help="Run multiple compiles in parallel", type=int, default=1)
     parser.add_argument("--dry-run", help="Don't actually compile anything", action="store_true")
     parser.add_argument("source", help="Specific source to build, accept comma-separated list of multiple sources", type=str, default="None", nargs='?')
@@ -105,6 +106,11 @@ if __name__ == "__main__":
                 exec_buildlist.append(build_item)
                 
     if not cli.dry_run:
+        if not cli.not_interactive:
+            user_confirm = input("Start compiling? (y/n) ")
+            if user_confirm.lower() not in ["y", "yes"]:
+                exit(0)
+        
         with ThreadPool(cli.threads) as p:
             return_statuses = p.map(do_build_item, exec_buildlist)
         
