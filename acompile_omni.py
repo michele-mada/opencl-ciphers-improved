@@ -60,7 +60,7 @@ def is_new_build_required(source_item, verbose=False):
 
 
 def do_build_item(source_item):
-    return subprocess.call("%s \"%s\"" % (compile_command, make_cl_path(source_item)), shell=True)
+    return subprocess.call("%s \"%s\"" % (compile_command, source_item), shell=True)
 
 
 
