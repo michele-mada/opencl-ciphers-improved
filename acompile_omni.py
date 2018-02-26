@@ -42,11 +42,11 @@ def is_update_required(source_item, depend_list, verbose=False):
                            depends_with_mtimes))
     
     if verbose and len(triggers) > 0:
-        print("Updating {:<32} built on: {}".format(source_item, 
+        print("Updating {:<41} built on: {}".format(source_item, 
                                                     datetime.datetime.fromtimestamp(item_binary_mtime).strftime(datefmt)))
         for trigger in triggers:
-            print("+-source {:<30} updated on: {}".format(trigger[0], 
-                                                          datetime.datetime.fromtimestamp(trigger[1]).strftime(datefmt)))
+            print("    +- source {:<34} updated on: {}".format(trigger[0], 
+                                                               datetime.datetime.fromtimestamp(trigger[1]).strftime(datefmt)))
             
     return len(triggers) > 0
 
@@ -54,7 +54,7 @@ def is_update_required(source_item, depend_list, verbose=False):
 def is_new_build_required(source_item, verbose=False):
     if not os.path.isfile(make_binary_path(source_item)):
         if verbose:
-            print("Building {:<32} ex-novo".format(source_item))
+            print("Building {:<40} ex-novo".format(source_item))
         return True
     return False
 
