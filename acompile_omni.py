@@ -106,7 +106,7 @@ if __name__ == "__main__":
                 exec_buildlist.append(build_item)
                 
     if not cli.dry_run:
-        if not cli.not_interactive:
+        if not cli.non_interactive:
             user_confirm = input("Start compiling? (y/n) ")
             if user_confirm.lower() not in ["y", "yes"]:
                 exit(0)
