@@ -113,12 +113,6 @@ uchar f1(uchar x) {
     block_out[7] = block_in[7] ^ (f0(block_in[6]) + round_key[0]);              \
 }
 
-void print_hex_string(uchar *hexstring, size_t length) {
-    for (size_t i=0; i<length; i++) {
-        printf("%02X ", hexstring[i]);
-    }
-}
-
 void encrypt(__private uchar state_in[BLOCK_SIZE],
              __private uchar* key,
              __private uchar state_out[BLOCK_SIZE]) {
@@ -184,7 +178,7 @@ __kernel void hightCipherDec(__global uchar* restrict in,
 
 __attribute__((reqd_work_group_size(1, 1, 1)))
 __kernel void hightCipherCtr(__global uchar* restrict in,
-                             __global uint* restrict keys,
+                             __global uchar* restrict keys,
                              __global uchar* restrict out,
                              __global uchar* restrict IV,
                              unsigned int num_rounds,

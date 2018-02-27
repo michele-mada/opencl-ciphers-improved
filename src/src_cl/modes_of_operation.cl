@@ -98,11 +98,12 @@ void gf128_multiply_by_alpha(uchar* block_in, uchar* block_out) {
     }                                                                           \
 }
 
+// Inner component of XTS_MODE_BOILERPLATE, not portable!
 #define XTS_ROUND(encdec_fun, block_size, block_id, global_in, global_out, tweak_val)     \
 {                                                                               \
     _Pragma("unroll")                                                           \
     for (size_t i = 0; i < (block_size); ++i) {                                 \
-        size_t offset = (block_id) * (block_size) + i;                             \
+        size_t offset = (block_id) * (block_size) + i;                          \
         temp_state_in[i] = (global_in)[offset] ^ (tweak_val)[i];                \
     }                                                                           \
                                                                                 \
@@ -110,8 +111,42 @@ void gf128_multiply_by_alpha(uchar* block_in, uchar* block_out) {
                                                                                 \
     _Pragma("unroll")                                                           \
     for(size_t i = 0; i < (block_size); i++) {                                  \
-        size_t offset = (block_id) * (block_size) + i;                             \
+        size_t offset = (block_id) * (block_size) + i;                          \
         (global_out)[offset] = temp_state_out[i] ^ (tweak_val)[i];              \
+    }                                                                           \
+}
+
+// Inner component of XTS_MODE_BOILERPLATE, not portable!
+#define CIPHERTEXT_STEALING(blockcipher, block_size, global_in, global_out, tweak)      \
+{                                                                               \
+    size_t bytes_done = ((input_size) / (block_size)) * (block_size);           \
+                                                                                \
+    size_t bytes_left = input_size - bytes_done;                                \
+    if (bytes_left % (block_size) != 0) {                                       \
+        size_t last_partial_block_offset = bytes_done;                          \
+        size_t last_full_block_offset = bytes_done - (block_size);              \
+        /* Ctx stealing */                                                      \
+        /* first part of the input state: partial ptx */                        \
+        for (size_t i = 0; i < bytes_left; ++i) {                               \
+            size_t offset = last_partial_block_offset + i;                      \
+            temp_state_in[i] = (global_in)[offset] ^ tweak[i];                  \
+            /* also copy the final partial block bytes */                       \
+            (global_out)[offset] = temp_state_out[offset - (block_size)];       \
+        }                                                                       \
+        /* last part of the input state: ctx stolen from previous operation */  \
+        for (size_t i = bytes_left; i < (block_size); ++i) {                    \
+            size_t offset = last_full_block_offset + i;                         \
+            temp_state_in[i] = temp_state_out[offset] ^ tweak[i];               \
+        }                                                                       \
+                                                                                \
+        blockcipher(temp_state_in, local_w1, temp_state_out);                   \
+                                                                                \
+        /* copy the output into the second-to-last out block */                 \
+        _Pragma("unroll")                                                       \
+        for (size_t i = 0; i < (block_size); ++i) {                             \
+            size_t offset = last_full_block_offset + i;                         \
+            (global_out)[offset] = temp_state_out[i] ^ tweak[i];                \
+        }                                                                       \
     }                                                                           \
 }
 
@@ -138,39 +173,18 @@ void gf128_multiply_by_alpha(uchar* block_in, uchar* block_out) {
     blockcipher_tweak(tweak1, local_w2, tweak2);                                \
                                                                                 \
     for (size_t blockid=0; blockid < (input_size) / ((block_size)*2); blockid++) {  \
-        XTS_ROUND(blockcipher, (block_size), blockid*2, (global_in), (global_out), tweak2);    \
+        XTS_ROUND(blockcipher, (block_size), blockid*2, (global_in), (global_out), tweak2);      \
         gf128_multiply_by_alpha(tweak2, tweak1);                                \
-        XTS_ROUND(blockcipher, (block_size), (blockid*2)+1, (global_in), (global_out), tweak1);    \
+        XTS_ROUND(blockcipher, (block_size), (blockid*2)+1, (global_in), (global_out), tweak1);  \
         gf128_multiply_by_alpha(tweak1, tweak2);                                \
     }                                                                           \
                                                                                 \
-    size_t bytes_done = ((input_size) / (block_size)) * (block_size);           \
-                                                                                \
-    size_t bytes_left = input_size - bytes_done;                                \
-    if (bytes_left % (block_size) != 0) {                                       \
-        size_t last_partial_block_offset = bytes_done;                          \
-        size_t last_full_block_offset = bytes_done - (block_size);              \
-        /* Ctx stealing */                                                      \
-        /* first part of the input state: partial ptx */                        \
-        for (size_t i = 0; i < bytes_left; ++i) {                               \
-            size_t offset = last_partial_block_offset + i;                      \
-            temp_state_in[i] = (global_in)[offset] ^ tweak2[i];                 \
-            /* also copy the final partial block bytes */                       \
-            (global_out)[offset] = temp_state_out[offset - (block_size)];       \
-        }                                                                       \
-        /* last part of the input state: ctx stolen from previous operation */  \
-        for (size_t i = bytes_left; i < (block_size); ++i) {                    \
-            size_t offset = last_full_block_offset + i;                         \
-            temp_state_in[i] = temp_state_out[offset] ^ tweak2[i];              \
-        }                                                                       \
-                                                                                \
-        blockcipher(temp_state_in, local_w1, temp_state_out);                   \
-                                                                                \
-        /* copy the output into the second-to-last out block */                 \
-        _Pragma("unroll")                                                       \
-        for (size_t i = 0; i < (block_size); ++i) {                             \
-            size_t offset = last_full_block_offset + i;                         \
-            (global_out)[offset] = temp_state_out[i] ^ tweak2[i];               \
-        }                                                                       \
+    if (((input_size) / (block_size)) % 2 != 0) {                               \
+        size_t blockid = ((input_size) / (block_size)) - 1;                     \
+        XTS_ROUND(blockcipher, (block_size), blockid, (global_in), (global_out), tweak2);       \
+        gf128_multiply_by_alpha(tweak2, tweak1);                                \
+        CIPHERTEXT_STEALING(blockcipher, (block_size), (global_in), (global_out), tweak1);      \
+    } else {                                                                    \
+        CIPHERTEXT_STEALING(blockcipher, (block_size), (global_in), (global_out), tweak2);      \
     }                                                                           \
 }

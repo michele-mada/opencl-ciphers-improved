@@ -8,8 +8,8 @@ import time
 from multiprocessing.pool import ThreadPool
 
 
-sources = ["camellia_swi_default", 
-           "aes_swi_small", 
+sources = ["aes_swi_small",
+           "camellia_swi_default", 
            "cast5_swi_default", 
            "des_swi_default", 
            "hight_swi_default"]
