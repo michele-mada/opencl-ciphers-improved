@@ -87,6 +87,7 @@ extern int test_aes(OpenCLEnv* global_env);
 extern int test_camellia(OpenCLEnv* global_env);
 extern int test_cast5(OpenCLEnv* global_env);
 extern int test_hight(OpenCLEnv* global_env);
+extern int test_misty1(OpenCLEnv* global_env);
 
 
 #endif

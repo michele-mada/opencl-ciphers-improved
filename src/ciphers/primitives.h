@@ -7,6 +7,7 @@
 #include "camellia/camellia_primitives.h"
 #include "cast5/cast5_primitives.h"
 #include "hight/hight_primitives.h"
+#include "misty1/misty1_primitives.h"
 
 
 #endif

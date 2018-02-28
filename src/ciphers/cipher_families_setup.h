@@ -8,6 +8,7 @@ enum CipherFamilyId {
     CAMELLIA_CIPHERS,
     CAST5_CIPHERS,
     HIGHT_CIPHERS,
+    MISTY1_CIPHERS,
 
 
     NUM_FAMILIES
@@ -19,6 +20,7 @@ extern CipherFamily* get_aes_family(struct OpenCLEnv* environment);
 extern CipherFamily* get_camellia_family(struct OpenCLEnv* environment);
 extern CipherFamily* get_cast5_family(struct OpenCLEnv* environment);
 extern CipherFamily* get_hight_family(struct OpenCLEnv* environment);
+extern CipherFamily* get_misty1_family(struct OpenCLEnv* environment);
 
 
 #endif

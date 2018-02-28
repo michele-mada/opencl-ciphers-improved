@@ -7,12 +7,27 @@
 #include "tuning/tuning_common.h"
 
 
+
+
 int test_all(OpenCLEnv *global_env) {
-    return test_des(global_env) && \
-           test_aes(global_env) && \
-           test_camellia(global_env) && \
-           test_cast5(global_env) && \
-           test_hight(global_env);
+
+    typedef int (*test_function_t)(OpenCLEnv*);
+
+    #define NUM_TEST_FUNCTIONS 6
+    test_function_t test_functions[NUM_TEST_FUNCTIONS] = {
+        &test_des,
+        &test_aes,
+        &test_camellia,
+        &test_cast5,
+        &test_hight,
+        &test_misty1
+    };
+
+    int result = 1;
+    for (size_t i=0; i<NUM_TEST_FUNCTIONS; i++) {
+        result = result && (test_functions[i])(global_env);
+    }
+    return result;
 }
 
 

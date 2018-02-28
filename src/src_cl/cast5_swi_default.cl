@@ -1,7 +1,7 @@
 
 
 #define BLOCK_SIZE 8u
-#define MAX_EXKEY_SIZE_WORDS 32
+#define MAX_EXKEY_SIZE_DWORDS 32
 
 
 #define HOST_LITTLE_ENDIAN
@@ -516,7 +516,7 @@ __kernel void cast5CipherEnc(__global uchar* restrict in,
                              __global uchar* restrict out,
                              unsigned int num_rounds,
                              unsigned int input_size) \
-    ECB_MODE_BOILERPLATE(ENCRYPT_INTERFACE, in, out, (__global uchar* restrict)keys, BLOCK_SIZE, MAX_EXKEY_SIZE_WORDS*4, input_size);
+    ECB_MODE_BOILERPLATE(ENCRYPT_INTERFACE, in, out, (__global uchar* restrict)keys, BLOCK_SIZE, MAX_EXKEY_SIZE_DWORDS*4, input_size);
 
 __attribute__((reqd_work_group_size(1, 1, 1)))
 __kernel void cast5CipherDec(__global uchar* restrict in,
@@ -524,7 +524,7 @@ __kernel void cast5CipherDec(__global uchar* restrict in,
                              __global uchar* restrict out,
                              unsigned int num_rounds,
                              unsigned int input_size) \
-    ECB_MODE_BOILERPLATE(DECRYPT_INTERFACE, in, out, (__global uchar* restrict)keys, BLOCK_SIZE, MAX_EXKEY_SIZE_WORDS*4, input_size);
+    ECB_MODE_BOILERPLATE(DECRYPT_INTERFACE, in, out, (__global uchar* restrict)keys, BLOCK_SIZE, MAX_EXKEY_SIZE_DWORDS*4, input_size);
 
 
 __attribute__((reqd_work_group_size(1, 1, 1)))
@@ -534,4 +534,4 @@ __kernel void cast5CipherCtr(__global uchar* restrict in,
                              __global uchar* restrict IV,
                              unsigned int num_rounds,
                              unsigned int input_size) \
-    CTR_MODE_BOILERPLATE(ENCRYPT_INTERFACE, in, out, (__global uchar* restrict)keys, IV, BLOCK_SIZE, MAX_EXKEY_SIZE_WORDS*4, input_size);
+    CTR_MODE_BOILERPLATE(ENCRYPT_INTERFACE, in, out, (__global uchar* restrict)keys, IV, BLOCK_SIZE, MAX_EXKEY_SIZE_DWORDS*4, input_size);
