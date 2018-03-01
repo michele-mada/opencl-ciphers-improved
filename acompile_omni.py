@@ -18,6 +18,7 @@ depends = ["modes_of_operation"]
 
 
 compile_command = "ubertime acompile_mon_multisrc_subdir"
+aocflags = "--profile -v --no-interleaving default"
 
 src_folder = "./src_cl/"
 bin_folder = "./bin_cl/"
@@ -55,14 +56,14 @@ def is_update_required(source_item, depend_list, verbose=False):
 def is_new_build_required(source_item, verbose=False):
     if not os.path.isfile(make_binary_path(source_item)):
         if verbose:
-            print("Building {:<40} ex-novo".format(source_item))
+            print("Building {:<41} ex-novo".format(source_item))
         return True
     return False
 
 
 def do_build_item(source_pair):
-    (num, source_item) = source_pair
-    return subprocess.call("%s \"%s\"" % (compile_command, source_item), shell=True)
+    (num, source_item, environ) = source_pair
+    return subprocess.call("%s \"%s\"" % (compile_command, source_item), shell=True, env=environ)
 
 
 
@@ -71,6 +72,7 @@ def parsecli():
     parser.add_argument("-u", "--update", help="Update mode", action="store_true")
     parser.add_argument("-f", "--force", help="Skip modification time check and rebuild all", action="store_true")
     parser.add_argument("-v", "--verbose", help="Verbose mode", action="store_true")
+    parser.add_argument("-r", "--report", help="Exit compilation early after generating the html report, equivalent to running 'aoc -c'", action="store_true")
     parser.add_argument("-n", "--non-interactive", help="Run in unattended mode", action="store_true")
     parser.add_argument("-t", "--threads", help="Run multiple compiles in parallel", type=int, default=1)
     parser.add_argument("--dry-run", help="Don't actually compile anything", action="store_true")
@@ -106,15 +108,30 @@ if __name__ == "__main__":
                 exec_buildlist.append(build_item)
             elif is_update_required(build_item, depends, verbose=cli.verbose):
                 exec_buildlist.append(build_item)
+            else:
+                if verbose:
+                    item_binary_mtime = os.path.getmtime(make_binary_path(source_item))
+                    print("Target {:<43} is up to date (built {})".format(
+                        source_item, 
+                        datetime.datetime.fromtimestamp(item_binary_mtime).strftime(datefmt)))
                 
     if not cli.dry_run:
         if not cli.non_interactive:
             user_confirm = input("Start compiling? (y/n) ")
             if user_confirm.lower() not in ["y", "yes"]:
                 exit(0)
+                
+        run_env_master = os.environ.copy()
+        run_env_master["AOCFLAGS"] = aocflags
+        
+        if cli.report:
+            run_env_master["AOCFLAGS"] += " -c"
         
         with ThreadPool(cli.threads) as p:
-            return_statuses = p.map(do_build_item, enumerate(exec_buildlist))
+            return_statuses = p.map(do_build_item, 
+                                    zip(range(len(exec_buildlist)), 
+                                        exec_buildlist),
+                                        [run_env_master.copy() for _ in range(len(exec_buildlist))])
         
         nsuccess = len(list(filter(lambda rs: rs == 0, return_statuses)))
         print("Done compiling; %d success, %d failed." % (nsuccess, len(return_statuses)-nsuccess))
