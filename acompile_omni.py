@@ -129,9 +129,11 @@ if __name__ == "__main__":
         
         with ThreadPool(cli.threads) as p:
             return_statuses = p.map(do_build_item, 
-                                    zip(range(len(exec_buildlist)), 
-                                        exec_buildlist),
-                                        [run_env_master.copy() for _ in range(len(exec_buildlist))])
+                                    list(zip(
+                                            range(len(exec_buildlist)), 
+                                            exec_buildlist),
+                                            [run_env_master.copy() for _ in range(len(exec_buildlist))]
+                                            ))
         
         nsuccess = len(list(filter(lambda rs: rs == 0, return_statuses)))
         print("Done compiling; %d success, %d failed." % (nsuccess, len(return_statuses)-nsuccess))
