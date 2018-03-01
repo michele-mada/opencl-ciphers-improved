@@ -116,13 +116,13 @@ uint16_t FI(uint16_t FI_IN, uint16_t FI_KEY) {
 void misty1_expandkey(uint8_t *user_key, uint16_t *key_enc, uint16_t *key_dec, size_t keylen) {
     #pragma unroll
     for (int i = 0; i < 8; ++i) {
-        key_enc[i] = key_dec[31 - i] = user_key[i*2]*256 + user_key[i*2+1];
+        key_enc[i] = key_dec[i] = user_key[i*2]*256 + user_key[i*2+1];
     }
 
     #pragma unroll
     for (int i = 0; i < 8; ++i) {
-        key_enc[i+ 8] = key_dec[31 - (i+ 8)] = FI(key_enc[i], key_enc[(i+1)%8]);
-        key_enc[i+16] = key_dec[31 - (i+16)] = key_enc[i+8] & 0x1ff;
-        key_enc[i+24] = key_dec[31 - (i+24)] = key_enc[i+8] >> 9;
+        key_enc[i+ 8] = key_dec[i+ 8] = FI(key_enc[i], key_enc[(i+1)%8]);
+        key_enc[i+16] = key_dec[i+16] = key_enc[i+8] & 0x1ff;
+        key_enc[i+24] = key_dec[i+24] = key_enc[i+8] >> 9;
     }
 }
