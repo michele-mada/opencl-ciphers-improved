@@ -126,9 +126,9 @@ if __name__ == "__main__":
         
         if cli.report:
             run_env_master["AOCFLAGS"] += " -c"
-            run_env_master["AOCOUT_EXT"] = "aocx"
-        else:
             run_env_master["AOCOUT_EXT"] = "aoco"
+        else:
+            run_env_master["AOCOUT_EXT"] = "aocx"
         
         with ThreadPool(cli.threads) as p:
             return_statuses = p.map(do_build_item, 
