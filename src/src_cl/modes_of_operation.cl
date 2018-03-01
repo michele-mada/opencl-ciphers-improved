@@ -162,7 +162,7 @@ void gf128_multiply_by_alpha(uchar* block_in, uchar* block_out) {
                                                                                 \
     uchar __attribute__((register)) local_w1[(key_size)];                       \
     copy_extkey_to_local(local_w1, (global_key1), (key_size));                  \
-    uchar __attribute__((register)) local_w2[(key_size)];                       \
+    uchar local_w2[(key_size)];                       \
     copy_extkey_to_local(local_w2, (global_key2), (key_size));                  \
                                                                                 \
     /* initialize tweak */                                                      \
