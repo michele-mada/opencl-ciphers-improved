@@ -172,15 +172,7 @@ void gf128_multiply_by_alpha(uchar* block_in, uchar* block_out) {
     }                                                                           \
     blockcipher_tweak(tweak1, local_w2, tweak2);                                \
                                                                                 \
-    for (size_t blockid=0; blockid < (input_size) / ((block_size)*2); blockid++) {  \
-        XTS_ROUND(blockcipher, (block_size), blockid*2, (global_in), (global_out), tweak2);      \
-        gf128_multiply_by_alpha(tweak2, tweak1);                                \
-        XTS_ROUND(blockcipher, (block_size), (blockid*2)+1, (global_in), (global_out), tweak1);  \
-        gf128_multiply_by_alpha(tweak1, tweak2);                                \
-    }                                                                           \
-                                                                                \
-    if (((input_size) / (block_size)) % 2 != 0) {                               \
-        size_t blockid = ((input_size) / (block_size)) - 1;                     \
+    for (size_t blockid=0; blockid < (input_size) / (block_size); blockid++) {  \
         XTS_ROUND(blockcipher, (block_size), blockid, (global_in), (global_out), tweak2);       \
         gf128_multiply_by_alpha(tweak2, tweak1);                                \
         for (size_t i=0; i<(block_size); i++) {                                 \
