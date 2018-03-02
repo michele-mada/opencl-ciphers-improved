@@ -172,10 +172,55 @@ void gf128_multiply_by_alpha(uchar* block_in, uchar* block_out) {
     }                                                                           \
     blockcipher_tweak(tweak1, local_w2, tweak2);                                \
                                                                                 \
-    for (size_t blockid=0; blockid < (input_size) / (block_size); blockid++) {  \
+    for (size_t blockid=0; blockid < (input_size) / ((block_size)*2); blockid++) {  \
+        XTS_ROUND(blockcipher, (block_size), blockid*2, (global_in), (global_out), tweak2);      \
+        gf128_multiply_by_alpha(tweak2, tweak1);                                \
+        XTS_ROUND(blockcipher, (block_size), (blockid*2)+1, (global_in), (global_out), tweak1);  \
+        gf128_multiply_by_alpha(tweak1, tweak2);                                \
+    }                                                                           \
+                                                                                \
+    if (((input_size) / (block_size)) % 2 != 0) {                               \
+        size_t blockid = ((input_size) / (block_size)) - 1;                     \
         XTS_ROUND(blockcipher, (block_size), blockid, (global_in), (global_out), tweak2);       \
         gf128_multiply_by_alpha(tweak2, tweak1);                                \
-        _Pragma("unroll")                                                       \
+        for (size_t i=0; i<(block_size); i++) {                                 \
+            tweak2[i] = tweak1[i];                                              \
+        }                                                                       \
+    }                                                                           \
+                                                                                \
+    CIPHERTEXT_STEALING(blockcipher, (block_size), (global_in), (global_out), tweak2);          \
+}
+
+#define XTS_MODE_LIGHT_BOILERPLATE(blockcipher,                                 \
+                                   global_in, global_out, global_key1, global_tweak,            \
+                                   block_size, key_size, input_size)            \
+{                                                                               \
+    uchar __attribute__((register)) tweak1[(block_size)];                       \
+    uchar __attribute__((register)) tweak2[(block_size)];                       \
+                                                                                \
+    uchar __attribute__((register)) temp_state_in[(block_size)];                \
+    uchar __attribute__((register)) temp_state_out[(block_size)];               \
+                                                                                \
+    uchar __attribute__((register)) local_w1[(key_size)];                       \
+    copy_extkey_to_local(local_w1, (global_key1), (key_size));                  \
+                                                                                \
+    /* initialize tweak */                                                      \
+    _Pragma("unroll")                                                           \
+    for (size_t i = 0; i < (block_size); i++) {                                 \
+        tweak1[i] = (global_tweak)[i];                                          \
+    }                                                                           \
+                                                                                \
+    for (size_t blockid=0; blockid < (input_size) / ((block_size)*2); blockid++) {  \
+        XTS_ROUND(blockcipher, (block_size), blockid*2, (global_in), (global_out), tweak2);      \
+        gf128_multiply_by_alpha(tweak2, tweak1);                                \
+        XTS_ROUND(blockcipher, (block_size), (blockid*2)+1, (global_in), (global_out), tweak1);  \
+        gf128_multiply_by_alpha(tweak1, tweak2);                                \
+    }                                                                           \
+                                                                                \
+    if (((input_size) / (block_size)) % 2 != 0) {                               \
+        size_t blockid = ((input_size) / (block_size)) - 1;                     \
+        XTS_ROUND(blockcipher, (block_size), blockid, (global_in), (global_out), tweak2);       \
+        gf128_multiply_by_alpha(tweak2, tweak1);                                \
         for (size_t i=0; i<(block_size); i++) {                                 \
             tweak2[i] = tweak1[i];                                              \
         }                                                                       \

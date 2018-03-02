@@ -294,11 +294,11 @@ void decrypt(__private uchar state_in[BLOCK_SIZE],
 
 
 __attribute__((reqd_work_group_size(1, 1, 1)))
-__kernel void aesCipherXtsEnc(__global uchar* restrict in,
+__kernel void aesCipherXtsEncLight(__global uchar* restrict in,
                               __global uint* restrict w1,
                               __global uint* restrict w2,
                               __global uchar* restrict out,
                               __global uchar* restrict tweak_init,
                               unsigned int num_rounds,
                               unsigned int input_size) \
-    XTS_MODE_BOILERPLATE(ENCRYPT_INTERFACE, ENCRYPT_INTERFACE, in, out, (__global uchar* restrict)w1, (__global uchar* restrict)w2, tweak_init, BLOCK_SIZE, MAX_EXKEY_SIZE_WORDS*4, input_size);
+    XTS_MODE_LIGHT_BOILERPLATE(ENCRYPT_INTERFACE, in, out, (__global uchar* restrict)w1, tweak_init, BLOCK_SIZE, MAX_EXKEY_SIZE_WORDS*4, input_size);
