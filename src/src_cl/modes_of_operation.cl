@@ -207,7 +207,7 @@ void gf128_multiply_by_alpha(uchar* block_in, uchar* block_out) {
     /* initialize tweak */                                                      \
     _Pragma("unroll")                                                           \
     for (size_t i = 0; i < (block_size); i++) {                                 \
-        tweak1[i] = (global_tweak)[i];                                          \
+        tweak2[i] = (global_tweak)[i];                                          \
     }                                                                           \
                                                                                 \
     for (size_t blockid=0; blockid < (input_size) / ((block_size)*2); blockid++) {  \
