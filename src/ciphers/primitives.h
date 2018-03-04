@@ -8,6 +8,7 @@
 #include "cast5/cast5_primitives.h"
 #include "hight/hight_primitives.h"
 #include "misty1/misty1_primitives.h"
+#include "clefia/clefia_primitives.h"
 
 
 #endif

@@ -13,14 +13,15 @@ int test_all(OpenCLEnv *global_env) {
 
     typedef int (*test_function_t)(OpenCLEnv*);
 
-    #define NUM_TEST_FUNCTIONS 6
+    #define NUM_TEST_FUNCTIONS 7
     test_function_t test_functions[NUM_TEST_FUNCTIONS] = {
         &test_des,
         &test_aes,
         &test_camellia,
         &test_cast5,
         &test_hight,
-        &test_misty1
+        &test_misty1,
+        &test_clefia,
     };
 
     int result = 1;
