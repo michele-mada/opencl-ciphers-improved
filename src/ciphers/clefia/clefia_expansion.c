@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <string.h>
 
 #include "clefia_expansion.h"
 #include "../../core/constants.h"
