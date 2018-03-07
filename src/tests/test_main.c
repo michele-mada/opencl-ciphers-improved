@@ -1,34 +1,36 @@
-
-#include "../core/opencl_env.h"
+#include "test_main.h"
 #include "../core/utils.h"
 #include "../core/constants.h"
 #include "../profiler/profiler_params.h"
-#include "validation/test_common.h"
-#include "tuning/tuning_common.h"
 
 
 
 
 int test_all(OpenCLEnv *global_env) {
-
-    typedef int (*test_function_t)(OpenCLEnv*);
-
-    #define NUM_TEST_FUNCTIONS 7
-    test_function_t test_functions[NUM_TEST_FUNCTIONS] = {
-        &test_des,
-        &test_aes,
-        &test_camellia,
-        &test_cast5,
-        &test_hight,
-        &test_misty1,
-        &test_clefia,
-    };
-
     int result = 1;
     for (size_t i=0; i<NUM_TEST_FUNCTIONS; i++) {
         result = result && (test_functions[i])(global_env);
     }
     return result;
+}
+
+int tune_all(OpenCLEnv *global_env, size_t stride) {
+    for (size_t i=0; i<NUM_TUNING_INTERFACES; i++) {
+        TuningInterface *iface = tuning_interfaces + i;
+        char *logfile_name;
+        asprintf(&logfile_name, LOGFILE, iface->human_name);
+
+        #ifdef USE_CUSTOM_PROFILER
+            GlobalProfiler_init(iface->human_name);
+            setup_global_profiler_params();
+        #endif
+
+        tuning_loop(global_env, iface, stride, logfile_name);
+
+        #ifdef USE_CUSTOM_PROFILER
+            GlobalProfiler_destroy();
+        #endif
+    }
 }
 
 
@@ -59,23 +61,14 @@ int run_validation() {
 int run_tuning() {
     OpenCLEnv *global_env = OpenCLEnv_init();
 
-    size_t stride = 1048576*4;  // stride = 1 * 4 MB
+    size_t stride = DEFAULT_STRIDE;
 
     char *custom_stride = getenv("TUNING_STRIDE");
     if (custom_stride != NULL) {
         stride = atol(custom_stride);
     }
 
-    #ifdef USE_CUSTOM_PROFILER
-        GlobalProfiler_init("aes");
-        setup_global_profiler_params();
-    #endif
-
-    auto_tune(global_env, stride, "tuning_data.txt");
-
-    #ifdef USE_CUSTOM_PROFILER
-        GlobalProfiler_destroy();
-    #endif
+    tune_all(global_env, stride);
 
     OpenCLEnv_destroy(global_env);
 
