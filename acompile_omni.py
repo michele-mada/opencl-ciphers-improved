@@ -12,7 +12,9 @@ sources = ["aes_swi_small",
            "camellia_swi_default", 
            "cast5_swi_default", 
            "des_swi_default", 
-           "hight_swi_default"]
+           "hight_swi_default",
+           "misty1_swi_default",
+           "clefia_swi_default"]
 
 depends = ["modes_of_operation"]
 
