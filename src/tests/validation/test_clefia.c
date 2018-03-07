@@ -11,18 +11,18 @@ TestResult validate_clefia_ecb_128(OpenCLEnv *global_env, TestDatum *datum) \
     VALIDATION_DECORATOR({
         clefia_context K;
         opencl_clefia_128_set_encrypt_key(global_env, (unsigned char*) datum->key, 128, &K);
-        //opencl_clefia_ecb_encrypt(global_env, datum->ptx, datum->ptx_length, &K, generated_ctx, NULL, NULL);
-        //opencl_clefia_set_decrypt_key(global_env, (unsigned char*) datum->key, 128, &K);
-        //opencl_clefia_ecb_decrypt(global_env, datum->ctx, datum->ctx_length, &K, generated_ptx, NULL, NULL);
+        opencl_clefia_128_ecb_encrypt(global_env, datum->ptx, datum->ptx_length, &K, generated_ctx, NULL, NULL);
+        opencl_clefia_128_set_decrypt_key(global_env, (unsigned char*) datum->key, 128, &K);
+        opencl_clefia_128_ecb_decrypt(global_env, datum->ctx, datum->ctx_length, &K, generated_ptx, NULL, NULL);
     })
 
 TestResult validate_clefia_ecb_192(OpenCLEnv *global_env, TestDatum *datum) \
     VALIDATION_DECORATOR({
         clefia_context K;
         opencl_clefia_192_set_encrypt_key(global_env, (unsigned char*) datum->key, 192, &K);
-        //opencl_clefia_ecb_encrypt(global_env, datum->ptx, datum->ptx_length, &K, generated_ctx, NULL, NULL);
-        //opencl_clefia_set_decrypt_key(global_env, (unsigned char*) datum->key, 128, &K);
-        //opencl_clefia_ecb_decrypt(global_env, datum->ctx, datum->ctx_length, &K, generated_ptx, NULL, NULL);
+        opencl_clefia_192_ecb_encrypt(global_env, datum->ptx, datum->ptx_length, &K, generated_ctx, NULL, NULL);
+        opencl_clefia_192_set_decrypt_key(global_env, (unsigned char*) datum->key, 192, &K);
+        opencl_clefia_192_ecb_decrypt(global_env, datum->ctx, datum->ctx_length, &K, generated_ptx, NULL, NULL);
     })
 
 static int clefia_run_all_cases_ecb(OpenCLEnv *global_env) {

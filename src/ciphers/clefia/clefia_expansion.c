@@ -86,8 +86,11 @@ void xored_memcpy(uint8_t *dst, const uint8_t *a, const uint8_t *b, int bytelen)
 
 void dual_xored_memcpy(uint8_t *dst1, uint8_t *dst2, const uint8_t *a, const uint8_t *b, int bytelen) {
     #pragma unroll
-    for (int bb = 0; bb < bytelen; ++bb) {
-        *dst1++ = *dst2++ = *a++ ^ *b++;
+    for (int bb = 0; bb < bytelen/2; ++bb) {
+        dst1[bb] = dst2[bb + bytelen/2] = a[bb] ^ b[bb];
+    }
+    for (int bb = bytelen/2; bb < bytelen; ++bb) {
+        dst1[bb] = dst2[bb - bytelen/2] = a[bb] ^ b[bb];
     }
 }
 
@@ -260,7 +263,7 @@ void clefia_128_set_key(uint8_t *user_key, uint8_t *key_enc, uint8_t *key_dec) {
     memcpy(whitening_key_dec + 8, skey128, 8); /* final whitening key (WK0, WK1) */
 
     uint8_t *rk_enc = round_key_enc;
-    uint8_t *rk_dec = round_key_dec + CLEFIA_EXPANDED_KEY_SIZE(CLEFIA_NUM_ROUNDS(128)) - 16;
+    uint8_t *rk_dec = round_key_dec + CLEFIA_EXPANDED_KEY_SIZE(CLEFIA_NUM_ROUNDS(128)) - 16*2;
 
     #pragma unroll
     for (int i = 0; i < 9; i++) { /* round key (RKi (0 <= i < 36)) */
@@ -312,7 +315,7 @@ void clefia_192_256_set_key(uint8_t *user_key, uint8_t *key_enc, uint8_t *key_de
                  skey256, skey256 + 16, 8); /* final whitening key (WK0, WK1) */
 
     uint8_t *rk_enc = round_key_enc;
-    uint8_t *rk_dec = round_key_dec + CLEFIA_EXPANDED_KEY_SIZE(CLEFIA_NUM_ROUNDS(keylen)) - 16;
+    uint8_t *rk_dec = round_key_dec + CLEFIA_EXPANDED_KEY_SIZE(CLEFIA_NUM_ROUNDS(keylen)) - 16*2;
 
     #pragma unroll
     for (int i = 0; i < 11; i++) { /* round key (RKi (0 <= i < 44)) */
@@ -347,14 +350,4 @@ void clefia_expandkey(uint8_t *user_key, uint8_t *key_enc, uint8_t *key_dec, siz
     } else {
         clefia_192_256_set_key(user_key, key_enc, key_dec, keylen);
     }
-
-    /*printf("WK: ");
-    for (size_t i=0; i<16; i++) {
-        printf("%02X ", key_enc[i] & 0xff);
-    }
-    printf("\nRK: ");
-    for (size_t i=0; i<CLEFIA_EXPANDED_KEY_SIZE(CLEFIA_NUM_ROUNDS(keylen))-16; i++) {
-        printf("%02X ", key_enc[i+16] & 0xff);
-    }
-    printf("\n");*/
 }

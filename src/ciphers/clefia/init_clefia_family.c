@@ -19,15 +19,21 @@ extern CipherOpenCLAtomics clefia_atomics;
 void init_clefia_methods_and_state(CipherFamily* fam) {
     fam->methods = (CipherMethod**) malloc(sizeof(CipherMethod*) * NUM_CLEFIA_METHODS);
 
-    /*fam->methods[CAMELLIA_128_ECB] = CipherMethod_init(fam, "camelliaCipher", 1);
-    fam->methods[CAMELLIA_192_ECB] = CipherMethod_init(fam, "camelliaCipher", 1);
-    fam->methods[CAMELLIA_256_ECB] = CipherMethod_init(fam, "camelliaCipher", 1);
-    fam->methods[CAMELLIA_128_CTR] = CipherMethod_init(fam, "camelliaCipherCtr", 1);
-    fam->methods[CAMELLIA_192_CTR] = CipherMethod_init(fam, "camelliaCipherCtr", 1);
-    fam->methods[CAMELLIA_256_CTR] = CipherMethod_init(fam, "camelliaCipherCtr", 1);
-    fam->methods[CAMELLIA_128_XTS] = CipherMethod_init(fam, "camelliaCipherXts", 1);
-    fam->methods[CAMELLIA_192_XTS] = CipherMethod_init(fam, "camelliaCipherXts", 1);
-    fam->methods[CAMELLIA_256_XTS] = CipherMethod_init(fam, "camelliaCipherXts", 1);*/
+    fam->methods[CLEFIA_128_ECB_ENC] = CipherMethod_init(fam, "clefiaCipherEnc", 1);
+    fam->methods[CLEFIA_128_ECB_DEC] = CipherMethod_init(fam, "clefiaCipherDec", 1);
+    fam->methods[CLEFIA_192_ECB_ENC] = CipherMethod_init(fam, "clefiaCipherEnc", 1);
+    fam->methods[CLEFIA_192_ECB_DEC] = CipherMethod_init(fam, "clefiaCipherDec", 1);
+    fam->methods[CLEFIA_256_ECB_ENC] = CipherMethod_init(fam, "clefiaCipherEnc", 1);
+    fam->methods[CLEFIA_256_ECB_DEC] = CipherMethod_init(fam, "clefiaCipherDec", 1);
+    fam->methods[CLEFIA_128_CTR] = CipherMethod_init(fam, "clefiaCipherCtr", 1);
+    fam->methods[CLEFIA_192_CTR] = CipherMethod_init(fam, "clefiaCipherCtr", 1);
+    fam->methods[CLEFIA_256_CTR] = CipherMethod_init(fam, "clefiaCipherCtr", 1);
+    fam->methods[CLEFIA_128_XTS_ENC] = CipherMethod_init(fam, "clefiaCipherXtsEnc", 1);
+    fam->methods[CLEFIA_128_XTS_DEC] = CipherMethod_init(fam, "clefiaCipherXtsDec", 1);
+    fam->methods[CLEFIA_192_XTS_ENC] = CipherMethod_init(fam, "clefiaCipherXtsEnc", 1);
+    fam->methods[CLEFIA_192_XTS_DEC] = CipherMethod_init(fam, "clefiaCipherXtsDec", 1);
+    fam->methods[CLEFIA_256_XTS_ENC] = CipherMethod_init(fam, "clefiaCipherXtsEnc", 1);
+    fam->methods[CLEFIA_256_XTS_DEC] = CipherMethod_init(fam, "clefiaCipherXtsDec", 1);
 
     fam->num_methods = NUM_CLEFIA_METHODS;
 

@@ -12,8 +12,10 @@
 
 #define CLEFIA_IV_SIZE 16
 #define CLEFIA_EXPANDED_ROUND_KEY_SIZE(num_rounds) (num_rounds*2)     // in 4B words
-#define CLEFIA_EXPANDED_KEY_SIZE(num_rounds) (((num_rounds*2)+4)*4)   // in bytes
+#define CLEFIA_WHITENING_KEY_SIZE 4     // in 4B words
 #define CLEFIA_NUM_ROUNDS(key_size) ((key_size/16)+10)
+#define CLEFIA_EXPANDED_KEY_SIZE(num_rounds) \
+        (CLEFIA_EXPANDED_ROUND_KEY_SIZE(num_rounds) + CLEFIA_WHITENING_KEY_SIZE) * 4
 
 
 #define CLEFIA_MAX_EXPANDED_KEYSIZE CLEFIA_EXPANDED_KEY_SIZE(CLEFIA_NUM_ROUNDS(256))
