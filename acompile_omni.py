@@ -9,12 +9,13 @@ from multiprocessing.pool import ThreadPool
 
 
 sources = ["aes_swi_small",
-           "camellia_swi_default", 
-           "cast5_swi_default", 
-           "des_swi_default", 
+           "camellia_swi_default",
+           "cast5_swi_default",
+           "des_swi_default",
            "hight_swi_default",
            "misty1_swi_default",
-           "clefia_swi_default"]
+           "clefia_swi_default",
+           "present_swi_default"]
 
 depends = ["modes_of_operation"]
 
@@ -37,21 +38,21 @@ def make_cl_path(source_item):
 
 def is_update_required(source_item, depend_list, verbose=False):
     item_binary_mtime = os.path.getmtime(make_binary_path(source_item))
-    
+
     build_sources = [make_cl_path(source_item)] + list(map(make_cl_path, depend_list))
-    depends_with_mtimes = map(lambda src: (src, os.path.getmtime(src)), 
+    depends_with_mtimes = map(lambda src: (src, os.path.getmtime(src)),
                               build_sources)
-    
-    triggers = list(filter(lambda dep_w_mtime: dep_w_mtime[1] > item_binary_mtime, 
+
+    triggers = list(filter(lambda dep_w_mtime: dep_w_mtime[1] > item_binary_mtime,
                            depends_with_mtimes))
-    
+
     if verbose and len(triggers) > 0:
-        print("Updating {:<41} built on: {}".format(source_item, 
+        print("Updating {:<41} built on: {}".format(source_item,
                                                     datetime.datetime.fromtimestamp(item_binary_mtime).strftime(datefmt)))
         for trigger in triggers:
-            print("    +- source {:<34} updated on: {}".format(trigger[0], 
+            print("    +- source {:<34} updated on: {}".format(trigger[0],
                                                                datetime.datetime.fromtimestamp(trigger[1]).strftime(datefmt)))
-            
+
     return len(triggers) > 0
 
 
@@ -85,7 +86,7 @@ def parsecli():
 
 if __name__ == "__main__":
     cli = parsecli()
-    
+
     if cli.source != "None":
         buildlist = cli.source.split(",")
     elif cli.update:
@@ -93,14 +94,14 @@ if __name__ == "__main__":
     else:
         print("Please either provide a source parameter or use the update '-u' mode.")
         exit(-1)
-        
+
     exec_buildlist = []
-    
+
     for build_item in buildlist:
         if not os.path.isfile(make_cl_path(build_item)):
             print("Source item {} not found in path {}".format(build_item, make_cl_path(build_item)))
             continue
-        
+
         if cli.force:
             if verbose:
                 print("Reuilding {}".format(build_item))
@@ -114,33 +115,31 @@ if __name__ == "__main__":
                 if verbose:
                     item_binary_mtime = os.path.getmtime(make_binary_path(source_item))
                     print("Target {:<43} is up to date (built {})".format(
-                        source_item, 
+                        source_item,
                         datetime.datetime.fromtimestamp(item_binary_mtime).strftime(datefmt)))
-                
+
     if not cli.dry_run:
         if not cli.non_interactive:
             user_confirm = input("Start compiling? (y/n) ")
             if user_confirm.lower() not in ["y", "yes"]:
                 exit(0)
-                
+
         run_env_master = os.environ.copy()
         run_env_master["AOCFLAGS"] = aocflags
-        
+
         if cli.report:
             run_env_master["AOCFLAGS"] += " -c"
             run_env_master["AOCOUT_EXT"] = "aoco"
         else:
             run_env_master["AOCOUT_EXT"] = "aocx"
-        
+
         with ThreadPool(cli.threads) as p:
-            return_statuses = p.map(do_build_item, 
+            return_statuses = p.map(do_build_item,
                                     zip(
-                                        range(len(exec_buildlist)), 
+                                        range(len(exec_buildlist)),
                                         exec_buildlist,
                                         [run_env_master.copy() for _ in range(len(exec_buildlist))]
                                         ))
-        
+
         nsuccess = len(list(filter(lambda rs: rs == 0, return_statuses)))
         print("Done compiling; %d success, %d failed." % (nsuccess, len(return_statuses)-nsuccess))
-    
-

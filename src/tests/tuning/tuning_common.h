@@ -15,8 +15,8 @@
 
 #define AOCL_ALIGNMENT 64
 #define DEFAULT_STRIDE 1048576UL*4  // stride = 1 * 4 MB
-//#define PAYLOAD_MAX_SIZE 1073741824UL*2   // 1*2 GB
-#define PAYLOAD_MAX_SIZE 1048576UL*4
+#define PAYLOAD_MAX_SIZE 1073741824UL*2   // 1*2 GB
+//#define PAYLOAD_MAX_SIZE 1048576UL*4
 #define REPETITIONS 100
 #define CLOCK_USED CLOCK_REALTIME
 #define RANDOM_SOURCE "/dev/urandom"
@@ -31,6 +31,7 @@ typedef struct TuningInterface {
     void (*set_key) (OpenCLEnv* env, const unsigned char *userKey, const int bits, void* context);
     void (*block_cipher) (OpenCLEnv* env, uint8_t* plaintext, size_t input_size, void* context, uint8_t* ciphertext, cipher_callback_t callback, void *user_data);
     size_t context_bytes;
+    size_t keysize;
 } TuningInterface;
 
 

@@ -172,7 +172,7 @@ void opencl_camellia_128_ctr_encrypt(OpenCLEnv* env, uint8_t* plaintext, size_t 
 }
 
 void opencl_camellia_128_ctr_decrypt(OpenCLEnv* env, uint8_t* ciphertext, size_t input_size, camellia_context* K, uint8_t* plaintext, cipher_callback_t callback, void *user_data) {
-    camellia_encrypt_decrypt_function(env, CAMELLIA_128_CTR, ciphertext, input_size, (void*)&(K->key18), plaintext, K->iv, CAMELLIA_18_ROUNDS, DECRYPT, callback, user_data);
+    opencl_camellia_128_ctr_encrypt(env, ciphertext, input_size, (void*)&(K->key18), plaintext, callback, user_data);
 }
 
 
@@ -181,7 +181,7 @@ void opencl_camellia_192_ctr_encrypt(OpenCLEnv* env, uint8_t* plaintext, size_t 
 }
 
 void opencl_camellia_192_ctr_decrypt(OpenCLEnv* env, uint8_t* ciphertext, size_t input_size, camellia_context* K, uint8_t* plaintext, cipher_callback_t callback, void *user_data) {
-    camellia_encrypt_decrypt_function(env, CAMELLIA_192_CTR, ciphertext, input_size, (void*)&(K->key24), plaintext, K->iv, CAMELLIA_24_ROUNDS, DECRYPT, callback, user_data);
+    opencl_camellia_192_ctr_encrypt(env, ciphertext, input_size, (void*)&(K->key24), plaintext, callback, user_data);
 }
 
 
@@ -190,7 +190,7 @@ void opencl_camellia_256_ctr_encrypt(OpenCLEnv* env, uint8_t* plaintext, size_t 
 }
 
 void opencl_camellia_256_ctr_decrypt(OpenCLEnv* env, uint8_t* ciphertext, size_t input_size, camellia_context* K, uint8_t* plaintext, cipher_callback_t callback, void *user_data) {
-    camellia_encrypt_decrypt_function(env, CAMELLIA_256_CTR, ciphertext, input_size, (void*)&(K->key24), plaintext, K->iv, CAMELLIA_24_ROUNDS, DECRYPT, callback, user_data);
+    opencl_camellia_256_ctr_encrypt(env, ciphertext, input_size, (void*)&(K->key24), plaintext, callback, user_data);
 }
 /* ----------------- end ctr mode ----------------- */
 

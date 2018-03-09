@@ -49,8 +49,9 @@ void tuning_step(OpenCLEnv* global_env,
                  FILE *logfile) {
     struct timespec duration;
     void *context = malloc(impl->context_bytes);
+    uint8_t *key_material = alloc_random_payload(impl->keysize);
     printf("Host-side key schedule...\r"); fflush(stdout);
-    impl->set_key(global_env, (unsigned char*) key_128, 128, context);
+    impl->set_key(global_env, (unsigned char*) key_material, impl->keysize, context);
     printf("Allocating %luB x 2...\r", nbytes); fflush(stdout);
     uint8_t *payload = alloc_random_payload(nbytes);
     uint8_t *trashcan = (uint8_t*) aligned_alloc(AOCL_ALIGNMENT, sizeof(uint8_t) * nbytes);
@@ -66,6 +67,7 @@ void tuning_step(OpenCLEnv* global_env,
 
     free(payload);
     free(trashcan);
+    free(key_material);
     free(context);
 }
 

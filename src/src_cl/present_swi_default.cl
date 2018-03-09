@@ -5,24 +5,28 @@
 
 
 #define SELECT_NIBBLE(number, nib) ((number >> (nib*4)) & 0xF)
-#define SUBSTITUTE_NIBBLE(number, nib) (((NUM_LONGS)sbox[SELECT_NIBBLE(number, nib)]) << (nib*4))
+#define SUBSTITUTE_NIBBLE(number, nib) (((ulong)sbox[SELECT_NIBBLE(number, nib)]) << (nib*4))
 
-#define BIT_PERMUTATION(number, oldpos, newpos) (((number & (1 << (oldpos))) >> (oldpos)) << (newpos))
+#define BIT_SELECT64(number, pos) (((ulong)((number) & (1ULL << (pos)))) >> (pos))
+
+#define BIT_PERMUTATION64(number, oldpos, newpos) (BIT_SELECT64(number, oldpos) << (newpos))
 // the equation P(i) = BIT_MAPPING_GEN(i) is true for all 0 <= i < 64 entries in
 // the present permutation table
-#define BIT_MAPPING_GEN(oldpos) ((((oldpos)*16) + ((oldpos)/4)) % 64)
-#define BIT_MAPPING_GEN_INV(oldpos) ((((oldpos)/16) + ((oldpos)*4)) % 64)
+//#define BIT_MAPPING_GEN(oldpos) ((((oldpos)*16) + ((oldpos)/4)) % 64)
+//#define BIT_MAPPING_GEN_INV(oldpos) ((((oldpos)/16) + ((oldpos)*4)) % 64)
+#define BIT_MAPPING_GEN(oldpos) ((oldpos*16) % 63)
+#define BIT_MAPPING_GEN_INV(oldpos) ((oldpos*4) % 63)
 
-#define PERMUTATE_BIT(number, bitpos) BIT_PERMUTATION(number, bitpos, BIT_MAPPING_GEN(bitpos))
-#define PERMUTATE_BIT_INV(number, bitpos) BIT_PERMUTATION(number, bitpos, BIT_MAPPING_GEN_INV(bitpos))
+#define PERMUTATE_BIT(number, bitpos) BIT_PERMUTATION64(number, bitpos, BIT_MAPPING_GEN(bitpos))
+#define PERMUTATE_BIT_INV(number, bitpos) BIT_PERMUTATION64(number, bitpos, BIT_MAPPING_GEN_INV(bitpos))
 
 
 
-ulong add_round_key(__private ulong state_in, __private ulong* rk) {
+ulong add_round_key(__private ulong state_in, __private ulong rk) {
     return rk ^ state_in;
 }
 
-ushort substitution(__private ulong* state_in, ushort sbox) {
+ulong substitution(__private ulong state_in, ushort *sbox) {
     return    0                                     \
               | SUBSTITUTE_NIBBLE(state_in, 0)      \
               | SUBSTITUTE_NIBBLE(state_in, 1)      \
@@ -106,7 +110,7 @@ ushort substitution(__private ulong* state_in, ushort sbox) {
               | permfun(state_in, 60)      \
               | permfun(state_in, 61)      \
               | permfun(state_in, 62)      \
-              | permfun(state_in, 63)      \
+              | BIT_PERMUTATION64(state_in, 63, 63)      \
               )
 
 ulong present_round(__private ulong state_in,
@@ -129,9 +133,10 @@ ulong present_round_inv(__private ulong state_in,
     const ushort sbox_inv[16] = {0x5,0xe,0xf,0x8,0xC,0x1,0x2,0xD,0xB,0x4,0x6,0x3,0x0,0x7,0x9,0xA};
 
     temp_state1 = add_round_key(state_in, key[num_round]);
-    temp_state2 = substitution(temp_state1, sbox_inv);
-    return PERMUTATE_STATE(temp_state2, PERMUTATE_BIT_INV);
+    temp_state2 = PERMUTATE_STATE(temp_state1, PERMUTATE_BIT_INV);
+    return substitution(temp_state2, sbox_inv);
 }
+
 
 
 void encrypt(__private uchar state_in[BLOCK_SIZE],
@@ -156,20 +161,20 @@ void encrypt(__private uchar state_in[BLOCK_SIZE],
 void decrypt(__private uchar state_in[BLOCK_SIZE],
              __private ulong* key,
              __private uchar state_out[BLOCK_SIZE]) {
-    __private uchar temp_state1[BLOCK_SIZE];
-    __private uchar temp_state2[BLOCK_SIZE];
+    __private ulong temp_state1;
+    __private ulong temp_state2;
 
     __private ulong* state_in64 = (ulong*)state_in;
     __private ulong* state_out64 = (ulong*)state_out;
 
-    temp_state1 = add_round_key(*state_in64, key[0]);  // initial key addition
+    temp_state1 = present_round_inv(*state_in64, key, 0);
     temp_state2 = present_round_inv(temp_state1, key, 1);
     for (size_t r=1; r<(31/2); r++) {
         temp_state1 = present_round_inv(temp_state2, key, r*2);
         temp_state2 = present_round_inv(temp_state1, key, (r*2)+1);
     }
     temp_state1 = present_round_inv(temp_state2, key, 30);
-    *state_out64 = present_round_inv(temp_state1, key, 31);
+    *state_out64 = add_round_key(temp_state1, key[31]);  // final key addition
 }
 
 

@@ -26,7 +26,7 @@ void init_present_methods_and_state(CipherFamily* fam) {
     fam->num_methods = NUM_PRESENT_METHODS;
 
     fam->state = CipherState_init(fam);
-    cast5_atomics = common_atomics;
+    present_atomics = common_atomics;
 }
 
 void destroy_present_methods_and_state(CipherFamily* fam) {

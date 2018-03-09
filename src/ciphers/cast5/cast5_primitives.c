@@ -154,7 +154,7 @@ void opencl_cast5_ctr_encrypt(OpenCLEnv* env, uint8_t* plaintext, size_t input_s
 }
 
 void opencl_cast5_ctr_decrypt(OpenCLEnv* env, uint8_t* ciphertext, size_t input_size, cast5_context* K, uint8_t* plaintext, cipher_callback_t callback, void *user_data) {
-    cast5_encrypt_decrypt_function(env, CAST5_MODE_CTR, ciphertext, input_size, K, plaintext, K->iv, DECRYPT, callback, user_data);
+    opencl_cast5_ctr_encrypt(env, ciphertext, input_size, K, plaintext, callback, user_data);
 }
 
 /* ----------------- end ctr mode ----------------- */
