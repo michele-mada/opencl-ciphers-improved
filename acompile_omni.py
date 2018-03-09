@@ -113,9 +113,9 @@ if __name__ == "__main__":
                 exec_buildlist.append(build_item)
             else:
                 if cli.verbose:
-                    item_binary_mtime = os.path.getmtime(make_binary_path(source_item))
+                    item_binary_mtime = os.path.getmtime(make_binary_path(build_item))
                     print("Target {:<43} is up to date (built {})".format(
-                        source_item,
+                        build_item,
                         datetime.datetime.fromtimestamp(item_binary_mtime).strftime(datefmt)))
 
     if not cli.dry_run:
