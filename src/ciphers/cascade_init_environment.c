@@ -13,6 +13,7 @@ extern void OpenCLEnv_cascade_init_environment(OpenCLEnv* env) {
     env->ciphers[HIGHT_CIPHERS] = get_hight_family(env);
     env->ciphers[MISTY1_CIPHERS] = get_misty1_family(env);
     env->ciphers[CLEFIA_CIPHERS] = get_clefia_family(env);
+    env->ciphers[PRESENT_CIPHERS] = get_present_family(env);
 
     env->num_ciphers = NUM_FAMILIES;
 }
