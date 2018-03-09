@@ -103,7 +103,7 @@ if __name__ == "__main__":
             continue
 
         if cli.force:
-            if verbose:
+            if cli.verbose:
                 print("Reuilding {}".format(build_item))
             exec_buildlist.append(build_item)
         else:
@@ -112,7 +112,7 @@ if __name__ == "__main__":
             elif is_update_required(build_item, depends, verbose=cli.verbose):
                 exec_buildlist.append(build_item)
             else:
-                if verbose:
+                if cli.verbose:
                     item_binary_mtime = os.path.getmtime(make_binary_path(source_item))
                     print("Target {:<43} is up to date (built {})".format(
                         source_item,
