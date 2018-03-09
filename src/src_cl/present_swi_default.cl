@@ -21,12 +21,33 @@
 #define PERMUTATE_BIT_INV(number, bitpos) BIT_PERMUTATION64(number, bitpos, BIT_MAPPING_GEN_INV(bitpos))
 
 
-
 ulong add_round_key(__private ulong state_in, __private ulong rk) {
     return rk ^ state_in;
 }
 
-ulong substitution(__private ulong state_in, ushort *sbox) {
+ulong substitution(__private ulong state_in) {
+    ushort sbox[16] = {0xc,0x5,0x6,0xb,0x9,0x0,0xa,0xd,0x3,0xe,0xf,0x8,0x4,0x7,0x1,0x2};
+    return    0                                     \
+              | SUBSTITUTE_NIBBLE(state_in, 0)      \
+              | SUBSTITUTE_NIBBLE(state_in, 1)      \
+              | SUBSTITUTE_NIBBLE(state_in, 2)      \
+              | SUBSTITUTE_NIBBLE(state_in, 3)      \
+              | SUBSTITUTE_NIBBLE(state_in, 4)      \
+              | SUBSTITUTE_NIBBLE(state_in, 5)      \
+              | SUBSTITUTE_NIBBLE(state_in, 6)      \
+              | SUBSTITUTE_NIBBLE(state_in, 7)      \
+              | SUBSTITUTE_NIBBLE(state_in, 8)      \
+              | SUBSTITUTE_NIBBLE(state_in, 9)      \
+              | SUBSTITUTE_NIBBLE(state_in, 10)     \
+              | SUBSTITUTE_NIBBLE(state_in, 11)     \
+              | SUBSTITUTE_NIBBLE(state_in, 12)     \
+              | SUBSTITUTE_NIBBLE(state_in, 13)     \
+              | SUBSTITUTE_NIBBLE(state_in, 14)     \
+              | SUBSTITUTE_NIBBLE(state_in, 15);
+}
+
+ulong substitution_inv(__private ulong state_in) {
+    ushort sbox[16] = {0x5,0xe,0xf,0x8,0xC,0x1,0x2,0xD,0xB,0x4,0x6,0x3,0x0,0x7,0x9,0xA};
     return    0                                     \
               | SUBSTITUTE_NIBBLE(state_in, 0)      \
               | SUBSTITUTE_NIBBLE(state_in, 1)      \
@@ -118,10 +139,9 @@ ulong present_round(__private ulong state_in,
                     size_t num_round) {
     __private ulong temp_state1;
     __private ulong temp_state2;
-    const ushort sbox[16] = {0xc,0x5,0x6,0xb,0x9,0x0,0xa,0xd,0x3,0xe,0xf,0x8,0x4,0x7,0x1,0x2};
 
     temp_state1 = add_round_key(state_in, key[num_round]);
-    temp_state2 = substitution(temp_state1, sbox);
+    temp_state2 = substitution(temp_state1);
     return PERMUTATE_STATE(temp_state2, PERMUTATE_BIT);
 }
 
@@ -130,11 +150,10 @@ ulong present_round_inv(__private ulong state_in,
                         size_t num_round) {
     __private ulong temp_state1;
     __private ulong temp_state2;
-    const ushort sbox_inv[16] = {0x5,0xe,0xf,0x8,0xC,0x1,0x2,0xD,0xB,0x4,0x6,0x3,0x0,0x7,0x9,0xA};
 
     temp_state1 = add_round_key(state_in, key[num_round]);
     temp_state2 = PERMUTATE_STATE(temp_state1, PERMUTATE_BIT_INV);
-    return substitution(temp_state2, sbox_inv);
+    return substitution_inv(temp_state2);
 }
 
 
