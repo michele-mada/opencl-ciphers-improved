@@ -67,29 +67,43 @@ CipherFamily* CipherFamily_init(struct OpenCLEnv* environment,
                                 void (*cascade_init_fun)(struct CipherFamily*),
                                 void (*cascade_destroy_fun)(struct CipherFamily*)) {
     CipherFamily* new_fam = (CipherFamily*) malloc(sizeof(CipherFamily));
+    new_fam->loaded = 0;
     new_fam->environment = environment;
     new_fam->num_methods = 0;
     new_fam->cascade_destroy_fun = cascade_destroy_fun;
     new_fam->programs = (cl_program*) malloc(sizeof(cl_program) * source_filename_list_length);
     new_fam->num_programs = source_filename_list_length;
-    for (size_t i=0; i<new_fam->num_programs; i++) {
+
+    new_fam->cascade_init_fun = cascade_init_fun;
+    new_fam->source_filename_list = source_filename_list;
+    #ifndef LAZY_LOADING
+        CipherFamily_costly_finalization(new_fam);
+    #endif
+    return new_fam;
+}
+
+void CipherFamily_costly_finalization(CipherFamily* fam) {
+    for (size_t i=0; i<fam->num_programs; i++) {
         #ifdef PLATFORM_CPU
-            new_fam->programs[i] = load_program_cl(new_fam, source_filename_list[i]);
+            fam->programs[i] = load_program_cl(fam, fam->source_filename_list[i]);
         #else
-            new_fam->programs[i] = load_program_aocx(new_fam, source_filename_list[i]);
+            fam->programs[i] = load_program_aocx(fam, fam->source_filename_list[i]);
         #endif
     }
-    (*cascade_init_fun)(new_fam);
-    return new_fam;
+    fam->cascade_init_fun(fam);
+    free_kernel_filename_list(fam->source_filename_list, fam->num_programs);
+    fam->loaded = 1;
 }
 
 
 void CipherFamily_destroy(CipherFamily* fam) {
-    for (size_t i=0; i<fam->num_programs; i++) {
-        clReleaseProgram(fam->programs[i]);
+    if (fam->loaded) {
+        for (size_t i=0; i<fam->num_programs; i++) {
+            clReleaseProgram(fam->programs[i]);
+        }
+        free(fam->programs);
+        fam->cascade_destroy_fun(fam);
     }
-    free(fam->programs);
-    fam->cascade_destroy_fun(fam);
     free(fam);
 }
 

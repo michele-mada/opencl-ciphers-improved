@@ -122,5 +122,16 @@ void omni_encrypt_decrypt_function(OpenCLEnv* env,
                                    int with_iv, int with_tweak,
                                    cipher_callback_t callback, void *user_data);
 
+#ifdef LAZY_LOADING
+    #define FINALIZE_FAMILY(fam) \
+    { \
+        if (!((fam)->loaded)) { \
+            CipherFamily_costly_finalization(fam); \
+        } \
+    }
+#else
+    #define FINALIZE_FAMILY(fam) {}
+#endif
+
 
 #endif

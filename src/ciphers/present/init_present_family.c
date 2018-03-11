@@ -45,6 +45,6 @@ CipherFamily* get_present_family(struct OpenCLEnv* environment) {
                                                     kernels_present,
                                                     num_sources_present);
     CipherFamily* present = CipherFamily_init(environment, kernel_paths, num_sources_present, &init_present_methods_and_state, &destroy_present_methods_and_state);
-    free_kernel_filename_list(kernel_paths, num_sources_present);
+    // the init function will automatically free the kernel_paths array when done
     return present;
 }

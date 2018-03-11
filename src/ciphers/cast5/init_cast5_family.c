@@ -52,6 +52,6 @@ CipherFamily* get_cast5_family(struct OpenCLEnv* environment) {
                                                     kernels_cast5,
                                                     num_sources_cast5);
     CipherFamily* cast5 = CipherFamily_init(environment, kernel_paths, num_sources_cast5, &init_cast5_methods_and_state, &destroy_cast5_methods_and_state);
-    free_kernel_filename_list(kernel_paths, num_sources_cast5);
+    // the init function will automatically free the kernel_paths array when done
     return cast5;
 }

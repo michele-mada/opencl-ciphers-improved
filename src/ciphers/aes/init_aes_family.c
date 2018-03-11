@@ -57,6 +57,6 @@ CipherFamily* get_aes_family(struct OpenCLEnv* environment) {
                                                     kernels_aes,
                                                     num_sources_aes);
     CipherFamily* aes = CipherFamily_init(environment, kernel_paths, num_sources_aes, &init_aes_methods_and_state, &destroy_aes_methods_and_state);
-    free_kernel_filename_list(kernel_paths, num_sources_aes);
+    // the init function will automatically free the kernel_paths array when done
     return aes;
 }

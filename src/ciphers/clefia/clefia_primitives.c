@@ -61,6 +61,7 @@ void clefia_encrypt_decrypt_function(OpenCLEnv* env,           // global opencl 
                                      int is_decrypt,           // select which key to use, encrypt or decrypt
                                      cipher_callback_t callback,  // optional callback invoked after the critical section
                                      void *user_data) {        // argument of the optional callback
+    FINALIZE_FAMILY(FAMILY);
     CipherMethod* meth = FAMILY->methods[method_id];
 
     omni_encrypt_decrypt_function(env,
@@ -80,6 +81,7 @@ void clefia_encrypt_decrypt_function(OpenCLEnv* env,           // global opencl 
 /* ----------------- begin key preparation ----------------- */
 
 void clefia_omni_set_key(OpenCLEnv* env, const unsigned char *userKey, const int bits, clefia_context *K, int is_dec) {
+    FINALIZE_FAMILY(FAMILY);
     K->ex_key_dim = CLEFIA_EXPANDED_KEY_SIZE(CLEFIA_NUM_ROUNDS(bits));
     clefia_expandkey(userKey, K->esk, K->dsk, bits);
     clefia_atomics.prepare_key1_buffer(FAMILY, K->ex_key_dim);

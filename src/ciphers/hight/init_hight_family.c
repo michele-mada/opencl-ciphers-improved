@@ -44,6 +44,6 @@ CipherFamily* get_hight_family(struct OpenCLEnv* environment) {
                                                     kernels_hight,
                                                     num_sources_hight);
     CipherFamily* hight = CipherFamily_init(environment, kernel_paths, num_sources_hight, &init_hight_methods_and_state, &destroy_hight_methods_and_state);
-    free_kernel_filename_list(kernel_paths, num_sources_hight);
+    // the init function will automatically free the kernel_paths array when done
     return hight;
 }

@@ -41,6 +41,7 @@ void camellia_encrypt_decrypt_function(OpenCLEnv* env,
                                        int is_decrypt,
                                        cipher_callback_t callback,  // optional callback invoked after the critical section
                                        void *user_data) {
+    FINALIZE_FAMILY(FAMILY);
     CipherMethod* meth = FAMILY->methods[method_id];
 
     omni_encrypt_decrypt_function(env,
@@ -58,6 +59,7 @@ void camellia_encrypt_decrypt_function(OpenCLEnv* env,
 /* ----------------- begin key preparation ----------------- */
 
 void camellia_load_key_once(OpenCLEnv* env, camellia_context *context, int mode, int is_decrypt) {
+    FINALIZE_FAMILY(FAMILY);
     size_t key_long_size = KEY_INT_SIZE();
     uint32_t* key = (is_decrypt ? CONTEXT_DSK() : CONTEXT_ESK());
     camellia_atomics.prepare_key1_buffer(FAMILY, key_long_size * sizeof(uint64_t));
@@ -75,6 +77,7 @@ void opencl_camellia_128_set_decrypt_key(OpenCLEnv* env, const unsigned char *us
 }
 
 void opencl_camellia_128_set_tweak_key(OpenCLEnv* env, const unsigned char *userKey, const int bits, camellia_context *K) {
+    FINALIZE_FAMILY(FAMILY);
     uint64_t discard[CAMELLIA_18ROUND_EXPANDED_KEY_SIZE];
     camellia_expandkey((uint64_t*)userKey, K->key18.tsk, discard, 128);
     camellia_atomics.prepare_key2_buffer(FAMILY, CAMELLIA_18ROUND_EXPANDED_KEY_SIZE * sizeof(uint64_t));
@@ -92,6 +95,7 @@ void opencl_camellia_192_set_decrypt_key(OpenCLEnv* env, const unsigned char *us
 }
 
 void opencl_camellia_192_set_tweak_key(OpenCLEnv* env, const unsigned char *userKey, const int bits, camellia_context *K) {
+    FINALIZE_FAMILY(FAMILY);
     uint64_t discard[CAMELLIA_24ROUND_EXPANDED_KEY_SIZE];
     camellia_expandkey((uint64_t*)userKey, K->key24.tsk, discard, 192);
     camellia_atomics.prepare_key2_buffer(FAMILY, CAMELLIA_24ROUND_EXPANDED_KEY_SIZE * sizeof(uint64_t));
@@ -109,6 +113,7 @@ void opencl_camellia_256_set_decrypt_key(OpenCLEnv* env, const unsigned char *us
 }
 
 void opencl_camellia_256_set_tweak_key(OpenCLEnv* env, const unsigned char *userKey, const int bits, camellia_context *K) {
+    FINALIZE_FAMILY(FAMILY);
     uint64_t discard[CAMELLIA_24ROUND_EXPANDED_KEY_SIZE];
     camellia_expandkey((uint64_t*)userKey, K->key24.tsk, discard, 256);
     camellia_atomics.prepare_key2_buffer(FAMILY, CAMELLIA_24ROUND_EXPANDED_KEY_SIZE * sizeof(uint64_t));
@@ -120,6 +125,7 @@ void opencl_camellia_256_set_tweak_key(OpenCLEnv* env, const unsigned char *user
 /* ----------------- begin iv manipulation ----------------- */
 
 void opencl_camellia_set_iv(OpenCLEnv* env, uint8_t *iv, camellia_context *K) {
+    FINALIZE_FAMILY(FAMILY);
     memcpy(K->iv, iv, CAMELLIA_IV_SIZE);
     camellia_atomics.prepare_iv_buffer(FAMILY, CAMELLIA_IV_SIZE);
 }

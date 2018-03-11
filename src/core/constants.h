@@ -30,5 +30,7 @@ const static int i = 1;
 
 #define USE_CUSTOM_PROFILER
 
+#define LAZY_LOADING
+
 
 #endif

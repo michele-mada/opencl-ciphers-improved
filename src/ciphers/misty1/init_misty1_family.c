@@ -44,6 +44,6 @@ CipherFamily* get_misty1_family(struct OpenCLEnv* environment) {
                                                     kernels_misty1,
                                                     num_sources_misty1);
     CipherFamily* misty1 = CipherFamily_init(environment, kernel_paths, num_sources_misty1, &init_misty1_methods_and_state, &destroy_misty1_methods_and_state);
-    free_kernel_filename_list(kernel_paths, num_sources_misty1);
+    // the init function will automatically free the kernel_paths array when done
     return misty1;
 }

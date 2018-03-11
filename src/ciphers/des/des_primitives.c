@@ -46,6 +46,7 @@ void des_encrypt_decrypt_function(OpenCLEnv* env,
                                   int is_decrypt,
                                   cipher_callback_t callback,  // optional callback invoked after the critical section
                                   void *user_data) {
+    FINALIZE_FAMILY(FAMILY);
     CipherMethod* meth = FAMILY->methods[method_id];
 
     omni_encrypt_decrypt_function(env,
@@ -63,6 +64,7 @@ void des_encrypt_decrypt_function(OpenCLEnv* env,
 /* ----------------- begin key preparation ----------------- */
 
 void des_load_key_once(OpenCLEnv* env, des_context *context, int mode, int is_decrypt) {
+    FINALIZE_FAMILY(FAMILY);
     size_t key_int_size = KEY_INT_SIZE();
     uint32_t* key = (is_decrypt ? CONTEXT_DSK() : CONTEXT_ESK());
     des_atomics.prepare_key1_buffer(FAMILY, key_int_size * sizeof(uint32_t));

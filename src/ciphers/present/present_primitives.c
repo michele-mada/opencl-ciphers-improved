@@ -32,6 +32,7 @@ void present_encrypt_decrypt_function(OpenCLEnv* env,           // global opencl
                                       int is_decrypt,           // select which key to use, encrypt or decrypt
                                       cipher_callback_t callback,  // optional callback invoked after the critical section
                                       void *user_data) {        // argument of the optional callback
+    FINALIZE_FAMILY(FAMILY);
     CipherMethod* meth = FAMILY->methods[method_id];
 
     omni_encrypt_decrypt_function(env,
@@ -50,18 +51,21 @@ void present_encrypt_decrypt_function(OpenCLEnv* env,           // global opencl
 /* ----------------- begin key preparation ----------------- */
 
 void opencl_present_set_encrypt_key(OpenCLEnv* env, const unsigned char *userKey, const int bits, present_context *K) {
+    FINALIZE_FAMILY(FAMILY);
     present_expandkey(userKey, K->esk, K->dsk, bits);
     present_atomics.prepare_key1_buffer(FAMILY, PRESENT_EXPANDED_KEY_SIZE * sizeof(uint64_t));
     present_atomics.sync_load_key1(FAMILY, (uint8_t*) K->esk, PRESENT_EXPANDED_KEY_SIZE * sizeof(uint64_t));
 }
 
 void opencl_present_set_decrypt_key(OpenCLEnv* env, const unsigned char *userKey, const int bits, present_context *K) {
+    FINALIZE_FAMILY(FAMILY);
     present_expandkey(userKey, K->esk, K->dsk, bits);
     present_atomics.prepare_key1_buffer(FAMILY, PRESENT_EXPANDED_KEY_SIZE * sizeof(uint64_t));
     present_atomics.sync_load_key1(FAMILY, (uint8_t*) K->dsk, PRESENT_EXPANDED_KEY_SIZE * sizeof(uint64_t));
 }
 
 void opencl_present_set_tweak_key(OpenCLEnv* env, const unsigned char *userKey, const int bits, present_context *K) {
+    FINALIZE_FAMILY(FAMILY);
     uint64_t discard[PRESENT_EXPANDED_KEY_SIZE];
     present_expandkey(userKey, K->tsk, K->dsk, bits);
     present_atomics.prepare_key2_buffer(FAMILY, PRESENT_EXPANDED_KEY_SIZE * sizeof(uint64_t));

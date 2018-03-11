@@ -60,6 +60,7 @@ void aes_encrypt_decrypt_function(OpenCLEnv* env,           // global opencl env
                                   int is_decrypt,           // select which key to use, encrypt or decrypt
                                   cipher_callback_t callback,  // optional callback invoked after the critical section
                                   void *user_data) {        // argument of the optional callback
+    FINALIZE_FAMILY(FAMILY);
     CipherMethod* meth = FAMILY->methods[method_id];
 
     omni_encrypt_decrypt_function(env,
@@ -81,6 +82,7 @@ void aes_encrypt_decrypt_function(OpenCLEnv* env,           // global opencl env
 /* ----------------- begin key preparation ----------------- */
 
 void opencl_aes_128_set_encrypt_key(OpenCLEnv* env, const unsigned char *userKey, const int bits, aes_context *K) {
+    FINALIZE_FAMILY(FAMILY);
     K->ex_key_dim = Nr_TO_EXKEYSIZE(10);
     key_expansion_encrypt(userKey, K->expanded_key_encrypt, 4, 4, 10);
     aes_atomics.prepare_key1_buffer(FAMILY, K->ex_key_dim * sizeof(uint32_t));
@@ -88,6 +90,7 @@ void opencl_aes_128_set_encrypt_key(OpenCLEnv* env, const unsigned char *userKey
 }
 
 void opencl_aes_128_set_decrypt_key(OpenCLEnv* env, const unsigned char *userKey, const int bits, aes_context *K) {
+    FINALIZE_FAMILY(FAMILY);
     K->ex_key_dim = Nr_TO_EXKEYSIZE(10);
     key_expansion_decrypt(userKey, K->expanded_key_decrypt, 4, 4, 10);
     aes_atomics.prepare_key1_buffer(FAMILY, K->ex_key_dim * sizeof(uint32_t));
@@ -95,6 +98,7 @@ void opencl_aes_128_set_decrypt_key(OpenCLEnv* env, const unsigned char *userKey
 }
 
 void opencl_aes_128_set_tweak_key(OpenCLEnv* env, const unsigned char *userKey, const int bits, aes_context *K) {
+    FINALIZE_FAMILY(FAMILY);
     K->ex_key_dim = Nr_TO_EXKEYSIZE(10);
     key_expansion_encrypt(userKey, K->expanded_key_tweak, 4, 4, 10);
     aes_atomics.prepare_key2_buffer(FAMILY, K->ex_key_dim * sizeof(uint32_t));
@@ -102,6 +106,7 @@ void opencl_aes_128_set_tweak_key(OpenCLEnv* env, const unsigned char *userKey, 
 }
 
 void opencl_aes_192_set_encrypt_key(OpenCLEnv* env, const unsigned char *userKey, const int bits, aes_context *K) {
+    FINALIZE_FAMILY(FAMILY);
     K->ex_key_dim = Nr_TO_EXKEYSIZE(12);
     key_expansion_encrypt(userKey, K->expanded_key_encrypt, 6, 4, 12);
     aes_atomics.prepare_key1_buffer(FAMILY, K->ex_key_dim * sizeof(uint32_t));
@@ -109,6 +114,7 @@ void opencl_aes_192_set_encrypt_key(OpenCLEnv* env, const unsigned char *userKey
 }
 
 void opencl_aes_192_set_decrypt_key(OpenCLEnv* env, const unsigned char *userKey, const int bits, aes_context *K) {
+    FINALIZE_FAMILY(FAMILY);
     K->ex_key_dim = Nr_TO_EXKEYSIZE(12);
     key_expansion_decrypt(userKey, K->expanded_key_decrypt, 6, 4, 12);
     aes_atomics.prepare_key1_buffer(FAMILY, K->ex_key_dim * sizeof(uint32_t));
@@ -116,6 +122,7 @@ void opencl_aes_192_set_decrypt_key(OpenCLEnv* env, const unsigned char *userKey
 }
 
 void opencl_aes_192_set_tweak_key(OpenCLEnv* env, const unsigned char *userKey, const int bits, aes_context *K) {
+    FINALIZE_FAMILY(FAMILY);
     K->ex_key_dim = Nr_TO_EXKEYSIZE(12);
     key_expansion_decrypt(userKey, K->expanded_key_tweak, 6, 4, 12);
     aes_atomics.prepare_key2_buffer(FAMILY, K->ex_key_dim * sizeof(uint32_t));
@@ -123,6 +130,7 @@ void opencl_aes_192_set_tweak_key(OpenCLEnv* env, const unsigned char *userKey, 
 }
 
 void opencl_aes_256_set_encrypt_key(OpenCLEnv* env, const unsigned char *userKey, const int bits, aes_context *K) {
+    FINALIZE_FAMILY(FAMILY);
     K->ex_key_dim = Nr_TO_EXKEYSIZE(14);
     key_expansion_encrypt(userKey, K->expanded_key_encrypt, 8, 4, 14);
     aes_atomics.prepare_key1_buffer(FAMILY, K->ex_key_dim * sizeof(uint32_t));
@@ -130,6 +138,7 @@ void opencl_aes_256_set_encrypt_key(OpenCLEnv* env, const unsigned char *userKey
 }
 
 void opencl_aes_256_set_decrypt_key(OpenCLEnv* env, const unsigned char *userKey, const int bits, aes_context *K) {
+    FINALIZE_FAMILY(FAMILY);
     K->ex_key_dim = Nr_TO_EXKEYSIZE(14);
     key_expansion_decrypt(userKey, K->expanded_key_decrypt, 8, 4, 14);
     aes_atomics.prepare_key1_buffer(FAMILY, K->ex_key_dim * sizeof(uint32_t));
@@ -137,6 +146,7 @@ void opencl_aes_256_set_decrypt_key(OpenCLEnv* env, const unsigned char *userKey
 }
 
 void opencl_aes_256_set_tweak_key(OpenCLEnv* env, const unsigned char *userKey, const int bits, aes_context *K) {
+    FINALIZE_FAMILY(FAMILY);
     K->ex_key_dim = Nr_TO_EXKEYSIZE(14);
     key_expansion_decrypt(userKey, K->expanded_key_tweak, 8, 4, 14);
     aes_atomics.prepare_key2_buffer(FAMILY, K->ex_key_dim * sizeof(uint32_t));
@@ -148,6 +158,7 @@ void opencl_aes_256_set_tweak_key(OpenCLEnv* env, const unsigned char *userKey, 
 /* ----------------- begin iv manipulation ----------------- */
 
 void opencl_aes_set_iv(OpenCLEnv* env, uint8_t *iv, aes_context *K) {
+    FINALIZE_FAMILY(FAMILY);
     memcpy(K->iv, iv, AES_IV_SIZE);
     aes_atomics.prepare_iv_buffer(FAMILY, AES_IV_SIZE);
 }

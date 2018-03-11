@@ -48,6 +48,6 @@ CipherFamily* get_des_family(struct OpenCLEnv* environment) {
                                                     kernels_des,
                                                     num_sources_des);
     CipherFamily* des = CipherFamily_init(environment, kernel_paths, num_sources_des, &init_des_methods_and_state, &destroy_des_methods_and_state);
-    free_kernel_filename_list(kernel_paths, num_sources_des);
+    // the init function will automatically free the kernel_paths array when done
     return des;
 }

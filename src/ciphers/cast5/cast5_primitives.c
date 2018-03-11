@@ -71,6 +71,7 @@ void cast5_encrypt_decrypt_function(OpenCLEnv* env,
                                     int is_decrypt,
                                     cipher_callback_t callback,  // optional callback invoked after the critical section
                                     void *user_data) {
+    FINALIZE_FAMILY(FAMILY);
     int rounds = CAST5_12_ROUNDS;
     if (context->keylength > 10) rounds = CAST5_16_ROUNDS;
 
@@ -93,6 +94,7 @@ void cast5_encrypt_decrypt_function(OpenCLEnv* env,
 /* ----------------- begin key preparation ----------------- */
 
 void opencl_cast5_set_encrypt_key(OpenCLEnv* env, const unsigned char *userKey, const int bits, cast5_context *K) {
+    FINALIZE_FAMILY(FAMILY);
     cast5_expandkey(userKey, K->esk, K->dsk, bits);
     K->keylength = bits/8;
     cast5_atomics.prepare_key1_buffer(FAMILY, CAST5_EXPANDED_KEY_SIZE * sizeof(uint32_t));
@@ -100,6 +102,7 @@ void opencl_cast5_set_encrypt_key(OpenCLEnv* env, const unsigned char *userKey, 
 }
 
 void opencl_cast5_set_decrypt_key(OpenCLEnv* env, const unsigned char *userKey, const int bits, cast5_context *K) {
+    FINALIZE_FAMILY(FAMILY);
     cast5_expandkey(userKey, K->esk, K->dsk, bits);
     K->keylength = bits/8;
     cast5_atomics.prepare_key1_buffer(FAMILY, CAST5_EXPANDED_KEY_SIZE * sizeof(uint32_t));
@@ -107,6 +110,7 @@ void opencl_cast5_set_decrypt_key(OpenCLEnv* env, const unsigned char *userKey, 
 }
 
 void opencl_cast5_set_tweak_key(OpenCLEnv* env, const unsigned char *userKey, const int bits, cast5_context *K) {
+    FINALIZE_FAMILY(FAMILY);
     uint32_t discard[CAST5_EXPANDED_KEY_SIZE];
     cast5_expandkey(userKey, K->tsk, discard, bits);
     K->keylength = bits/8;

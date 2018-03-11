@@ -57,6 +57,6 @@ CipherFamily* get_clefia_family(struct OpenCLEnv* environment) {
                                                     kernels_clefia,
                                                     num_sources_clefia);
     CipherFamily* clefia = CipherFamily_init(environment, kernel_paths, num_sources_clefia, &init_clefia_methods_and_state, &destroy_clefia_methods_and_state);
-    free_kernel_filename_list(kernel_paths, num_sources_clefia);
+    // the init function will automatically free the kernel_paths array when done
     return clefia;
 }

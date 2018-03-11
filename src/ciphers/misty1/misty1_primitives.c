@@ -30,6 +30,7 @@ void misty1_encrypt_decrypt_function(OpenCLEnv* env,
                                      uint8_t* iv,
                                      cipher_callback_t callback,  // optional callback invoked after the critical section
                                      void *user_data) {
+    FINALIZE_FAMILY(FAMILY);
     CipherMethod* meth = FAMILY->methods[method_id];
 
     omni_encrypt_decrypt_function(env,
@@ -47,18 +48,21 @@ void misty1_encrypt_decrypt_function(OpenCLEnv* env,
 /* ----------------- begin key preparation ----------------- */
 
 void opencl_misty1_set_encrypt_key(OpenCLEnv* env, const unsigned char *userKey, const int bits, misty1_context *K) {
+    FINALIZE_FAMILY(FAMILY);
     misty1_expandkey(userKey, K->esk, K->dsk, bits);
     misty1_atomics.prepare_key1_buffer(FAMILY, MISTY1_EXPANDED_KEY_SIZE * sizeof(uint16_t));
     misty1_atomics.sync_load_key1(FAMILY, (uint8_t*) K->esk, MISTY1_EXPANDED_KEY_SIZE * sizeof(uint16_t));
 }
 
 void opencl_misty1_set_decrypt_key(OpenCLEnv* env, const unsigned char *userKey, const int bits, misty1_context *K) {
+    FINALIZE_FAMILY(FAMILY);
     misty1_expandkey(userKey, K->esk, K->dsk, bits);
     misty1_atomics.prepare_key1_buffer(FAMILY, MISTY1_EXPANDED_KEY_SIZE * sizeof(uint16_t));
     misty1_atomics.sync_load_key1(FAMILY, (uint8_t*) K->dsk, MISTY1_EXPANDED_KEY_SIZE * sizeof(uint16_t));
 }
 
 void opencl_misty1_set_tweak_key(OpenCLEnv* env, const unsigned char *userKey, const int bits, misty1_context *K) {
+    FINALIZE_FAMILY(FAMILY);
     uint8_t discard[MISTY1_EXPANDED_KEY_SIZE];
     misty1_expandkey(userKey, K->tsk, discard, bits);
     misty1_atomics.prepare_key2_buffer(FAMILY, MISTY1_EXPANDED_KEY_SIZE * sizeof(uint16_t));

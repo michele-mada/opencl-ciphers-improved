@@ -28,9 +28,12 @@ typedef struct CipherFamily {
     struct OpenCLEnv* environment;
     size_t num_programs;
     cl_program *programs;
+    int loaded;
+    char** source_filename_list;
     size_t num_methods;
     struct CipherMethod** methods;
     void *state;
+    void (*cascade_init_fun)(struct CipherFamily*);
     void (*cascade_destroy_fun)(struct CipherFamily*);
 } CipherFamily;
 
@@ -41,6 +44,7 @@ CipherFamily* CipherFamily_init(struct OpenCLEnv* environment,
                                 void (*cascade_init_fun)(struct CipherFamily*),
                                 void (*cascade_destroy_fun)(struct CipherFamily*));
 void CipherFamily_destroy(CipherFamily* fam);
+void CipherFamily_costly_finalization(CipherFamily* fam);
 
 void CipherFamily_toggle_burst_mode(CipherFamily* fam, int enabled);
 

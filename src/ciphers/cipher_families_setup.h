@@ -11,6 +11,7 @@ enum CipherFamilyId {
     MISTY1_CIPHERS,
     CLEFIA_CIPHERS,
     PRESENT_CIPHERS,
+    SEED_CIPHERS,
 
 
     NUM_FAMILIES
@@ -25,6 +26,7 @@ extern CipherFamily* get_hight_family(struct OpenCLEnv* environment);
 extern CipherFamily* get_misty1_family(struct OpenCLEnv* environment);
 extern CipherFamily* get_clefia_family(struct OpenCLEnv* environment);
 extern CipherFamily* get_present_family(struct OpenCLEnv* environment);
+extern CipherFamily* get_seed_family(struct OpenCLEnv* environment);
 
 
 #endif

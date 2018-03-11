@@ -51,6 +51,6 @@ CipherFamily* get_camellia_family(struct OpenCLEnv* environment) {
                                                     kernels_camellia,
                                                     num_sources_camellia);
     CipherFamily* camellia = CipherFamily_init(environment, kernel_paths, num_sources_camellia, &init_camellia_methods_and_state, &destroy_camellia_methods_and_state);
-    free_kernel_filename_list(kernel_paths, num_sources_camellia);
+    // the init function will automatically free the kernel_paths array when done
     return camellia;
 }
