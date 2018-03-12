@@ -15,7 +15,8 @@ sources = ["aes_swi_small",
            "hight_swi_default",
            "misty1_swi_default",
            "clefia_swi_default",
-           "present_swi_default"]
+           "present_swi_default",
+           "seed_swi_default"]
 
 depends = ["modes_of_operation"]
 
