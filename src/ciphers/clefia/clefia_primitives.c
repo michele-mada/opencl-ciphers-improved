@@ -121,6 +121,7 @@ void opencl_clefia_256_set_decrypt_key(OpenCLEnv* env, const unsigned char *user
 /* ----------------- begin iv manipulation ----------------- */
 
 void opencl_clefia_set_iv(OpenCLEnv* env, uint8_t *iv, clefia_context *K) {
+    FINALIZE_FAMILY(FAMILY);
     memcpy(K->iv, iv, CLEFIA_IV_SIZE);
     clefia_atomics.prepare_iv_buffer(FAMILY, CLEFIA_IV_SIZE);
 }

@@ -291,7 +291,7 @@ __kernel void clefiaCipherXtsEnc(__global uchar* restrict in,
                                  __global uchar* restrict tweak_init,
                                  unsigned int num_rounds,
                                  unsigned int input_size) \
-    XTS_MODE_BOILERPLATE(ENCRYPT_INTERFACE, ENCRYPT_INTERFACE, in, out, w1, w2, tweak_init, BLOCK_SIZE, MAX_EXKEY_SIZE_BYTES, input_size);
+    XTS_MODE_BOILERPLATE(ENCRYPT_INTERFACE, ENCRYPT_INTERFACE, XTS_STEAL_ENC, in, out, w1, w2, tweak_init, BLOCK_SIZE, MAX_EXKEY_SIZE_BYTES, input_size);
 
 __attribute__((reqd_work_group_size(1, 1, 1)))
 __kernel void clefiaCipherXtsDec(__global uchar* restrict in,
@@ -301,4 +301,4 @@ __kernel void clefiaCipherXtsDec(__global uchar* restrict in,
                                  __global uchar* restrict tweak_init,
                                  unsigned int num_rounds,
                                  unsigned int input_size) \
-    XTS_MODE_BOILERPLATE(DECRYPT_INTERFACE, ENCRYPT_INTERFACE, in, out, w1, w2, tweak_init, BLOCK_SIZE, MAX_EXKEY_SIZE_BYTES, input_size);
+    XTS_MODE_BOILERPLATE(DECRYPT_INTERFACE, ENCRYPT_INTERFACE, XTS_STEAL_DEC, in, out, w1, w2, tweak_init, BLOCK_SIZE, MAX_EXKEY_SIZE_BYTES, input_size);

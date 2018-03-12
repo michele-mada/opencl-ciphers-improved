@@ -3,6 +3,12 @@
 #define GF_128_FDBK 0x87
 
 
+#define XTS_STEAL_ENC 0
+#define XTS_STEAL_DEC 1
+
+#define IS_STEALING_REQUIRED(input_size, block_size) \
+    (((input_size) - (((input_size) / (block_size)) * (block_size))) % (block_size) != 0)
+
 void increment_counter(__private uchar* counter, size_t amount, size_t block_size) {
     size_t n = block_size, c = amount;
     #pragma unroll
@@ -110,9 +116,10 @@ void gf128_multiply_by_alpha(uchar* block_in, uchar* block_out) {
     encdec_fun(temp_state_in, local_w1, temp_state_out);                        \
                                                                                 \
     _Pragma("unroll")                                                           \
-    for(size_t i = 0; i < (block_size); i++) {                                  \
+    for (size_t i = 0; i < (block_size); i++) {                                 \
         size_t offset = (block_id) * (block_size) + i;                          \
-        (global_out)[offset] = temp_state_out[i] ^ (tweak_val)[i];              \
+        temp_state_steal[i] = temp_state_out[i] ^ (tweak_val)[i];               \
+        (global_out)[offset] = temp_state_steal[i];                             \
     }                                                                           \
 }
 
@@ -131,12 +138,12 @@ void gf128_multiply_by_alpha(uchar* block_in, uchar* block_out) {
             size_t offset = last_partial_block_offset + i;                      \
             temp_state_in[i] = (global_in)[offset] ^ tweak[i];                  \
             /* also copy the final partial block bytes */                       \
-            (global_out)[offset] = temp_state_out[offset - (block_size)];       \
+            (global_out)[offset] = temp_state_steal[offset - (block_size)];     \
         }                                                                       \
         /* last part of the input state: ctx stolen from previous operation */  \
         for (size_t i = bytes_left; i < (block_size); ++i) {                    \
             size_t offset = last_full_block_offset + i;                         \
-            temp_state_in[i] = temp_state_out[offset] ^ tweak[i];               \
+            temp_state_in[i] = temp_state_steal[offset] ^ tweak[i];             \
         }                                                                       \
                                                                                 \
         blockcipher(temp_state_in, local_w1, temp_state_out);                   \
@@ -150,15 +157,23 @@ void gf128_multiply_by_alpha(uchar* block_in, uchar* block_out) {
     }                                                                           \
 }
 
-#define XTS_MODE_BOILERPLATE(blockcipher, blockcipher_tweak,                    \
+#define XTS_MODE_BOILERPLATE(blockcipher, /* main cipher function/macro; prototype: void cipher(uchar *in, uchar *key, uchar *out) */ \
+                             blockcipher_tweak, /* tweak only cipher function/macro; prototype: void cipher(uchar *in, uchar *key, uchar *out) */ \
+                             is_dec, /* boolean, true to set the ciphertext stealing datapath to decryption mode */ \
+                             /* global parameters, type __global uchar*  */ \
                              global_in, global_out, global_key1, global_key2, global_tweak,     \
-                             block_size, key_size, input_size)                  \
+                             /* cipher-specific constants, size expressed in bytes  */ \
+                             block_size, key_size,                              \
+                             /* input size (in bytes) parameter, type unsigned int */ \
+                             input_size)                                        \
 {                                                                               \
     uchar __attribute__((register)) tweak1[(block_size)];                       \
     uchar __attribute__((register)) tweak2[(block_size)];                       \
+    uchar __attribute__((register)) tweak_last[(block_size)];                   \
                                                                                 \
     uchar __attribute__((register)) temp_state_in[(block_size)];                \
     uchar __attribute__((register)) temp_state_out[(block_size)];               \
+    uchar __attribute__((register)) temp_state_steal[(block_size)];             \
                                                                                 \
     uchar __attribute__((register)) local_w1[(key_size)];                       \
     copy_extkey_to_local(local_w1, (global_key1), (key_size));                  \
@@ -172,22 +187,22 @@ void gf128_multiply_by_alpha(uchar* block_in, uchar* block_out) {
     }                                                                           \
     blockcipher_tweak(tweak1, local_w2, tweak2);                                \
                                                                                 \
-    for (size_t blockid=0; blockid < (input_size) / ((block_size)*2); blockid++) {  \
-        XTS_ROUND(blockcipher, (block_size), blockid*2, (global_in), (global_out), tweak2);      \
-        gf128_multiply_by_alpha(tweak2, tweak1);                                \
-        XTS_ROUND(blockcipher, (block_size), (blockid*2)+1, (global_in), (global_out), tweak1);  \
-        gf128_multiply_by_alpha(tweak1, tweak2);                                \
-    }                                                                           \
-                                                                                \
-    if (((input_size) / (block_size)) % 2 != 0) {                               \
-        size_t blockid = ((input_size) / (block_size)) - 1;                     \
+    size_t blockid;                                                             \
+    for (blockid=0; blockid<((input_size) / (block_size))-1; blockid++) {       \
         XTS_ROUND(blockcipher, (block_size), blockid, (global_in), (global_out), tweak2);       \
         gf128_multiply_by_alpha(tweak2, tweak1);                                \
-        _Pragma("unroll")                                                       \
         for (size_t i=0; i<(block_size); i++) {                                 \
             tweak2[i] = tweak1[i];                                              \
         }                                                                       \
     }                                                                           \
-                                                                                \
-    CIPHERTEXT_STEALING(blockcipher, (block_size), (global_in), (global_out), tweak2);          \
+    gf128_multiply_by_alpha(tweak2, tweak_last);                                \
+    if ((is_dec) && IS_STEALING_REQUIRED((input_size), (block_size))) {         \
+        XTS_ROUND(blockcipher, (block_size), blockid, (global_in), (global_out), tweak_last);   \
+        for (size_t i=0; i<(block_size); i++) {                                 \
+            tweak_last[i] = tweak2[i];                                          \
+        }                                                                       \
+    } else {                                                                    \
+        XTS_ROUND(blockcipher, (block_size), blockid, (global_in), (global_out), tweak2);       \
+    }                                                                           \
+    CIPHERTEXT_STEALING(blockcipher, (block_size), (global_in), (global_out), tweak_last);      \
 }

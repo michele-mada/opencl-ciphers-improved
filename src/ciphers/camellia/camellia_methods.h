@@ -9,15 +9,18 @@ typedef enum CamelliaMethodsId {
     CAMELLIA_128_CTR,
     CAMELLIA_192_CTR,
     CAMELLIA_256_CTR,
-    CAMELLIA_128_XTS,
-    CAMELLIA_192_XTS,
-    CAMELLIA_256_XTS,
+    CAMELLIA_128_XTS_ENC,
+    CAMELLIA_192_XTS_ENC,
+    CAMELLIA_256_XTS_ENC,
+    CAMELLIA_128_XTS_DEC,
+    CAMELLIA_192_XTS_DEC,
+    CAMELLIA_256_XTS_DEC,
 
     NUM_CAMELLIA_METHODS
 } CamelliaMethodsId;
 
 
-#define IS_CAMELLIA_TWEAKED_METHOD(meth_id) ((meth_id) >= CAMELLIA_128_XTS && (meth_id) <= CAMELLIA_256_XTS)
+#define IS_CAMELLIA_TWEAKED_METHOD(meth_id) ((meth_id) >= CAMELLIA_128_XTS_ENC && (meth_id) <= CAMELLIA_256_XTS_DEC)
 
 
 static int num_sources_camellia = 1;

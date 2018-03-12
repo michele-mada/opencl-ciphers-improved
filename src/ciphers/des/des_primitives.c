@@ -106,6 +106,7 @@ void opencl_des3_set_decrypt_key(OpenCLEnv* env, const unsigned char *userKey, c
 /* ----------------- begin iv manipulation ----------------- */
 
 void opencl_des_set_iv(OpenCLEnv* env, uint8_t *iv, des_context *K) {
+    FINALIZE_FAMILY(FAMILY);
     memcpy(K->iv, iv, DES_IV_SIZE);
     des_atomics.prepare_iv_buffer(FAMILY, DES_IV_SIZE);
 }

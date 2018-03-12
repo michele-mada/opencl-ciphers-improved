@@ -74,6 +74,7 @@ void opencl_misty1_set_tweak_key(OpenCLEnv* env, const unsigned char *userKey, c
 /* ----------------- begin iv manipulation ----------------- */
 
 void opencl_misty1_set_iv(OpenCLEnv* env, uint8_t *iv, misty1_context *K) {
+    FINALIZE_FAMILY(FAMILY);
     memcpy(K->iv, iv, MISTY1_IV_SIZE);
     misty1_atomics.prepare_iv_buffer(FAMILY, MISTY1_IV_SIZE);
 }

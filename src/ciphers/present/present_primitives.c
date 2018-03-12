@@ -77,6 +77,7 @@ void opencl_present_set_tweak_key(OpenCLEnv* env, const unsigned char *userKey, 
 /* ----------------- begin iv manipulation ----------------- */
 
 void opencl_present_set_iv(OpenCLEnv* env, uint8_t *iv, present_context *K) {
+    FINALIZE_FAMILY(FAMILY);
     memcpy(K->iv, iv, PRESENT_IV_SIZE);
     present_atomics.prepare_iv_buffer(FAMILY, PRESENT_IV_SIZE);
 }

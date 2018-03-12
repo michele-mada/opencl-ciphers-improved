@@ -95,7 +95,6 @@ __constant uchar S1[0x100] = {
 #endif
 
 
-
 #define m0 0xFC
 #define m1 0xF3
 #define m2 0xCF
@@ -136,17 +135,17 @@ ulong F(uint Ki0, uint Ki1, ulong R) {
 
 #define SEED_ROUND_AND_SWAP(block1, block2) \
 { \
-    temp = (block1); \
-    uint Ki0 = k[round_key_id++]; \
-    uint Ki1 = k[round_key_id++]; \
-    (block1) = (block2) ^ F(Ki0, Ki1, (block1)); \
-    (block2) = temp; \
+    temp = (block2); \
+    uint Ki0 = key[round_key_id++]; \
+    uint Ki1 = key[round_key_id++]; \
+    (block2) = (block1) ^ F(Ki0, Ki1, (block2)); \
+    (block1) = temp; \
 }
 
 
-void encrypt(__private uchar state_in[BLOCK_SIZE],
-             __private ulong* key,
-             __private uchar state_out[BLOCK_SIZE]) {
+void crypt(__private uchar state_in[BLOCK_SIZE],
+           __private uint* key,
+           __private uchar state_out[BLOCK_SIZE]) {
     ulong *M = (ulong*) state_in;
     ulong *C = (ulong*) state_out;
     ulong L, R, temp;
@@ -170,19 +169,21 @@ void encrypt(__private uchar state_in[BLOCK_SIZE],
     SEED_ROUND_AND_SWAP(L, R);  // round 14
     SEED_ROUND_AND_SWAP(L, R);  // round 15
 
-    L = L ^ F(k[round_key_id++], R);  // final round
+    uint Ki0 = key[round_key_id++];
+    uint Ki1 = key[round_key_id++];
+    L = L ^ F(Ki0, Ki1, R);  // final round
 
     C[0] = FIX_ENDIANNESS(L);
     C[1] = FIX_ENDIANNESS(R);
 }
 
-#define ENCRYPT_INTERFACE(in, key, out) encrypt(in, (ulong*)key, out, num_rounds)
-#define DECRYPT_INTERFACE(in, key, out) encrypt(in, (ulong*)key, out, num_rounds)
+#define ENCRYPT_INTERFACE(in, key, out) crypt(in, (uint*)key, out)
+#define DECRYPT_INTERFACE(in, key, out) crypt(in, (uint*)key, out)
 
 
 __attribute__((reqd_work_group_size(1, 1, 1)))
 __kernel void seedCipherEnc(__global uchar* restrict in,
-                            __global ulong* restrict keys,
+                            __global uint* restrict keys,
                             __global uchar* restrict out,
                             unsigned int num_rounds,
                             unsigned int input_size) \
@@ -190,7 +191,7 @@ __kernel void seedCipherEnc(__global uchar* restrict in,
 
 __attribute__((reqd_work_group_size(1, 1, 1)))
 __kernel void seedCipherDec(__global uchar* restrict in,
-                            __global ulong* restrict keys,
+                            __global uint* restrict keys,
                             __global uchar* restrict out,
                             unsigned int num_rounds,
                             unsigned int input_size) \
@@ -200,7 +201,7 @@ __kernel void seedCipherDec(__global uchar* restrict in,
 
 __attribute__((reqd_work_group_size(1, 1, 1)))
 __kernel void seedCipherCtr(__global uchar* restrict in,
-                            __global ulong* restrict keys,
+                            __global uint* restrict keys,
                             __global uchar* restrict out,
                             __global uchar* restrict IV,
                             unsigned int num_rounds,
@@ -210,20 +211,20 @@ __kernel void seedCipherCtr(__global uchar* restrict in,
 
 __attribute__((reqd_work_group_size(1, 1, 1)))
 __kernel void seedCipherXtsEnc(__global uchar* restrict in,
-                               __global ulong* restrict keys1,
-                               __global ulong* restrict keys2,
+                               __global uint* restrict keys1,
+                               __global uint* restrict keys2,
                                __global uchar* restrict out,
                                __global uchar* restrict tweak_init,
                                unsigned int num_rounds,
                                unsigned int input_size) \
-    XTS_MODE_BOILERPLATE(ENCRYPT_INTERFACE, ENCRYPT_INTERFACE, in, out, (__global uchar* restrict)keys1, (__global uchar* restrict)keys2, tweak_init, BLOCK_SIZE, EXKEY_SIZE_DWORDS*4, input_size);
+    XTS_MODE_BOILERPLATE(ENCRYPT_INTERFACE, ENCRYPT_INTERFACE, XTS_STEAL_ENC, in, out, (__global uchar* restrict)keys1, (__global uchar* restrict)keys2, tweak_init, BLOCK_SIZE, EXKEY_SIZE_DWORDS*4, input_size);
 
 __attribute__((reqd_work_group_size(1, 1, 1)))
 __kernel void seedCipherXtsDec(__global uchar* restrict in,
-                               __global ulong* restrict keys1,
-                               __global ulong* restrict keys2,
+                               __global uint* restrict keys1,
+                               __global uint* restrict keys2,
                                __global uchar* restrict out,
                                __global uchar* restrict tweak_init,
                                unsigned int num_rounds,
                                unsigned int input_size) \
-    XTS_MODE_BOILERPLATE(DECRYPT_INTERFACE, ENCRYPT_INTERFACE, in, out, (__global uchar* restrict)keys1, (__global uchar* restrict)keys2, tweak_init, BLOCK_SIZE, EXKEY_SIZE_DWORDS*4, input_size);
+    XTS_MODE_BOILERPLATE(DECRYPT_INTERFACE, ENCRYPT_INTERFACE, XTS_STEAL_DEC, in, out, (__global uchar* restrict)keys1, (__global uchar* restrict)keys2, tweak_init, BLOCK_SIZE, EXKEY_SIZE_DWORDS*4, input_size);

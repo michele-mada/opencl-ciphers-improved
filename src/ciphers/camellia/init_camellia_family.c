@@ -25,9 +25,12 @@ void init_camellia_methods_and_state(CipherFamily* fam) {
     fam->methods[CAMELLIA_128_CTR] = CipherMethod_init(fam, "camelliaCipherCtr", 1);
     fam->methods[CAMELLIA_192_CTR] = CipherMethod_init(fam, "camelliaCipherCtr", 1);
     fam->methods[CAMELLIA_256_CTR] = CipherMethod_init(fam, "camelliaCipherCtr", 1);
-    fam->methods[CAMELLIA_128_XTS] = CipherMethod_init(fam, "camelliaCipherXts", 1);
-    fam->methods[CAMELLIA_192_XTS] = CipherMethod_init(fam, "camelliaCipherXts", 1);
-    fam->methods[CAMELLIA_256_XTS] = CipherMethod_init(fam, "camelliaCipherXts", 1);
+    fam->methods[CAMELLIA_128_XTS_ENC] = CipherMethod_init(fam, "camelliaCipherXtsEnc", 1);
+    fam->methods[CAMELLIA_192_XTS_ENC] = CipherMethod_init(fam, "camelliaCipherXtsEnc", 1);
+    fam->methods[CAMELLIA_256_XTS_ENC] = CipherMethod_init(fam, "camelliaCipherXtsEnc", 1);
+    fam->methods[CAMELLIA_128_XTS_DEC] = CipherMethod_init(fam, "camelliaCipherXtsDec", 1);
+    fam->methods[CAMELLIA_192_XTS_DEC] = CipherMethod_init(fam, "camelliaCipherXtsDec", 1);
+    fam->methods[CAMELLIA_256_XTS_DEC] = CipherMethod_init(fam, "camelliaCipherXtsDec", 1);
 
     fam->num_methods = NUM_CAMELLIA_METHODS;
 

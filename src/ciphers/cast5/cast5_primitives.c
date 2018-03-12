@@ -30,7 +30,7 @@
 CipherOpenCLAtomics cast5_atomics;
 
 
-int get_method_id(int usage_mode, int num_rounds, int is_decrypt) {
+int get_method_id_cast5(int usage_mode, int num_rounds, int is_decrypt) {
     if (is_decrypt) {
         switch (usage_mode) {
             case CAST5_MODE_ECB:
@@ -75,7 +75,7 @@ void cast5_encrypt_decrypt_function(OpenCLEnv* env,
     int rounds = CAST5_12_ROUNDS;
     if (context->keylength > 10) rounds = CAST5_16_ROUNDS;
 
-    int method_id = get_method_id(usage_mode, rounds, is_decrypt);
+    int method_id = get_method_id_cast5(usage_mode, rounds, is_decrypt);
 
     CipherMethod* meth = FAMILY->methods[method_id];
 
@@ -123,6 +123,7 @@ void opencl_cast5_set_tweak_key(OpenCLEnv* env, const unsigned char *userKey, co
 /* ----------------- begin iv manipulation ----------------- */
 
 void opencl_cast5_set_iv(OpenCLEnv* env, uint8_t *iv, cast5_context *K) {
+    FINALIZE_FAMILY(FAMILY);
     memcpy(K->iv, iv, CAST5_IV_SIZE);
     cast5_atomics.prepare_iv_buffer(FAMILY, CAST5_IV_SIZE);
 }

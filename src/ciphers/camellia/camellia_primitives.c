@@ -203,29 +203,29 @@ void opencl_camellia_256_ctr_decrypt(OpenCLEnv* env, uint8_t* ciphertext, size_t
 /* ----------------- begin xts mode ----------------- */
 
 void opencl_camellia_128_xts_encrypt(OpenCLEnv* env, uint8_t* plaintext, size_t input_size, camellia_context* K, uint8_t* ciphertext, cipher_callback_t callback, void *user_data) {
-    camellia_encrypt_decrypt_function(env, CAMELLIA_128_XTS, plaintext, input_size, (void*)&(K->key18), ciphertext, K->iv, CAMELLIA_18_ROUNDS, ENCRYPT, callback, user_data);
+    camellia_encrypt_decrypt_function(env, CAMELLIA_128_XTS_ENC, plaintext, input_size, (void*)&(K->key18), ciphertext, K->iv, CAMELLIA_18_ROUNDS, ENCRYPT, callback, user_data);
 }
 
 void opencl_camellia_128_xts_decrypt(OpenCLEnv* env, uint8_t* ciphertext, size_t input_size, camellia_context* K, uint8_t* plaintext, cipher_callback_t callback, void *user_data) {
-    camellia_encrypt_decrypt_function(env, CAMELLIA_128_XTS, ciphertext, input_size, (void*)&(K->key18), plaintext, K->iv, CAMELLIA_18_ROUNDS, DECRYPT, callback, user_data);
+    camellia_encrypt_decrypt_function(env, CAMELLIA_128_XTS_DEC, ciphertext, input_size, (void*)&(K->key18), plaintext, K->iv, CAMELLIA_18_ROUNDS, DECRYPT, callback, user_data);
 }
 
 
 void opencl_camellia_192_xts_encrypt(OpenCLEnv* env, uint8_t* plaintext, size_t input_size, camellia_context* K, uint8_t* ciphertext, cipher_callback_t callback, void *user_data) {
-    camellia_encrypt_decrypt_function(env, CAMELLIA_192_XTS, plaintext, input_size, (void*)&(K->key24), ciphertext, K->iv, CAMELLIA_24_ROUNDS, ENCRYPT, callback, user_data);
+    camellia_encrypt_decrypt_function(env, CAMELLIA_192_XTS_ENC, plaintext, input_size, (void*)&(K->key24), ciphertext, K->iv, CAMELLIA_24_ROUNDS, ENCRYPT, callback, user_data);
 }
 
 void opencl_camellia_192_xts_decrypt(OpenCLEnv* env, uint8_t* ciphertext, size_t input_size, camellia_context* K, uint8_t* plaintext, cipher_callback_t callback, void *user_data) {
-    camellia_encrypt_decrypt_function(env, CAMELLIA_192_XTS, ciphertext, input_size, (void*)&(K->key24), plaintext, K->iv, CAMELLIA_24_ROUNDS, DECRYPT, callback, user_data);
+    camellia_encrypt_decrypt_function(env, CAMELLIA_192_XTS_DEC, ciphertext, input_size, (void*)&(K->key24), plaintext, K->iv, CAMELLIA_24_ROUNDS, DECRYPT, callback, user_data);
 }
 
 
 void opencl_camellia_256_xts_encrypt(OpenCLEnv* env, uint8_t* plaintext, size_t input_size, camellia_context* K, uint8_t* ciphertext, cipher_callback_t callback, void *user_data) {
-    camellia_encrypt_decrypt_function(env, CAMELLIA_256_XTS, plaintext, input_size, (void*)&(K->key24), ciphertext, K->iv, CAMELLIA_24_ROUNDS, ENCRYPT, callback, user_data);
+    camellia_encrypt_decrypt_function(env, CAMELLIA_256_XTS_ENC, plaintext, input_size, (void*)&(K->key24), ciphertext, K->iv, CAMELLIA_24_ROUNDS, ENCRYPT, callback, user_data);
 }
 
 void opencl_camellia_256_xts_decrypt(OpenCLEnv* env, uint8_t* ciphertext, size_t input_size, camellia_context* K, uint8_t* plaintext, cipher_callback_t callback, void *user_data) {
-    camellia_encrypt_decrypt_function(env, CAMELLIA_256_XTS, ciphertext, input_size, (void*)&(K->key24), plaintext, K->iv, CAMELLIA_24_ROUNDS, DECRYPT, callback, user_data);
+    camellia_encrypt_decrypt_function(env, CAMELLIA_256_XTS_DEC, ciphertext, input_size, (void*)&(K->key24), plaintext, K->iv, CAMELLIA_24_ROUNDS, DECRYPT, callback, user_data);
 }
 
 /* ----------------- end xts mode ----------------- */

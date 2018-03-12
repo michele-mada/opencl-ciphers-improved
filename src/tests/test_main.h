@@ -10,16 +10,17 @@
 
 typedef int (*test_function_t)(OpenCLEnv*);
 
-#define NUM_TEST_FUNCTIONS 8
+#define NUM_TEST_FUNCTIONS 9
 static test_function_t test_functions[NUM_TEST_FUNCTIONS] = {
-    &test_des,
     &test_aes,
+    &test_des,
     &test_camellia,
     &test_cast5,
     &test_hight,
     &test_misty1,
     &test_clefia,
     &test_present,
+    &test_seed,
 };
 
 

@@ -90,6 +90,7 @@ extern int test_hight(OpenCLEnv* global_env);
 extern int test_misty1(OpenCLEnv* global_env);
 extern int test_clefia(OpenCLEnv* global_env);
 extern int test_present(OpenCLEnv* global_env);
+extern int test_seed(OpenCLEnv* global_env);
 
 
 #endif

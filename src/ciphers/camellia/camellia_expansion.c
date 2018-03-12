@@ -90,7 +90,7 @@ const uint64_t Sigma5 = 0x10E527FADE682D1Dul;
 const uint64_t Sigma6 = 0xB05688C2B3E6C1FDul;
 
 
-uint64_t fix_endianness(uint64_t number) {
+uint64_t fix_endianness64(uint64_t number) {
     uint8_t temp;
     if (!is_bigendian()) {
         uint8_t *bytes = (uint8_t*) &number;
@@ -171,14 +171,14 @@ void camellia_expandkey(uint64_t *user_key, uint64_t *exkey_enc, uint64_t *exkey
     uint64_t *enc_kw, *enc_k, *enc_ke;
     uint64_t *dec_kw, *dec_k, *dec_ke;
 
-    K[0] = fix_endianness(user_key[0]); K[1] = fix_endianness(user_key[1]);
+    K[0] = fix_endianness64(user_key[0]); K[1] = fix_endianness64(user_key[1]);
 
     if (keylen == 128) {
         K[2] = 0; K[3] = 0;
     } else if (keylen == 192) {
-        K[2] = fix_endianness(user_key[2]); K[3] = ~fix_endianness(user_key[2]);
+        K[2] = fix_endianness64(user_key[2]); K[3] = ~fix_endianness64(user_key[2]);
     } else {
-        K[2] = fix_endianness(user_key[2]); K[3] = fix_endianness(user_key[3]);
+        K[2] = fix_endianness64(user_key[2]); K[3] = fix_endianness64(user_key[3]);
     }
 
     uint64_t KLhi = K[0];
