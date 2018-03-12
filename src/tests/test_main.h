@@ -26,7 +26,7 @@ static test_function_t test_functions[NUM_TEST_FUNCTIONS] = {
 
 
 
-#define NUM_TUNING_INTERFACES 8
+#define NUM_TUNING_INTERFACES 9
 
 static TuningInterface tuning_interfaces[NUM_TUNING_INTERFACES] = {
     {
@@ -84,6 +84,13 @@ static TuningInterface tuning_interfaces[NUM_TUNING_INTERFACES] = {
         .block_cipher = &opencl_present_ecb_encrypt,
         .context_bytes = sizeof(present_context),
         .keysize = 10,
+    },
+    {
+        .human_name = "seed",
+        .set_key = &opencl_seed_set_encrypt_key,
+        .block_cipher = &opencl_seed_ecb_encrypt,
+        .context_bytes = sizeof(seed_context),
+        .keysize = 16,
     },
 };
 
