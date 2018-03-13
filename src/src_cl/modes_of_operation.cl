@@ -187,6 +187,59 @@ void gf128_multiply_by_alpha(uchar* block_in, uchar* block_out) {
     }                                                                           \
     blockcipher_tweak(tweak1, local_w2, tweak2);                                \
                                                                                 \
+    size_t blockid;                                                             \
+    for (blockid=0; blockid<((input_size) / (block_size))-1; blockid++) {       \
+        XTS_ROUND(blockcipher, (block_size), blockid, (global_in), (global_out), tweak2);       \
+        gf128_multiply_by_alpha(tweak2, tweak1);                                \
+        _Pragma("unroll")                                                       \
+        for (size_t i=0; i<(block_size); i++) {                                 \
+            tweak2[i] = tweak1[i];                                              \
+        }                                                                       \
+    }                                                                           \
+    gf128_multiply_by_alpha(tweak2, tweak_last);                                \
+    if ((is_dec) && IS_STEALING_REQUIRED((input_size), (block_size))) {         \
+        XTS_ROUND(blockcipher, (block_size), blockid, (global_in), (global_out), tweak_last);   \
+        _Pragma("unroll")                                                       \
+        for (size_t i=0; i<(block_size); i++) {                                 \
+            tweak_last[i] = tweak2[i];                                          \
+        }                                                                       \
+    } else {                                                                    \
+        XTS_ROUND(blockcipher, (block_size), blockid, (global_in), (global_out), tweak2);       \
+    }                                                                           \
+    CIPHERTEXT_STEALING(blockcipher, (block_size), (global_in), (global_out), tweak_last);      \
+}
+
+
+#define XTS_MODE_BOILERPLATE_LARGE(blockcipher, /* main cipher function/macro; prototype: void cipher(uchar *in, uchar *key, uchar *out) */ \
+                             blockcipher_tweak, /* tweak only cipher function/macro; prototype: void cipher(uchar *in, uchar *key, uchar *out) */ \
+                             is_dec, /* boolean, true to set the ciphertext stealing datapath to decryption mode */ \
+                             /* global parameters, type __global uchar*  */ \
+                             global_in, global_out, global_key1, global_key2, global_tweak,     \
+                             /* cipher-specific constants, size expressed in bytes  */ \
+                             block_size, key_size,                              \
+                             /* input size (in bytes) parameter, type unsigned int */ \
+                             input_size)                                        \
+{                                                                               \
+    uchar __attribute__((register)) tweak1[(block_size)];                       \
+    uchar __attribute__((register)) tweak2[(block_size)];                       \
+    uchar __attribute__((register)) tweak_last[(block_size)];                   \
+                                                                                \
+    uchar __attribute__((register)) temp_state_in[(block_size)];                \
+    uchar __attribute__((register)) temp_state_out[(block_size)];               \
+    uchar __attribute__((register)) temp_state_steal[(block_size)];             \
+                                                                                \
+    uchar __attribute__((register)) local_w1[(key_size)];                       \
+    copy_extkey_to_local(local_w1, (global_key1), (key_size));                  \
+    uchar __attribute__((register)) local_w2[(key_size)];                       \
+    copy_extkey_to_local(local_w2, (global_key2), (key_size));                  \
+                                                                                \
+    /* initialize tweak */                                                      \
+    _Pragma("unroll")                                                           \
+    for (size_t i = 0; i < (block_size); i++) {                                 \
+        tweak1[i] = (global_tweak)[i];                                          \
+    }                                                                           \
+    blockcipher_tweak(tweak1, local_w2, tweak2);                                \
+                                                                                \
     size_t blockid = 0;                                                         \
     for (; (blockid+2) < ((input_size) / (block_size)) ;) {                     \
         XTS_ROUND(blockcipher, (block_size), blockid, (global_in), (global_out), tweak2);       \
