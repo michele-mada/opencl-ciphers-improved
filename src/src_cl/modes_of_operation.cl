@@ -107,7 +107,6 @@ void gf128_multiply_by_alpha(uchar* block_in, uchar* block_out) {
 // Inner component of XTS_MODE_BOILERPLATE, not portable!
 #define XTS_ROUND(encdec_fun, block_size, block_id, global_in, global_out, tweak_val)     \
 {                                                                               \
-    printf("xts round %d\n", block_id);\
     _Pragma("unroll")                                                           \
     for (size_t i = 0; i < (block_size); ++i) {                                 \
         size_t offset = (block_id) * (block_size) + i;                          \
