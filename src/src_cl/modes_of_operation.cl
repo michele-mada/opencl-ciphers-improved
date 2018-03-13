@@ -208,8 +208,8 @@ void gf128_multiply_by_alpha(uchar* block_in, uchar* block_out) {
     } else { /* last 2 rounds */                                                \
         XTS_ROUND(blockcipher, (block_size), blockid, (global_in), (global_out), tweak2);           \
         gf128_multiply_by_alpha(tweak2, tweak1);                                \
-        blockid++;                                                              \
         gf128_multiply_by_alpha(tweak1, tweak_last);                            \
+        blockid++;                                                              \
         if ((is_dec) && IS_STEALING_REQUIRED((input_size), (block_size))) {     \
             XTS_ROUND(blockcipher, (block_size), blockid, (global_in), (global_out), tweak_last);   \
             CIPHERTEXT_STEALING(blockcipher, (block_size), (global_in), (global_out), tweak1);      \
