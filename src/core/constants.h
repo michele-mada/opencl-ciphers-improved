@@ -32,7 +32,7 @@ const static int i = 1;
 
 #define LAZY_LOADING
 
-//#define CRASH_WHEN_OUT_OF_MEM
+#define CRASH_WHEN_OUT_OF_MEM
 
 
 #endif
