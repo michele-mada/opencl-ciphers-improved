@@ -34,6 +34,38 @@ int tune_all(OpenCLEnv *global_env, size_t stride) {
 }
 
 
+int tune_by_name(OpenCLEnv *global_env, size_t stride, char *algo_name) {
+    int match_found = 0;
+    for (size_t i=0; i<NUM_TUNING_INTERFACES; i++) {
+        TuningInterface *iface = tuning_interfaces + i;
+
+        if (strcmp(iface->human_name, algo_name) != 0) continue;
+        match_found = 1;
+
+        char *logfile_name;
+        asprintf(&logfile_name, LOGFILE, iface->human_name);
+
+        #ifdef USE_CUSTOM_PROFILER
+            GlobalProfiler_init(iface->human_name);
+            setup_global_profiler_params();
+        #endif
+
+        tuning_loop(global_env, iface, stride, logfile_name);
+
+        #ifdef USE_CUSTOM_PROFILER
+            GlobalProfiler_destroy();
+        #endif
+    }
+
+    if (match_found == 0) {
+        fprintf(stderr, "Algorithm %s not found\nPossible choices are:\n", algo_name);
+        for (size_t i=0; i<NUM_TUNING_INTERFACES; i++) {
+            fprintf(stderr, "%s\n", tuning_interfaces[i].human_name);
+        }
+    }
+}
+
+
 int run_validation() {
     OpenCLEnv *global_env = OpenCLEnv_init();
 
@@ -58,7 +90,7 @@ int run_validation() {
 }
 
 
-int run_tuning() {
+int run_tuning(char *specific_algo) {
     OpenCLEnv *global_env = OpenCLEnv_init();
 
     size_t stride = DEFAULT_STRIDE;
@@ -68,7 +100,12 @@ int run_tuning() {
         stride = atol(custom_stride);
     }
 
-    tune_all(global_env, stride);
+    if (specific_algo == NULL) {
+        tune_all(global_env, stride);
+    } else {
+        tune_by_name(global_env, stride, specific_algo);
+    }
+
 
     OpenCLEnv_destroy(global_env);
 
@@ -83,7 +120,7 @@ int run_clinfo() {
 
 
 int complain_and_quit() {
-    printf("Please provide a valid argument. (\"validation\", \"tuning\", \"clinfo\", \"all\")\n");
+    printf("Please provide a valid argument. (\"validation\", \"tuning (optional: cipher name)\", \"clinfo\", \"all\")\n");
     printf("Environment: TUNING_STRIDE=num_bytes (default 4MB)\n");
     printf("             OCLC_ENC_BLOCK_SIZE=num_bytes (default %uB)\n", BASE_ENC_BLOCK_SIZE);
     printf("             OCLC_KERNEL_PATH_PREFIX=path\n");
@@ -100,7 +137,11 @@ int main(int argc, char* argv[]) {
         complain_and_quit();
     } else {
         if (strcmp(argv[1], "tuning") == 0) {
-            return run_tuning();
+            if (argc == 3) {
+                return run_tuning(argv[2]);
+            } else {
+                return run_tuning(NULL);
+            }
         } else if (strcmp(argv[1], "validation") == 0) {
             return run_validation();
         } else if (strcmp(argv[1], "clinfo") == 0) {
@@ -108,7 +149,7 @@ int main(int argc, char* argv[]) {
         } else if (strcmp(argv[1], "all") == 0) {
             run_clinfo();
             run_validation();
-            return run_tuning();
+            return run_tuning(NULL);
         } else {
             printf("Option \"%s\" not recognized.\n", argv[1]);
             complain_and_quit();
