@@ -21,7 +21,7 @@ void load_CL_program_source(char* fileName, unsigned char** source_str, size_t* 
 void load_CL_program_binary(char* fileName, unsigned char** binary_str, size_t* binary_size);
 void build_error_fatal(cl_int* ret, cl_program* program, cl_device_id* deviceId);
 void print_opencl_platforms_devices();
-void prepare_buffer(cl_context context, cl_mem* buffer, cl_mem_flags required_flags, size_t required_size);
+int prepare_buffer(cl_context context, cl_mem* buffer, cl_mem_flags required_flags, size_t required_size);
 
 
 #ifndef HAS_TIMESPEC_DIFF

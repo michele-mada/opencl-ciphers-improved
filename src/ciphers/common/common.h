@@ -45,10 +45,10 @@ void CipherState_destroy(CipherState *state);
 
 //NOTE: all sizes must be in *bytes*
 typedef struct CipherOpenCLAtomics {
-    void (*prepare_variable_buffers) (CipherFamily* fam, size_t input_size, size_t output_size);
-    void (*prepare_key1_buffer) (CipherFamily* fam, size_t key_size);
-    void (*prepare_key2_buffer) (CipherFamily* fam, size_t key_size);
-    void (*prepare_iv_buffer) (CipherFamily* fam, size_t iv_size);
+    int (*prepare_variable_buffers) (CipherFamily* fam, size_t input_size, size_t output_size);
+    int (*prepare_key1_buffer) (CipherFamily* fam, size_t key_size);
+    int (*prepare_key2_buffer) (CipherFamily* fam, size_t key_size);
+    int (*prepare_iv_buffer) (CipherFamily* fam, size_t iv_size);
 
     void (*sync_load_key1) (CipherFamily* fam, uint8_t* key, size_t key_size);
     void (*sync_load_key2) (CipherFamily* fam, uint8_t* key, size_t key_size);
@@ -67,10 +67,10 @@ typedef struct CipherOpenCLAtomics {
 #define KERNEL_PARAM_ERRORCHECK() if (ret != CL_SUCCESS) error_fatal("Failed to set kernel parameter %d, err = %s (%d)\n", param_id-1, get_cl_error_string(ret), ret)
 
 
-extern void common_prepare_variable_buffers(CipherFamily* fam, size_t input_size, size_t output_size);
-extern void common_prepare_key1_buffer(CipherFamily* fam, size_t key_size);
-extern void common_prepare_key2_buffer(CipherFamily* fam, size_t key_size);
-extern void common_prepare_iv_buffer(CipherFamily* fam, size_t iv_size);
+extern int common_prepare_variable_buffers(CipherFamily* fam, size_t input_size, size_t output_size);
+extern int common_prepare_key1_buffer(CipherFamily* fam, size_t key_size);
+extern int common_prepare_key2_buffer(CipherFamily* fam, size_t key_size);
+extern int common_prepare_iv_buffer(CipherFamily* fam, size_t iv_size);
 
 extern void common_sync_load_key1(CipherFamily* fam, uint8_t* key, size_t key_size);
 extern void common_sync_load_key2(CipherFamily* fam, uint8_t* key, size_t key_size);

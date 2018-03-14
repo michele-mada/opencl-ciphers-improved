@@ -211,20 +211,29 @@ int is_buffer_compliant(cl_mem buffer, cl_mem_flags required_flags, size_t requi
 }
 
 
-void prepare_buffer(cl_context context, cl_mem* buffer, cl_mem_flags required_flags, size_t required_size) {
+int prepare_buffer(cl_context context, cl_mem* buffer, cl_mem_flags required_flags, size_t required_size) {
     cl_int ret;
     if (!is_buffer_compliant(*buffer, required_flags, required_size)) {
         clReleaseMemObject(*buffer);
         *buffer = clCreateBuffer(context, required_flags, required_size, NULL, &ret);
-        if (ret != CL_SUCCESS) error_fatal("Failed to allocate new buffer, error = %s (%d)\n", get_cl_error_string(ret), ret);
+        //if (required_size > 4194304) ret = -5; // sabotage line, test purposes only
+        if (ret != CL_SUCCESS) {
+            fprintf(stderr, "Failed to allocate new buffer, error = %s (%d)\n", get_cl_error_string(ret), ret);
+            #ifdef CRASH_WHEN_OUT_OF_MEM
+                exit(1);
+            #endif
+            return 0;
+        }
     }
+
+    return 1;
 }
 
 
 void error_fatal(const char *format, ...) {
     va_list args;
     va_start(args, format);
-    vprintf(format, args);
+    vfprintf(stderr, format, args);
     va_end(args);
     exit(1);
 }

@@ -1,5 +1,9 @@
 #include "common.h"
+#include "error.h"
 #include "../../profiler/profiler_params.h"
+
+
+int engine_errno;
 
 
 CipherState *CipherState_init(CipherFamily *fam) {
@@ -26,41 +30,49 @@ void CipherState_destroy(CipherState *state) {
 }
 
 
-void common_prepare_variable_buffers(CipherFamily* fam, size_t input_size, size_t output_size) {
+int common_prepare_variable_buffers(CipherFamily* fam, size_t input_size, size_t output_size) {
     cl_context context = fam->environment->context;
     CipherState *state = (CipherState*) fam->state;
 
     for (int buff_id=0; buff_id<NUM_BUFFERS; buff_id++) {
-        prepare_buffer(context, &(state->in[buff_id]), CL_MEM_READ_WRITE, input_size * sizeof(uint8_t));
-        prepare_buffer(context, &(state->out[buff_id]), CL_MEM_READ_WRITE, output_size * sizeof(uint8_t));
+        if (!prepare_buffer(context, &(state->in[buff_id]), CL_MEM_READ_WRITE, input_size * sizeof(uint8_t))) return 0;
+        if (!prepare_buffer(context, &(state->out[buff_id]), CL_MEM_READ_WRITE, output_size * sizeof(uint8_t))) return 0;
     }
+
+    return 1;
 }
 
-void common_prepare_key1_buffer(CipherFamily* fam, size_t key_size) {
+int common_prepare_key1_buffer(CipherFamily* fam, size_t key_size) {
     cl_context context = fam->environment->context;
     CipherState *state = (CipherState*) fam->state;
 
     for (int buff_id=0; buff_id<NUM_BUFFERS; buff_id++) {
-        prepare_buffer(context, &(state->exKey[buff_id]), CL_MEM_READ_WRITE, key_size * sizeof(uint8_t));
+        if (!prepare_buffer(context, &(state->exKey[buff_id]), CL_MEM_READ_WRITE, key_size * sizeof(uint8_t))) return 0;
     }
+
+    return 1;
 }
 
-void common_prepare_key2_buffer(CipherFamily* fam, size_t key_size) {
+int common_prepare_key2_buffer(CipherFamily* fam, size_t key_size) {
     cl_context context = fam->environment->context;
     CipherState *state = (CipherState*) fam->state;
 
     for (int buff_id=0; buff_id<NUM_BUFFERS; buff_id++) {
-        prepare_buffer(context, &(state->exKeySecond[buff_id]), CL_MEM_READ_WRITE, key_size * sizeof(uint8_t));
+        if (!prepare_buffer(context, &(state->exKeySecond[buff_id]), CL_MEM_READ_WRITE, key_size * sizeof(uint8_t))) return 0;
     }
+
+    return 1;
 }
 
-void common_prepare_iv_buffer(CipherFamily* fam, size_t iv_size) {
+int common_prepare_iv_buffer(CipherFamily* fam, size_t iv_size) {
     cl_context context = fam->environment->context;
     CipherState *state = (CipherState*) fam->state;
 
     for (int buff_id=0; buff_id<NUM_BUFFERS; buff_id++) {
-        prepare_buffer(context, &(state->iv[buff_id]), CL_MEM_READ_WRITE, iv_size * sizeof(uint8_t));
+        if (!prepare_buffer(context, &(state->iv[buff_id]), CL_MEM_READ_WRITE, iv_size * sizeof(uint8_t))) return 0;
     }
+
+    return 1;
 }
 
 
@@ -237,19 +249,25 @@ void omni_encrypt_decrypt_function(OpenCLEnv* env,           // global opencl en
                                    void *user_data) {        // argument of the optional callback
     CipherState *state = (CipherState*) meth->family->state;
 
-    cl_event last_sync;
+    static cl_event last_sync[NUM_BUFFERS];
     cl_event kernel_done;
 
     pthread_mutex_lock(&(env->engine_lock));
         //fprintf(stderr, "engine entering critical zone\n");
-        atomics->prepare_variable_buffers(meth->family, input_size, output_size);
+        if (!atomics->prepare_variable_buffers(meth->family, input_size, output_size)) {
+            // error preparing the buffer
+            engine_errno = OUT_OF_MEM;
+            clWaitForEvents(2, last_sync);
+            pthread_mutex_unlock(&(env->engine_lock));
+            return;
+        }
         atomics->prepare_kernel(meth, input_size, num_rounds, with_iv, with_tweak);
         if (iv != NULL) {
             atomics->load_iv(meth->family, iv, iv_size);
         }
         atomics->load_input(meth->family, input, input_size);
         atomics->execute_kernel(meth, &kernel_done, state->selected_buffer);
-        atomics->gather_output(meth->family, output, output_size, &last_sync);
+        atomics->gather_output(meth->family, output, output_size, last_sync + state->selected_buffer);
         //fprintf(stderr, "engine exiting critical zone\n");
     pthread_mutex_unlock(&(env->engine_lock));
 
@@ -261,7 +279,7 @@ void omni_encrypt_decrypt_function(OpenCLEnv* env,           // global opencl en
     }
 
     if (!IS_BURST) {
-        clWaitForEvents(1, &last_sync);
+        clWaitForEvents(2, last_sync);
         if (meth->burst_enabled) {
             meth->burst_ready = 1;
             meth->burst_length_so_far = 0;

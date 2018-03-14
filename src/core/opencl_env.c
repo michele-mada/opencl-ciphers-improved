@@ -3,6 +3,7 @@
 #include "param_atlas.h"
 #include "constants.h"
 #include "utils.h"
+#include "../ciphers/common/error.h"
 
 
 void select_OpenCL_platform_and_device(OpenCLEnv* env) {
@@ -52,6 +53,7 @@ OpenCLEnv* OpenCLEnv_init() {
         new_env->perf_counter = PerfCounter_init(new_env->parameters->perf_file,
                                                  new_env->parameters->perf_refresh_time);
     }
+    engine_errno = NO_ERROR;
     return new_env;
 }
 
