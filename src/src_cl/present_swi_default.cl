@@ -169,6 +169,7 @@ void encrypt(__private uchar state_in[BLOCK_SIZE],
 
     temp_state1 = present_round(*state_in64, key, 0);
     temp_state2 = present_round(temp_state1, key, 1);
+    #pragma unroll
     for (size_t r=1; r<(31/2); r++) {
         temp_state1 = present_round(temp_state2, key, r*2);
         temp_state2 = present_round(temp_state1, key, (r*2)+1);
@@ -188,6 +189,7 @@ void decrypt(__private uchar state_in[BLOCK_SIZE],
 
     temp_state1 = present_round_inv(*state_in64, key, 0);
     temp_state2 = present_round_inv(temp_state1, key, 1);
+    #pragma unroll
     for (size_t r=1; r<(31/2); r++) {
         temp_state1 = present_round_inv(temp_state2, key, r*2);
         temp_state2 = present_round_inv(temp_state1, key, (r*2)+1);
