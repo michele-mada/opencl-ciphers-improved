@@ -18,7 +18,7 @@ const static int i = 1;
 
 #define BASE_ENC_BLOCK_SIZE 4096
 
-#define NUM_BUFFERS 2
+#define NUM_BUFFERS 3
 
 
 #ifdef PLATFORM_CPU
