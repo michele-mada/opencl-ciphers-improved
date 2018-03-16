@@ -257,7 +257,7 @@ void omni_encrypt_decrypt_function(OpenCLEnv* env,           // global opencl en
         if (!atomics->prepare_variable_buffers(meth->family, input_size, output_size)) {
             // error preparing the buffer
             engine_errno = OUT_OF_MEM;
-            clWaitForEvents(2, last_sync);
+            clWaitForEvents(NUM_BUFFERS, last_sync);
             pthread_mutex_unlock(&(env->engine_lock));
             return;
         }
@@ -279,7 +279,7 @@ void omni_encrypt_decrypt_function(OpenCLEnv* env,           // global opencl en
     }
 
     if (!IS_BURST) {
-        clWaitForEvents(2, last_sync);
+        clWaitForEvents(NUM_BUFFERS, last_sync);
         if (meth->burst_enabled) {
             meth->burst_ready = 1;
             meth->burst_length_so_far = 0;
