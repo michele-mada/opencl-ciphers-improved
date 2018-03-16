@@ -79,7 +79,7 @@ int tuning_step(OpenCLEnv* global_env,
     OpenCLEnv_perf_begin_event(global_env);
     ret = utility_function(global_env, payload, nbytes, REPETITIONS, trashcan, context, impl, &duration);
 
-    printf("Processed %d %lu B chunks in %ld.%09ld           \n",
+    printf("Processed x%d %lu B chunks in %ld.%09ld           \n",
             REPETITIONS, nbytes, duration.tv_sec, duration.tv_nsec); fflush(stdout);
     fprintf(logfile, "%lu\t%ld.%09ld\n", nbytes, duration.tv_sec, duration.tv_nsec);
     fflush(logfile);
