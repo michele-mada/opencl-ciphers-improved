@@ -204,7 +204,7 @@ void gf128_multiply_by_alpha(uchar* block_in, uchar* block_out) {
             tweak_last[i] = tweak2[i];                                          \
         }                                                                       \
     } else {                                                                    \
-        XTS_ROUND(blockcipher, (block_size), blockid, (global_in), (global_out), tweak2);
+        XTS_ROUND(blockcipher, (block_size), blockid, (global_in), (global_out), tweak2);       \
         _Pragma("unroll")                                                       \
         for (size_t i=0; i<(block_size); i++) {                                 \
             tweak_last[i] = tweak1[i];                                          \
