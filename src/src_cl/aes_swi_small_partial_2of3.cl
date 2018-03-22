@@ -301,4 +301,4 @@ __kernel void aesCipherXtsEnc(__global uchar* restrict in,
                               __global uchar* restrict tweak_init,
                               unsigned int num_rounds,
                               unsigned int input_size) \
-    XTS_MODE_BOILERPLATE(ENCRYPT_INTERFACE, ENCRYPT_INTERFACE, XTS_STEAL_ENC, in, out, (__global uchar* restrict)w1, (__global uchar* restrict)w2, tweak_init, BLOCK_SIZE, MAX_EXKEY_SIZE_WORDS*4, input_size);
+    XTS_MODE_BOILERPLATE_LARGE(ENCRYPT_INTERFACE, ENCRYPT_INTERFACE, XTS_STEAL_ENC, in, out, (__global uchar* restrict)w1, (__global uchar* restrict)w2, tweak_init, BLOCK_SIZE, MAX_EXKEY_SIZE_WORDS*4, input_size);
