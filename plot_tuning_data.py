@@ -15,6 +15,7 @@ def parsecli():
     parser.add_argument('-q','--quiet', help='Don\'t display/print anything', action="store_true")
     parser.add_argument('-X','--throughput', help='Just print the best throughput to stdout', action="store_true")
     parser.add_argument('-B','--blocksize', help='Just print the block size to stdout', action="store_true")
+    parser.add_argument('-M','--moment', help='Just print "after how many inerations we reached best throughput"', action="store_true")
     parser.add_argument('file', metavar='filename', help='Text file with the tuning data', type=str, default="autotune.txt")
     return parser.parse_args()
 
@@ -28,23 +29,26 @@ def main(cli):
 
     throughput = (block_sizes * repetitions * convert_to_megs) / run_times
     best_throughput = max(throughput)
-    best_blocksize = block_sizes[np.where(throughput == best_throughput)[0]]
+    best_at = np.where(throughput == best_throughput)[0]
+    best_blocksize = block_sizes[best_at]
 
     if not cli.quiet:
         if cli.throughput:
             print("%.3f" % best_throughput, end="")
         elif cli.blocksize:
             print("%u" % int(best_blocksize * convert_to_megs), end="")
+        elif cli.moment:
+            print("%d" % best_at)
         else:
             print("Best throughput: %.3f MBs at blocksize: %uMB" % (best_throughput, int(best_blocksize * convert_to_megs)))
 
-    if not (cli.throughput or cli.blocksize):
+    if not (cli.throughput or cli.blocksize or cli.moment):
         fig, ax = plt.subplots()
         plt.plot(block_sizes * convert_to_megs, throughput)
         plt.margins(y=0.2)
         stride = 4
-        if max(block_sizes * convert_to_megs) > 100: stride = 40
-        elif max(block_sizes * convert_to_megs) > 1000: stride = 80
+        if max(block_sizes * convert_to_megs) > 100: stride = 20
+        elif max(block_sizes * convert_to_megs) > 1000: stride = 40
         ax.set_xticks(np.arange(0, max(block_sizes * convert_to_megs), stride))
         plt.xlabel('block size (MB)')
         plt.ylabel('throughput (MB/s)')

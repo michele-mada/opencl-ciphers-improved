@@ -3,11 +3,15 @@
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import numpy as np
+import os
 import argparse
+
+repetitions = 100
 
 def parsecli():
     parser = argparse.ArgumentParser(description="Visualize host-generated opencl_ciphers_improved_test profiler data")
     parser.add_argument('-w','--windowsize', help='Window size for running average', type=int, default=10)
+    parser.add_argument('-M','--moment', help='Just compute and print the average kernel/io in a window arount <moment>. Moment is indicated as a number of test iterations', type=int, default=-1)
     parser.add_argument('file', metavar='filename', help='Text file with the profiler data', type=str)
     return parser.parse_args()
 
@@ -43,14 +47,26 @@ def reject_outliers(datay, datax, m=2):
     return new_datay, new_datax
 
 
+def reject_outliers_1D(data, m=2):
+    # transform both x and y, in order to keep the synchronization
+    new_data = data[abs(data - np.mean(data)) < m * np.std(data)]
+    return new_data
+
+
 
 def main(cli):
+    global repetitions
     raw_dataset = []
     pretty_dataset = []
     kernels_only_dataset = []
     input_only_dataset = []
     output_only_dataset = []
     optypes = []
+    
+    rep_override_file = cli.file + ".repetitions"
+    if os.path.isfile(rep_override_file):
+        with open(rep_override_file, "r") as fp:
+            repetitions = int(fp.read())
 
     with open(cli.file, "r") as fp:
         lines = fp.read().split("\n")
@@ -185,13 +201,22 @@ def main(cli):
     ax3 = ax2.twinx()
     k_over_io_ratio = y_k_dur / y_io_dur
     line_ratio = ax3.plot(x_k_dur, k_over_io_ratio, label="Ratio kernel/io", color="#7e0eff")
-
-    ax2.set_xlabel('Time (ms)')
-    ax2.set_ylabel('Time (ms)')
-    ax3.set_ylabel('Ratio')
-    ax2.legend(loc='upper left')
-    ax3.legend(loc='upper right')
-    plt.show()
+    
+    if cli.moment >= 0:
+        moment_index = repetitions * cli.moment
+        window_radius = int(k_over_io_ratio.shape[0]/20)
+        window = k_over_io_ratio[max(moment_index-window_radius, 0) : moment_index+window_radius]
+        k_over_io_window_no_outliers = reject_outliers_1D(window, m=1)
+        avg_k_over_io_ratio = np.average(k_over_io_window_no_outliers)
+        print("%.3f" % avg_k_over_io_ratio)
+    
+    if not (cli.moment >= 0):
+        ax2.set_xlabel('Time (ms)')
+        ax2.set_ylabel('Time (ms)')
+        ax3.set_ylabel('Ratio')
+        ax2.legend(loc='upper left')
+        ax3.legend(loc='upper right')
+        plt.show()
 
 if __name__ == "__main__":
     cli = parsecli()
