@@ -187,7 +187,6 @@ void gf128_multiply_by_alpha(uchar* block_in, uchar* block_out) {
     blockcipher_tweak(tweak1, local_w2, tweak2);                                \
                                                                                 \
     size_t blockid;                                                             \
-    _Pragma("unroll 2")                                                         \
     for (blockid=0; blockid<((input_size) / (block_size))-1; blockid++) {       \
         XTS_ROUND(blockcipher, (block_size), blockid, (global_in), (global_out), tweak2);       \
         gf128_multiply_by_alpha(tweak2, tweak1);                                \
