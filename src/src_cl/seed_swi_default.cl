@@ -182,22 +182,12 @@ void crypt(__private uchar state_in[BLOCK_SIZE],
 
 
 __attribute__((reqd_work_group_size(1, 1, 1)))
-__kernel void seedCipherEnc(__global uchar* restrict in,
-                            __global uint* restrict keys,
-                            __global uchar* restrict out,
-                            unsigned int num_rounds,
-                            unsigned int input_size) \
+__kernel void seedCipher(__global uchar* restrict in,
+                         __global uint* restrict keys,
+                         __global uchar* restrict out,
+                         unsigned int num_rounds,
+                         unsigned int input_size) \
     ECB_MODE_BOILERPLATE(ENCRYPT_INTERFACE, in, out, (__global uchar* restrict)keys, BLOCK_SIZE, EXKEY_SIZE_DWORDS*4, input_size);
-
-__attribute__((reqd_work_group_size(1, 1, 1)))
-__kernel void seedCipherDec(__global uchar* restrict in,
-                            __global uint* restrict keys,
-                            __global uchar* restrict out,
-                            unsigned int num_rounds,
-                            unsigned int input_size) \
-    ECB_MODE_BOILERPLATE(DECRYPT_INTERFACE, in, out, (__global uchar* restrict)keys, BLOCK_SIZE, EXKEY_SIZE_DWORDS*4, input_size);
-
-
 
 __attribute__((reqd_work_group_size(1, 1, 1)))
 __kernel void seedCipherCtr(__global uchar* restrict in,

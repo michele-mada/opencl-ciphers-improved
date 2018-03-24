@@ -19,8 +19,8 @@ extern CipherOpenCLAtomics seed_atomics;
 void init_seed_methods_and_state(CipherFamily* fam) {
     fam->methods = (CipherMethod**) malloc(sizeof(CipherMethod*) * NUM_SEED_METHODS);
 
-    fam->methods[SEED_ECB_ENC] = CipherMethod_init(fam, "seedCipherEnc", 1);
-    fam->methods[SEED_ECB_DEC] = CipherMethod_init(fam, "seedCipherDec", 1);
+    fam->methods[SEED_ECB_ENC] = CipherMethod_init(fam, "seedCipher", 1);
+    fam->methods[SEED_ECB_DEC] = CipherMethod_init(fam, "seedCipher", 1);
     fam->methods[SEED_CTR] = CipherMethod_init(fam, "seedCipherCtr", 1);
     fam->methods[SEED_XTS_ENC] = CipherMethod_init(fam, "seedCipherXtsEnc", 1);
     fam->methods[SEED_XTS_DEC] = CipherMethod_init(fam, "seedCipherXtsDec", 1);
