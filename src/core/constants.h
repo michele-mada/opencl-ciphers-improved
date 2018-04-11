@@ -32,7 +32,7 @@ const static int i = 1;
 
 // if defined, enable the custom host-side profiler.
 // use the companion plot_hprofile_data.py script to view the generated hprofile_*.txt
-//#define USE_CUSTOM_PROFILER
+#define USE_CUSTOM_PROFILER
 
 // if defined, lazily load the required opencl program on demand, rathere than
 // loading all of them at startup

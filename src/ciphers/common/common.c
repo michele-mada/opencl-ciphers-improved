@@ -285,9 +285,13 @@ void omni_encrypt_decrypt_function(OpenCLEnv* env,           // global opencl en
     }
 
     if (!IS_BURST) {
-        for (int nbuf=0; nbuf<NUM_BUFFERS; nbuf++) {
-            clWaitForEvents(1, last_sync+nbuf);
-        }
+        #ifdef PLATFORM_CPU
+            for (int nbuf=0; nbuf<NUM_BUFFERS; nbuf++) {
+                clWaitForEvents(1, last_sync+nbuf);
+            }
+        #else
+            clWaitForEvents(NUM_BUFFERS, last_sync);
+        #endif
         if (meth->burst_enabled) {
             meth->burst_ready = 1;
             meth->burst_length_so_far = 0;
