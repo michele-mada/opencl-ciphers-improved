@@ -40,7 +40,7 @@ static void setup_global_profiler_params() {
 
 }
 
-#define PROFILE_EVENT(event, operation, kern_id)
+#define PROFILE_EVENT(event, operation, kern_id) {}
 
 #endif
 

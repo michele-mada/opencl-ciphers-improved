@@ -78,7 +78,6 @@ void aes_encrypt_decrypt_function(OpenCLEnv* env,           // global opencl env
 
 
 
-
 /* ----------------- begin key preparation ----------------- */
 
 void opencl_aes_128_set_encrypt_key(OpenCLEnv* env, const unsigned char *userKey, const int bits, aes_context *K) {

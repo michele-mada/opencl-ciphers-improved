@@ -78,19 +78,20 @@ int common_prepare_iv_buffer(CipherFamily* fam, size_t iv_size) {
 
 void common_sync_load_key1(CipherFamily* fam, uint8_t* key, size_t key_size) {
     CipherState *state = (CipherState*) fam->state;
-    int nbuf = state->selected_buffer;
     cl_int ret;
     cl_event step1;
     // write all the expanded key
-    ret = clEnqueueWriteBuffer(fam->environment->command_queue[nbuf],
-                               state->exKey[nbuf],
-                               CL_TRUE, 0, key_size * sizeof(uint8_t),
-                               key,
-                               0, NULL,
-                               &step1);
-    if (ret != CL_SUCCESS) error_fatal("Failed to enqueue clEnqueueWriteBuffer (state->exKey[%d]) . Error = %s (%d)\n", nbuf, get_cl_error_string(ret), ret);
-    PROFILE_EVENT(&step1, input, nbuf);
-    clWaitForEvents(1, &step1);
+    for (int nbuf=0; nbuf<NUM_BUFFERS; nbuf++) {
+        ret = clEnqueueWriteBuffer(fam->environment->command_queue[nbuf],
+                                   state->exKey[nbuf],
+                                   CL_TRUE, 0, key_size * sizeof(uint8_t),
+                                   key,
+                                   0, NULL,
+                                   &step1);
+        if (ret != CL_SUCCESS) error_fatal("Failed to enqueue clEnqueueWriteBuffer (state->exKey[%d]) . Error = %s (%d)\n", nbuf, get_cl_error_string(ret), ret);
+        PROFILE_EVENT(&step1, input, nbuf);
+        clWaitForEvents(1, &step1);
+    }
 }
 
 void common_sync_load_key2(CipherFamily* fam, uint8_t* key, size_t key_size) {
@@ -99,15 +100,17 @@ void common_sync_load_key2(CipherFamily* fam, uint8_t* key, size_t key_size) {
     cl_int ret;
     cl_event step1;
     // write all the expanded key
-    ret = clEnqueueWriteBuffer(fam->environment->command_queue[nbuf],
-                               state->exKeySecond[nbuf],
-                               CL_TRUE, 0, key_size * sizeof(uint8_t),
-                               key,
-                               0, NULL,
-                               &step1);
-    if (ret != CL_SUCCESS) error_fatal("Failed to enqueue clEnqueueWriteBuffer (state->exKeySecond[%d]) . Error = %s (%d)\n", nbuf, get_cl_error_string(ret), ret);
-    PROFILE_EVENT(&step1, input, nbuf);
-    clWaitForEvents(1, &step1);
+    for (int nbuf=0; nbuf<NUM_BUFFERS; nbuf++) {
+        ret = clEnqueueWriteBuffer(fam->environment->command_queue[nbuf],
+                                   state->exKeySecond[nbuf],
+                                   CL_TRUE, 0, key_size * sizeof(uint8_t),
+                                   key,
+                                   0, NULL,
+                                   &step1);
+        if (ret != CL_SUCCESS) error_fatal("Failed to enqueue clEnqueueWriteBuffer (state->exKeySecond[%d]) . Error = %s (%d)\n", nbuf, get_cl_error_string(ret), ret);
+        PROFILE_EVENT(&step1, input, nbuf);
+        clWaitForEvents(1, &step1);
+    }
 }
 
 void common_load_iv(CipherFamily* fam, uint8_t* iv, size_t iv_size) {
@@ -230,6 +233,9 @@ struct cipher_kernel_done_callback_data {
 
 static void cipher_kernel_done_callback(cl_event event, cl_int event_command_exec_status, void *user_data) {
     struct cipher_kernel_done_callback_data *p = (struct cipher_kernel_done_callback_data*) user_data;
+    #ifdef PLATFORM_CPU
+        clWaitForEvents(1, &event);
+    #endif
     p->handler(p->user_data);
     free(p);
 }
@@ -279,7 +285,9 @@ void omni_encrypt_decrypt_function(OpenCLEnv* env,           // global opencl en
     }
 
     if (!IS_BURST) {
-        clWaitForEvents(NUM_BUFFERS, last_sync);
+        for (int nbuf=0; nbuf<NUM_BUFFERS; nbuf++) {
+            clWaitForEvents(1, last_sync+nbuf);
+        }
         if (meth->burst_enabled) {
             meth->burst_ready = 1;
             meth->burst_length_so_far = 0;
