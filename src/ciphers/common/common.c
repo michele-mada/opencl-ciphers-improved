@@ -233,7 +233,7 @@ struct cipher_kernel_done_callback_data {
 
 static void cipher_kernel_done_callback(cl_event event, cl_int event_command_exec_status, void *user_data) {
     struct cipher_kernel_done_callback_data *p = (struct cipher_kernel_done_callback_data*) user_data;
-    #ifdef PLATFORM_CPU
+    #ifdef PLATFORM_CPU   // TODO do I really need this?
         clWaitForEvents(1, &event);
     #endif
     p->handler(p->user_data);
@@ -281,7 +281,7 @@ void omni_encrypt_decrypt_function(OpenCLEnv* env,           // global opencl en
         struct cipher_kernel_done_callback_data *wrapper_data = (struct cipher_kernel_done_callback_data*) malloc(sizeof(struct cipher_kernel_done_callback_data));
         wrapper_data->handler = callback;
         wrapper_data->user_data = user_data;
-        clSetEventCallback(kernel_done, CL_COMPLETE, &cipher_kernel_done_callback, (void*)wrapper_data);
+        clSetEventCallback(last_sync[state->selected_buffer], CL_COMPLETE, &cipher_kernel_done_callback, (void*)wrapper_data);
     }
 
     if (!IS_BURST) {
